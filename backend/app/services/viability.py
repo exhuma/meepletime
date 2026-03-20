@@ -10,6 +10,11 @@ from app.schemas.availability import AvailabilityOut
 
 
 def compute_viability(circle: Circle, local_date: date, db: Session) -> DayViability:
+    """Compute the derived viability for *local_date* in *circle*.
+
+    Resolves effective settings by merging circle defaults with any day override,
+    then evaluates attendee/hosting counts against the viability rules from the contract.
+    """
     availabilities = (
         db.query(DayAvailability)
         .filter(

@@ -15,6 +15,7 @@ router = APIRouter(tags=["day_overrides"])
 
 
 def _get_circle_or_404(db: Session, circle_id: uuid.UUID) -> Circle:
+    """Return the circle or raise HTTP 404 if it does not exist."""
     circle = db.query(Circle).filter(Circle.id == circle_id).first()
     if not circle:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Circle not found")
@@ -22,6 +23,7 @@ def _get_circle_or_404(db: Session, circle_id: uuid.UUID) -> Circle:
 
 
 def _require_membership(db: Session, circle_id: uuid.UUID, user_id: uuid.UUID) -> CircleMembership:
+    """Return the membership or raise HTTP 403 if the user is not a member."""
     m = (
         db.query(CircleMembership)
         .filter(CircleMembership.circle_id == circle_id, CircleMembership.user_id == user_id)
@@ -39,6 +41,7 @@ def get_override(
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_active_user),
 ):
+    """Return the day override for *local_date* in *circle_id*, or null if none exists."""
     _get_circle_or_404(db, circle_id)
     _require_membership(db, circle_id, current_user.id)
     return (
@@ -56,6 +59,7 @@ def upsert_override(
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_active_user),
 ):
+    """Create or replace the day override for *local_date*. Requires owner or admin role."""
     _get_circle_or_404(db, circle_id)
     membership = _require_membership(db, circle_id, current_user.id)
     if membership.role not in (MemberRole.owner, MemberRole.admin):
@@ -87,6 +91,7 @@ def delete_override(
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_active_user),
 ):
+    """Delete the day override for *local_date* in *circle_id*. Requires owner or admin role."""
     _get_circle_or_404(db, circle_id)
     membership = _require_membership(db, circle_id, current_user.id)
     if membership.role not in (MemberRole.owner, MemberRole.admin):

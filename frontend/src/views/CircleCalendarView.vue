@@ -5,7 +5,7 @@
         <v-icon>mdi-arrow-left</v-icon>
       </v-btn>
       <v-app-bar-title class="text-truncate">
-        {{ circles.currentCircle?.name || 'Loading...' }}
+        {{ circlesState.currentCircle.value?.name || 'Loading...' }}
       </v-app-bar-title>
       <v-switch
         v-model="viableOnly"
@@ -13,115 +13,337 @@
         color="primary"
         hide-details
         density="compact"
-        class="mr-3"
+        class="mr-2"
         style="max-width:140px"
       />
+      <v-btn icon :title="'Invite / QR Code'" @click="inviteDialog = true" class="mr-1">
+        <v-icon>mdi-qrcode</v-icon>
+      </v-btn>
     </v-app-bar>
 
-    <v-container class="pa-2 pt-0" style="max-width:600px">
+    <v-container class="pa-2" style="max-width:700px">
       <v-progress-linear v-if="loading" indeterminate color="primary" class="mb-2" />
 
-      <div ref="listContainer">
-        <template v-for="date in filteredDates" :key="date">
-          <DayCell
-            :date="date"
-            :viability="circles.viability[date] || null"
-            :myState="getMyState(date)"
-            :attendees="circles.calendar[date] || []"
-            @toggle="handleToggle(date)"
-            @detail="router.push(`/circles/${circleId}/day/${date}`)"
-          />
-        </template>
+      <!-- Month navigation -->
+      <div class="d-flex align-center px-2 py-2">
+        <v-btn
+          icon
+          variant="text"
+          :disabled="!canGoPrev"
+          @click="prevMonth"
+        >
+          <v-icon>mdi-chevron-left</v-icon>
+        </v-btn>
+        <span class="flex-grow-1 text-center text-subtitle-1 font-weight-bold">
+          {{ monthLabel }}
+        </span>
+        <v-btn icon variant="text" @click="nextMonth">
+          <v-icon>mdi-chevron-right</v-icon>
+        </v-btn>
       </div>
 
-      <v-alert v-if="!loading && filteredDates.length === 0 && viableOnly" type="info" class="mt-4">
-        No viable days found in this range.
-      </v-alert>
+      <!-- Calendar grid -->
+      <div class="calendar-grid">
+        <!-- Day headers -->
+        <div class="calendar-header" v-for="day in dayHeaders" :key="day">{{ day }}</div>
+
+        <!-- Blank cells for first week offset -->
+        <div v-for="n in firstDayOffset" :key="`blank-${n}`" class="calendar-cell calendar-cell--blank"></div>
+
+        <!-- Day cells -->
+        <div
+          v-for="day in daysInMonth"
+          :key="day.date"
+          class="calendar-cell"
+          :class="{
+            'calendar-cell--today': day.date === todayStr,
+            'calendar-cell--past': day.date < todayStr,
+            'calendar-cell--future': day.date >= todayStr,
+            'calendar-cell--viable': day.viability?.is_viable && !day.viability.is_soft_max_exceeded,
+            'calendar-cell--over-soft-max': day.viability?.is_soft_max_exceeded,
+            'calendar-cell--hidden': viableOnly && !day.viability?.is_viable,
+          }"
+          @click="day.date >= todayStr ? handleDayClick(day.date) : undefined"
+        >
+          <div class="calendar-cell__date">{{ day.dayOfMonth }}</div>
+          <div v-if="day.myState" class="calendar-cell__chip" :class="`chip--${day.myState}`">
+            {{ day.myState === 'hosting' ? '🏠' : '✓' }}
+          </div>
+          <div v-if="day.viability && day.viability.attendee_count > 0" class="calendar-cell__count">
+            {{ day.viability.attendee_count }}
+          </div>
+        </div>
+      </div>
+
+      <!-- Legend -->
+      <div class="d-flex flex-wrap gap-2 px-2 py-3">
+        <v-chip size="x-small" color="blue" variant="tonal">✓ Attending</v-chip>
+        <v-chip size="x-small" color="green" variant="tonal">🏠 Hosting</v-chip>
+        <v-chip size="x-small" color="success" variant="flat">Viable day</v-chip>
+        <v-chip size="x-small" color="orange" variant="tonal">Over soft max</v-chip>
+      </div>
+
+      <p class="text-caption text-grey text-center mt-1">Tap a future date to toggle your availability</p>
     </v-container>
+
+    <!-- Invite / QR Code dialog -->
+    <InviteDialog
+      v-if="circlesState.currentCircle.value"
+      v-model="inviteDialog"
+      :circle="circlesState.currentCircle.value"
+      :is-admin="isAdminOrOwner"
+      @regenerated="onInviteRegenerated"
+    />
   </div>
 </template>
 
-<script setup>
-import { ref, computed, onMounted, nextTick } from 'vue'
+<script setup lang="ts">
+import { ref, computed, onMounted } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
-import { format, addDays, subMonths, addMonths } from 'date-fns'
-import { useCirclesStore } from '../stores/circles'
-import { useAuthStore } from '../stores/auth'
-import DayCell from '../components/DayCell.vue'
+import { format, addMonths, startOfMonth, getDaysInMonth, getDay } from 'date-fns'
+import { useCircles } from '../composables/circles'
+import { useAuth } from '../composables/auth'
+import InviteDialog from '../components/InviteDialog.vue'
+import type { DayViability } from '../types'
 
 const route = useRoute()
 const router = useRouter()
-const circles = useCirclesStore()
-const auth = useAuthStore()
+const circlesState = useCircles()
+const auth = useAuth()
 
-const circleId = route.params.id
+const circleId = route.params.id as string
 const viableOnly = ref(false)
 const loading = ref(false)
-const listContainer = ref(null)
-const todayStr = format(new Date(), 'yyyy-MM-dd')
+const inviteDialog = ref(false)
 
-const startDate = format(subMonths(new Date(), 1), 'yyyy-MM-dd')
-const endDate = format(addMonths(new Date(), 2), 'yyyy-MM-dd')
+const today = new Date()
+const todayStr = format(today, 'yyyy-MM-dd')
 
-function generateDateRange(start, end) {
-  const dates = []
-  let current = new Date(start + 'T00:00:00')
-  const last = new Date(end + 'T00:00:00')
-  while (current <= last) {
-    dates.push(format(current, 'yyyy-MM-dd'))
-    current = addDays(current, 1)
-  }
-  return dates
+// Start at current month; do not allow navigating to past months
+const currentMonthStart = ref(startOfMonth(today))
+
+const monthLabel = computed<string>(() =>
+  format(currentMonthStart.value, 'MMMM yyyy'),
+)
+
+const dayHeaders = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat']
+
+/** Offset of the first day (0 = Sunday). */
+const firstDayOffset = computed<number>(() => getDay(currentMonthStart.value))
+
+interface DayCell {
+  date: string
+  dayOfMonth: number
+  myState: 'attending' | 'hosting' | null
+  viability: DayViability | null
 }
 
-const allDates = generateDateRange(startDate, endDate)
-
-const filteredDates = computed(() => {
-  if (!viableOnly.value) return allDates
-  return allDates.filter(d => circles.viability[d]?.is_viable)
+/** Build the array of day cells for the current month. */
+const daysInMonth = computed<DayCell[]>(() => {
+  const count = getDaysInMonth(currentMonthStart.value)
+  const userId = auth.user.value?.id
+  const cells: DayCell[] = []
+  for (let d = 1; d <= count; d++) {
+    const date = format(new Date(currentMonthStart.value.getFullYear(), currentMonthStart.value.getMonth(), d), 'yyyy-MM-dd')
+    const entries = circlesState.calendar.value[date] ?? []
+    const mine = userId ? entries.find((a) => a.user_id === userId) : undefined
+    const viab = circlesState.viability.value[date] ?? null
+    cells.push({
+      date,
+      dayOfMonth: d,
+      myState: mine?.state ?? null,
+      viability: viab,
+    })
+  }
+  return cells
 })
 
-function getMyState(date) {
-  const userId = auth.user?.id
-  const entries = circles.calendar[date] || []
-  const mine = entries.find(a => a.user_id === userId)
-  return mine?.state || 'empty'
+/** True when navigating back would go before the current month. */
+const canGoPrev = computed<boolean>(() => {
+  const prevMonth = addMonths(currentMonthStart.value, -1)
+  return prevMonth >= startOfMonth(today)
+})
+
+/** Navigate the calendar one month back, stopping at the current month. */
+function prevMonth(): void {
+  if (!canGoPrev.value) return
+  currentMonthStart.value = addMonths(currentMonthStart.value, -1)
+  reloadMonth()
 }
 
-async function handleToggle(date) {
-  const current = getMyState(date)
+/** Navigate the calendar one month forward. */
+function nextMonth(): void {
+  currentMonthStart.value = addMonths(currentMonthStart.value, 1)
+  reloadMonth()
+}
+
+/** Fetch availability and viability data for the currently displayed month. */
+async function reloadMonth(): Promise<void> {
+  const start = format(currentMonthStart.value, 'yyyy-MM-dd')
+  const end = format(addMonths(currentMonthStart.value, 1), 'yyyy-MM-dd')
+  await Promise.all([
+    circlesState.fetchCalendar(circleId, start, end),
+    circlesState.fetchViability(circleId, start, end),
+  ])
+}
+
+/** True if the current user is an owner or admin of this circle. */
+const isAdminOrOwner = computed<boolean>(() => {
+  const userId = auth.user.value?.id
+  if (!userId) return false
+  const member = circlesState.members.value.find((m) => m.user_id === userId)
+  return member?.role === 'owner' || member?.role === 'admin'
+})
+
+/**
+ * Handle a day cell click: cycle the user's availability for that day.
+ */
+async function handleDayClick(date: string): Promise<void> {
+  if (date < todayStr) return
+  await cycleAvailability(date)
+}
+
+/**
+ * Cycle the current user's availability state for date:
+ * empty → attending → hosting → empty
+ */
+async function cycleAvailability(date: string): Promise<void> {
+  const userId = auth.user.value?.id
+  if (!userId) return
+  const entries = circlesState.calendar.value[date] ?? []
+  const mine = entries.find((a) => a.user_id === userId)
+  const current = mine?.state ?? 'empty'
   try {
     if (current === 'empty') {
-      await circles.setAvailability(circleId, date, 'attending')
+      await circlesState.setAvailability(circleId, date, 'attending')
     } else if (current === 'attending') {
-      await circles.setAvailability(circleId, date, 'hosting')
+      await circlesState.setAvailability(circleId, date, 'hosting')
     } else {
-      await circles.deleteAvailability(circleId, date, auth.user?.id)
+      await circlesState.deleteAvailability(circleId, date, userId)
     }
+    await circlesState.fetchViability(circleId, date, date)
   } catch (e) {
-    console.error('Toggle error', e)
+    console.error('Availability toggle error', e)
   }
+}
+
+/** Refresh circle data after invite token regeneration. */
+function onInviteRegenerated(): void {
+  circlesState.fetchCircle(circleId)
 }
 
 onMounted(async () => {
   loading.value = true
   try {
+    const start = format(currentMonthStart.value, 'yyyy-MM-dd')
+    const end = format(addMonths(currentMonthStart.value, 3), 'yyyy-MM-dd')
     await Promise.all([
-      circles.fetchCircle(circleId),
-      circles.fetchMembers(circleId),
-      circles.fetchCalendar(circleId, startDate, endDate),
-      circles.fetchViability(circleId, startDate, endDate),
+      circlesState.fetchCircle(circleId),
+      circlesState.fetchMembers(circleId),
+      circlesState.fetchCalendar(circleId, start, end),
+      circlesState.fetchViability(circleId, start, end),
     ])
   } finally {
     loading.value = false
   }
-
-  await nextTick()
-  if (listContainer.value) {
-    const todayEl = listContainer.value.querySelector(`[data-date="${todayStr}"]`)
-    if (todayEl) {
-      todayEl.scrollIntoView({ behavior: 'smooth', block: 'start' })
-    }
-  }
 })
 </script>
+
+<style scoped>
+.calendar-grid {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  gap: 2px;
+  background: #e0e0e0;
+  border: 1px solid #e0e0e0;
+  border-radius: 8px;
+  overflow: hidden;
+}
+
+.calendar-header {
+  background: #f5f5f5;
+  text-align: center;
+  font-size: 0.75rem;
+  font-weight: 600;
+  padding: 6px 2px;
+  color: #666;
+}
+
+.calendar-cell {
+  background: #fff;
+  min-height: 72px;
+  padding: 4px;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  cursor: default;
+  position: relative;
+}
+
+.calendar-cell--blank {
+  background: #fafafa;
+  cursor: default;
+}
+
+.calendar-cell--past {
+  background: #fafafa;
+  opacity: 0.5;
+}
+
+.calendar-cell--future {
+  cursor: pointer;
+}
+
+.calendar-cell--future:hover {
+  background: #f3faf3;
+}
+
+.calendar-cell--today {
+  outline: 2px solid #4CAF50;
+  outline-offset: -2px;
+}
+
+.calendar-cell--viable {
+  background: #f0fff0;
+}
+
+.calendar-cell--over-soft-max {
+  background: #fff8e1;
+}
+
+.calendar-cell--hidden {
+  visibility: hidden;
+}
+
+.calendar-cell__date {
+  font-size: 0.8rem;
+  font-weight: 500;
+  color: #333;
+  line-height: 1.2;
+}
+
+.calendar-cell__chip {
+  font-size: 0.9rem;
+  margin-top: 2px;
+}
+
+.chip--attending {
+  color: #1565C0;
+}
+
+.chip--hosting {
+  color: #2E7D32;
+}
+
+.calendar-cell__count {
+  position: absolute;
+  bottom: 4px;
+  right: 4px;
+  font-size: 0.7rem;
+  font-weight: 700;
+  color: #666;
+  background: rgba(0,0,0,0.08);
+  border-radius: 4px;
+  padding: 1px 4px;
+}
+</style>

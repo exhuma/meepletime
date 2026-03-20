@@ -15,6 +15,7 @@ router = APIRouter(tags=["day_notes"])
 
 
 def _get_circle_or_404(db: Session, circle_id: uuid.UUID) -> Circle:
+    """Return the circle or raise HTTP 404 if it does not exist."""
     circle = db.query(Circle).filter(Circle.id == circle_id).first()
     if not circle:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Circle not found")
@@ -22,6 +23,7 @@ def _get_circle_or_404(db: Session, circle_id: uuid.UUID) -> Circle:
 
 
 def _require_membership(db: Session, circle_id: uuid.UUID, user_id: uuid.UUID) -> CircleMembership:
+    """Return the membership or raise HTTP 403 if the user is not a member."""
     m = (
         db.query(CircleMembership)
         .filter(CircleMembership.circle_id == circle_id, CircleMembership.user_id == user_id)
@@ -33,6 +35,7 @@ def _require_membership(db: Session, circle_id: uuid.UUID, user_id: uuid.UUID) -
 
 
 def _enrich_note(note: DayNote, db: Session) -> DayNoteOut:
+    """Attach the author's circle pseudonym to a *DayNoteOut* response object."""
     membership = (
         db.query(CircleMembership)
         .filter(
@@ -54,6 +57,7 @@ def list_notes(
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_active_user),
 ):
+    """Return all notes for *local_date* in *circle_id*, ordered by creation time."""
     _get_circle_or_404(db, circle_id)
     _require_membership(db, circle_id, current_user.id)
 
@@ -78,6 +82,7 @@ def add_note(
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_active_user),
 ):
+    """Append a plain-text note to *local_date* in *circle_id*. Any member may add notes."""
     _get_circle_or_404(db, circle_id)
     _require_membership(db, circle_id, current_user.id)
 

@@ -82,16 +82,17 @@
   </div>
 </template>
 
-<script setup>
+<script setup lang="ts">
 import { computed } from 'vue'
 import { format, parseISO, isBefore, startOfDay } from 'date-fns'
+import type { DayViability } from '../types'
 
-const props = defineProps({
-  date: { type: String, required: true },
-  viability: { type: Object, default: null },
-  myState: { type: String, default: 'empty' },
-  attendees: { type: Array, default: () => [] },
-})
+const props = defineProps<{
+  date: string
+  viability?: DayViability | null
+  myState?: string
+  attendees?: unknown[]
+}>()
 
 defineEmits(['toggle', 'detail'])
 
@@ -105,15 +106,18 @@ const monthName = computed(() => format(parsedDate.value, 'MMM'))
 
 const isPast = computed(() => isBefore(parsedDate.value, startOfDay(new Date())))
 
+const myState = computed(() => props.myState ?? 'empty')
+const attendees = computed(() => props.attendees ?? [])
+
 const stripeColor = computed(() => {
-  if (props.myState === 'hosting') return '#4CAF50'
-  if (props.myState === 'attending') return '#2196F3'
+  if (myState.value === 'hosting') return '#4CAF50'
+  if (myState.value === 'attending') return '#2196F3'
   return '#E0E0E0'
 })
 
 const stateColor = computed(() => {
-  if (props.myState === 'hosting') return 'green'
-  if (props.myState === 'attending') return 'blue'
+  if (myState.value === 'hosting') return 'green'
+  if (myState.value === 'attending') return 'blue'
   return 'grey'
 })
 </script>

@@ -19,14 +19,10 @@
     <v-container class="pa-4" style="max-width:600px">
       <v-progress-linear v-if="loading" indeterminate color="primary" class="mb-4" />
 
-      <!-- Attendees -->
       <div class="mb-6">
         <h3 class="text-subtitle-1 font-weight-bold mb-2">Attendees</h3>
         <v-list v-if="enrichedAttendees.length > 0" lines="one" class="rounded-lg" elevation="1">
-          <v-list-item
-            v-for="a in enrichedAttendees"
-            :key="a.user_id"
-          >
+          <v-list-item v-for="a in enrichedAttendees" :key="a.user_id">
             <template #prepend>
               <v-icon :color="a.state === 'hosting' ? 'green' : 'blue'" class="mr-2">
                 {{ a.state === 'hosting' ? 'mdi-home' : 'mdi-calendar-check' }}
@@ -39,16 +35,10 @@
         <v-alert v-else type="info" density="compact">No attendees yet.</v-alert>
       </div>
 
-      <!-- Notes -->
       <div>
         <h3 class="text-subtitle-1 font-weight-bold mb-2">Notes</h3>
         <div v-if="notes.length > 0" class="mb-4">
-          <v-card
-            v-for="note in notes"
-            :key="note.id"
-            class="mb-2"
-            variant="tonal"
-          >
+          <v-card v-for="note in notes" :key="note.id" class="mb-2" variant="tonal">
             <v-card-text class="pa-3">
               <div class="d-flex justify-space-between mb-1">
                 <span class="text-caption font-weight-bold">{{ note.pseudonym || 'User' }}</span>
@@ -60,7 +50,6 @@
         </div>
         <v-alert v-else type="info" density="compact" class="mb-4">No notes yet.</v-alert>
 
-        <!-- Add note form -->
         <v-form @submit.prevent="submitNote">
           <v-textarea
             v-model="newNote"
@@ -85,25 +74,26 @@
   </div>
 </template>
 
-<script setup>
+<script setup lang="ts">
 import { ref, computed, onMounted } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { format, parseISO } from 'date-fns'
-import { useCirclesStore } from '../stores/circles'
+import { useCircles } from '../composables/circles'
+import type { Note } from '../types'
 
 const route = useRoute()
 const router = useRouter()
-const circles = useCirclesStore()
+const circlesState = useCircles()
 
-const circleId = route.params.id
-const date = route.params.date
+const circleId = route.params.id as string
+const date = route.params.date as string
 
 const loading = ref(false)
 const submitting = ref(false)
-const notes = ref([])
+const notes = ref<Note[]>([])
 const newNote = ref('')
 
-const formattedDate = computed(() => {
+const formattedDate = computed<string>(() => {
   try {
     return format(parseISO(date), 'EEEE, MMMM d, yyyy')
   } catch {
@@ -111,18 +101,19 @@ const formattedDate = computed(() => {
   }
 })
 
-const attendees = computed(() => circles.calendar[date] || [])
-const viability = computed(() => circles.viability[date] || null)
+const attendees = computed(() => circlesState.calendar.value[date] ?? [])
+const viability = computed(() => circlesState.viability.value[date] ?? null)
 
-// Cross-reference attendees with membership list for pseudonyms
-const enrichedAttendees = computed(() => {
-  return attendees.value.map(a => {
-    const member = circles.members.find(m => m.user_id === a.user_id)
-    return { ...a, pseudonym: member?.pseudonym || a.user_id }
-  })
-})
+/** Cross-reference attendees with the members list to resolve pseudonyms. */
+const enrichedAttendees = computed(() =>
+  attendees.value.map((a) => {
+    const member = circlesState.members.value.find((m) => m.user_id === a.user_id)
+    return { ...a, pseudonym: member?.pseudonym ?? a.user_id }
+  }),
+)
 
-function formatTime(ts) {
+/** Format an ISO timestamp string to a short human-readable form. */
+function formatTime(ts: string): string {
   if (!ts) return ''
   try {
     return format(new Date(ts), 'MMM d, HH:mm')
@@ -131,12 +122,13 @@ function formatTime(ts) {
   }
 }
 
-async function submitNote() {
+/** Submit a new note for the current day. */
+async function submitNote(): Promise<void> {
   if (!newNote.value.trim()) return
   submitting.value = true
   try {
-    const note = await circles.addNote(circleId, date, newNote.value.trim())
-    notes.value.push(note)
+    const note = await circlesState.addNote(circleId, date, newNote.value.trim())
+    notes.value = [...notes.value, note]
     newNote.value = ''
   } catch (e) {
     console.error('Add note error', e)
@@ -149,11 +141,11 @@ onMounted(async () => {
   loading.value = true
   try {
     const [fetchedNotes] = await Promise.all([
-      circles.fetchNotes(circleId, date),
-      circles.fetchCircle(circleId),
-      circles.fetchMembers(circleId),
-      circles.fetchCalendar(circleId, date, date),
-      circles.fetchViability(circleId, date, date),
+      circlesState.fetchNotes(circleId, date),
+      circlesState.fetchCircle(circleId),
+      circlesState.fetchMembers(circleId),
+      circlesState.fetchCalendar(circleId, date, date),
+      circlesState.fetchViability(circleId, date, date),
     ])
     notes.value = fetchedNotes
   } catch (e) {

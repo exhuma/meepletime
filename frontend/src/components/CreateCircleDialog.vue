@@ -87,16 +87,19 @@
   </v-dialog>
 </template>
 
-<script setup>
+<script setup lang="ts">
 import { ref, reactive } from 'vue'
-import { useCirclesStore } from '../stores/circles'
+import { useCircles } from '../composables/circles'
 
-const props = defineProps({
-  modelValue: { type: Boolean, required: true },
-})
-const emit = defineEmits(['update:modelValue', 'created'])
+defineProps<{
+  modelValue: boolean
+}>()
+const emit = defineEmits<{
+  'update:modelValue': [value: boolean]
+  created: []
+}>()
 
-const circles = useCirclesStore()
+const circles = useCircles()
 const loading = ref(false)
 const error = ref('')
 
@@ -122,12 +125,12 @@ const form = reactive({
   description: '',
   timezone: 'UTC',
   host_needed: false,
-  minimum_attendees: null,
-  soft_max_attendees: null,
-  hard_max_attendees: null,
+  minimum_attendees: null as number | null,
+  soft_max_attendees: null as number | null,
+  hard_max_attendees: null as number | null,
 })
 
-async function handleCreate() {
+async function handleCreate(): Promise<void> {
   if (!form.name.trim()) return
   error.value = ''
   loading.value = true
@@ -144,7 +147,6 @@ async function handleCreate() {
     await circles.createCircle(payload)
     emit('created')
     emit('update:modelValue', false)
-    // Reset form
     form.name = ''
     form.description = ''
     form.timezone = 'UTC'
@@ -152,8 +154,9 @@ async function handleCreate() {
     form.minimum_attendees = null
     form.soft_max_attendees = null
     form.hard_max_attendees = null
-  } catch (e) {
-    error.value = e.response?.data?.detail || 'Failed to create circle.'
+  } catch (e: unknown) {
+    const err = e as { response?: { data?: { detail?: string } } }
+    error.value = err.response?.data?.detail || 'Failed to create circle.'
   } finally {
     loading.value = false
   }

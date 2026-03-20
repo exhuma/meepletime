@@ -15,16 +15,19 @@ _pending_jobs: dict[tuple[str, str], str] = {}
 
 
 def start_scheduler() -> None:
+    """Start the APScheduler background scheduler if it is not already running."""
     if not scheduler.running:
         scheduler.start()
 
 
 def shutdown_scheduler() -> None:
+    """Shut down the APScheduler background scheduler without waiting for pending jobs."""
     if scheduler.running:
         scheduler.shutdown(wait=False)
 
 
 def _make_key(circle_id: uuid.UUID, local_date: date) -> tuple[str, str]:
+    """Return a stable dict key for *(circle_id, local_date)* tracking pending debounce jobs."""
     return (str(circle_id), str(local_date))
 
 
@@ -56,6 +59,7 @@ def trigger_notification_eval(circle_id: uuid.UUID, local_date: date, db_factory
 
 
 def _run_evaluation(circle_id: uuid.UUID, local_date: date, db_factory) -> None:
+    """Execute the notification evaluation job and clean up the pending-job registry."""
     key = _make_key(circle_id, local_date)
     _pending_jobs.pop(key, None)
     db = db_factory()
@@ -68,7 +72,10 @@ def _run_evaluation(circle_id: uuid.UUID, local_date: date, db_factory) -> None:
 
 
 def evaluate_and_notify(circle_id: uuid.UUID, local_date: date, db: Session) -> None:
-    from app.models.circle import Circle
+    """Evaluate derived viability for *(circle_id, local_date)* and create notification events if warranted.
+
+    Anti-storm logic suppresses duplicate events that fall within twice the debounce window.
+    """
     from app.models.membership import CircleMembership
     from app.models.notification import NotificationEvent, NotificationDelivery
     from app.services.viability import compute_viability

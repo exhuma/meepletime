@@ -13,6 +13,7 @@ router = APIRouter(tags=["memberships"])
 
 
 def _require_membership(db: Session, circle_id: uuid.UUID, user_id: uuid.UUID) -> CircleMembership:
+    """Return the membership record or raise HTTP 403 if *user_id* is not a member of *circle_id*."""
     membership = (
         db.query(CircleMembership)
         .filter(CircleMembership.circle_id == circle_id, CircleMembership.user_id == user_id)
@@ -29,6 +30,7 @@ def list_members(
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_active_user),
 ):
+    """Return all members of *circle_id*. The caller must be a member."""
     _require_membership(db, circle_id, current_user.id)
     return db.query(CircleMembership).filter(CircleMembership.circle_id == circle_id).all()
 
@@ -41,6 +43,7 @@ def update_membership(
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_active_user),
 ):
+    """Update a membership's pseudonym, role, or host default. Owner/admin may update any member; a member may update their own record."""
     requester = _require_membership(db, circle_id, current_user.id)
     target = (
         db.query(CircleMembership)
@@ -90,6 +93,7 @@ def remove_member(
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_active_user),
 ):
+    """Remove a member from a circle. A member may leave themselves; owner/admin may remove others."""
     requester = _require_membership(db, circle_id, current_user.id)
     target = (
         db.query(CircleMembership)

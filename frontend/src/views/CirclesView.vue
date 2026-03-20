@@ -4,19 +4,19 @@
       <h2 class="text-h6 font-weight-bold">My Circles</h2>
       <v-spacer />
       <v-btn variant="text" color="primary" @click="joinDialog = true" size="small">
-        <v-icon left>mdi-key</v-icon> Join
+        <v-icon start>mdi-key</v-icon> Join
       </v-btn>
     </div>
 
     <v-progress-circular v-if="loading" indeterminate color="primary" class="d-block mx-auto my-8" />
 
-    <v-alert v-if="!loading && circles.circles.length === 0" type="info" class="mb-4">
+    <v-alert v-if="!loading && circlesState.circles.value.length === 0" type="info" class="mb-4">
       You're not in any circles yet. Create one or join with an invite token!
     </v-alert>
 
-    <v-list v-if="!loading && circles.circles.length > 0" lines="two" class="mb-4">
+    <v-list v-if="!loading && circlesState.circles.value.length > 0" lines="two" class="mb-4">
       <v-list-item
-        v-for="circle in circles.circles"
+        v-for="circle in circlesState.circles.value"
         :key="circle.id"
         :to="`/circles/${circle.id}`"
         rounded="lg"
@@ -36,24 +36,12 @@
       </v-list-item>
     </v-list>
 
-    <!-- Create circle FAB -->
-    <v-btn
-      color="primary"
-      size="large"
-      block
-      prepend-icon="mdi-plus"
-      @click="createDialog = true"
-    >
+    <v-btn color="primary" size="large" block prepend-icon="mdi-plus" @click="createDialog = true">
       Create Circle
     </v-btn>
 
-    <!-- Create Circle Dialog -->
-    <CreateCircleDialog
-      v-model="createDialog"
-      @created="onCircleCreated"
-    />
+    <CreateCircleDialog v-model="createDialog" @created="onCircleCreated" />
 
-    <!-- Join Circle Dialog -->
     <v-dialog v-model="joinDialog" max-width="400">
       <v-card>
         <v-card-title>Join a Circle</v-card-title>
@@ -75,13 +63,13 @@
   </v-container>
 </template>
 
-<script setup>
+<script setup lang="ts">
 import { ref, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
-import { useCirclesStore } from '../stores/circles'
+import { useCircles } from '../composables/circles'
 import CreateCircleDialog from '../components/CreateCircleDialog.vue'
 
-const circles = useCirclesStore()
+const circlesState = useCircles()
 const router = useRouter()
 
 const loading = ref(false)
@@ -92,17 +80,19 @@ const joinToken = ref('')
 onMounted(async () => {
   loading.value = true
   try {
-    await circles.fetchCircles()
+    await circlesState.fetchCircles()
   } finally {
     loading.value = false
   }
 })
 
-function onCircleCreated() {
+/** Close the create dialog after a circle has been created. */
+function onCircleCreated(): void {
   createDialog.value = false
 }
 
-function goToJoin() {
+/** Navigate to the join page for the entered invite token. */
+function goToJoin(): void {
   if (joinToken.value) {
     joinDialog.value = false
     router.push(`/join/${joinToken.value}`)

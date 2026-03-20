@@ -14,6 +14,7 @@ router = APIRouter(tags=["circles"])
 
 
 def _get_membership(db: Session, circle_id: uuid.UUID, user_id: uuid.UUID) -> CircleMembership | None:
+    """Return the CircleMembership for *user_id* in *circle_id*, or None."""
     return (
         db.query(CircleMembership)
         .filter(
@@ -25,6 +26,7 @@ def _get_membership(db: Session, circle_id: uuid.UUID, user_id: uuid.UUID) -> Ci
 
 
 def _require_membership(db: Session, circle_id: uuid.UUID, user_id: uuid.UUID) -> CircleMembership:
+    """Return the membership or raise HTTP 403 if *user_id* is not a member of *circle_id*."""
     membership = _get_membership(db, circle_id, user_id)
     if not membership:
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Not a member of this circle")
@@ -32,11 +34,13 @@ def _require_membership(db: Session, circle_id: uuid.UUID, user_id: uuid.UUID) -
 
 
 def _require_admin(membership: CircleMembership) -> None:
+    """Raise HTTP 403 if *membership* does not have owner or admin role."""
     if membership.role not in (MemberRole.owner, MemberRole.admin):
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Admin or owner role required")
 
 
 def _require_owner(membership: CircleMembership) -> None:
+    """Raise HTTP 403 if *membership* does not have owner role."""
     if membership.role != MemberRole.owner:
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Owner role required")
 
@@ -46,6 +50,7 @@ def list_circles(
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_active_user),
 ):
+    """Return all circles that the authenticated user belongs to."""
     memberships = (
         db.query(CircleMembership).filter(CircleMembership.user_id == current_user.id).all()
     )
@@ -60,6 +65,7 @@ def create_circle(
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_active_user),
 ):
+    """Create a new circle and automatically join the creator as owner."""
     circle = Circle(
         **circle_in.model_dump(),
         created_by_user_id=current_user.id,
@@ -85,6 +91,7 @@ def get_circle(
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_active_user),
 ):
+    """Return a single circle by ID. The caller must be a member."""
     circle = db.query(Circle).filter(Circle.id == circle_id).first()
     if not circle:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Circle not found")
@@ -99,6 +106,7 @@ def update_circle(
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_active_user),
 ):
+    """Update circle settings. Requires owner or admin role."""
     circle = db.query(Circle).filter(Circle.id == circle_id).first()
     if not circle:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Circle not found")
@@ -120,6 +128,7 @@ def delete_circle(
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_active_user),
 ):
+    """Permanently delete a circle. Requires owner role."""
     circle = db.query(Circle).filter(Circle.id == circle_id).first()
     if not circle:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Circle not found")
@@ -135,6 +144,7 @@ def regenerate_invite(
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_active_user),
 ):
+    """Generate a new invite token for *circle_id*, invalidating the previous one. Requires owner or admin role."""
     circle = db.query(Circle).filter(Circle.id == circle_id).first()
     if not circle:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Circle not found")
@@ -151,6 +161,7 @@ def preview_circle_by_invite(
     invite_token: uuid.UUID,
     db: Session = Depends(get_db),
 ):
+    """Return public circle details for a valid *invite_token* without requiring authentication."""
     circle = db.query(Circle).filter(Circle.invite_token == invite_token).first()
     if not circle:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Invalid invite token")
@@ -163,6 +174,7 @@ def join_circle(
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_active_user),
 ):
+    """Join a circle using an invite token and choose a per-circle pseudonym."""
     circle = db.query(Circle).filter(Circle.invite_token == join_in.invite_token).first()
     if not circle:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Invalid invite token")

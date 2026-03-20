@@ -4,11 +4,11 @@
       <v-app-bar-title>
         <span class="font-weight-bold">MeepleTime</span>
       </v-app-bar-title>
-      <template v-if="auth.isLoggedIn">
+      <template v-if="auth.isLoggedIn.value">
         <v-avatar color="secondary" size="32" class="mr-2">
           <span class="text-caption font-weight-bold">{{ userInitial }}</span>
         </v-avatar>
-        <v-btn icon @click="auth.logout">
+        <v-btn icon @click="handleLogout">
           <v-icon>mdi-logout</v-icon>
         </v-btn>
       </template>
@@ -19,19 +19,26 @@
   </v-app>
 </template>
 
-<script setup>
+<script setup lang="ts">
 import { computed, onMounted } from 'vue'
-import { useAuthStore } from './stores/auth'
+import { useRouter } from 'vue-router'
+import { useAuth } from './composables/auth'
 
-const auth = useAuthStore()
+const auth = useAuth()
+const router = useRouter()
 
 onMounted(() => {
   auth.loadFromStorage()
 })
 
-const userInitial = computed(() => {
-  if (!auth.user) return '?'
-  const email = auth.user.sub || auth.user.email || ''
-  return email.charAt(0).toUpperCase()
+const userInitial = computed<string>(() => {
+  const email = auth.user.value?.email ?? ''
+  return email.charAt(0).toUpperCase() || '?'
 })
+
+/** Sign out the current user and navigate to the login page. */
+function handleLogout(): void {
+  auth.logout()
+  router.push('/login')
+}
 </script>

@@ -45,27 +45,28 @@
   </v-container>
 </template>
 
-<script setup>
+<script setup lang="ts">
 import { ref, onMounted } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
-import { useCirclesStore } from '../stores/circles'
+import { useCircles } from '../composables/circles'
 import api from '../api'
+import type { Circle } from '../types'
 
 const route = useRoute()
 const router = useRouter()
-const circles = useCirclesStore()
+const circles = useCircles()
 
-const token = route.params.token
+const token = route.params.token as string
 const loading = ref(true)
 const joining = ref(false)
 const error = ref('')
-const circleInfo = ref(null)
+const circleInfo = ref<Circle | null>(null)
 const pseudonym = ref('')
 const canHostDefault = ref(false)
 
 onMounted(async () => {
   try {
-    const res = await api.get(`/circles/join/${token}`)
+    const res = await api.get<Circle>(`/circles/join/${token}`)
     circleInfo.value = res.data
   } catch {
     error.value = 'Invalid or expired invite token.'
@@ -74,13 +75,14 @@ onMounted(async () => {
   }
 })
 
-async function handleJoin() {
+async function handleJoin(): Promise<void> {
   joining.value = true
   try {
     await circles.joinCircle(token, pseudonym.value.trim(), canHostDefault.value)
     router.push('/circles')
-  } catch (e) {
-    error.value = e.response?.data?.detail || 'Failed to join circle.'
+  } catch (e: unknown) {
+    const err = e as { response?: { data?: { detail?: string } } }
+    error.value = err.response?.data?.detail || 'Failed to join circle.'
   } finally {
     joining.value = false
   }
