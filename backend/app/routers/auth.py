@@ -7,7 +7,7 @@ from passlib.context import CryptContext
 from sqlalchemy.orm import Session
 
 from app.config import settings
-from app.dependencies import get_db
+from app.dependencies import get_current_active_user, get_db
 from app.models.user import User
 from app.schemas.user import Token, UserCreate, UserOut
 
@@ -59,3 +59,8 @@ def login(form_data: OAuth2PasswordRequestForm = Depends(), db: Session = Depend
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Inactive user")
     access_token = create_access_token({"sub": user.email})
     return {"access_token": access_token, "token_type": "bearer"}
+
+
+@router.get("/me", response_model=UserOut)
+def get_me(current_user: User = Depends(get_current_active_user)):
+    return current_user
