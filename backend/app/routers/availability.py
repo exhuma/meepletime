@@ -1,6 +1,7 @@
 """Availability router: day-level availability management."""
 from __future__ import annotations
 
+import logging
 import uuid
 from datetime import date, datetime, timedelta, timezone
 
@@ -18,6 +19,8 @@ from app.models.circle import Circle
 from app.models.membership import CircleMembership, MemberRole
 from app.models.user import User
 from app.schemas.availability import AvailabilityOut, AvailabilitySet
+
+logger = logging.getLogger(__name__)
 
 router = APIRouter(tags=["availability"])
 
@@ -186,7 +189,12 @@ def set_availability(
         )
         trigger_notification_eval(circle_id, local_date, SessionLocal)
     except Exception:
-        pass
+        logger.warning(
+            "Notification eval failed for circle=%s date=%s",
+            circle_id,
+            local_date,
+            exc_info=True,
+        )
 
     return record
 
@@ -234,4 +242,9 @@ def delete_availability(
         )
         trigger_notification_eval(circle_id, local_date, SessionLocal)
     except Exception:
-        pass
+        logger.warning(
+            "Notification eval failed for circle=%s date=%s",
+            circle_id,
+            local_date,
+            exc_info=True,
+        )

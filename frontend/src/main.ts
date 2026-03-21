@@ -14,16 +14,19 @@ import { userManager } from './auth/oidc'
 
 setTokenProvider({
   getToken: () => {
-    // Read access token synchronously from sessionStorage.
-    // oidc-client-ts stores user data under a key prefixed
-    // with "oidc.user:".
-    const key = Object.keys(sessionStorage).find((k) =>
-      k.startsWith('oidc.user:'),
-    )
-    if (!key) return null
+    // oidc-client-ts (WebStorageStateStore) stores user state
+    // under the deterministic key:
+    //   oidc.user:<authority>:<client_id>
+    // This is the documented key format used by the library's
+    // own WebStorageStateStore implementation.
+    const authority =
+      import.meta.env.VITE_OIDC_AUTHORITY as string
+    const clientId =
+      import.meta.env.VITE_OIDC_CLIENT_ID as string
+    const key = `oidc.user:${authority}:${clientId}`
+    const raw = sessionStorage.getItem(key)
+    if (!raw) return null
     try {
-      const raw = sessionStorage.getItem(key)
-      if (!raw) return null
       const parsed = JSON.parse(raw) as {
         access_token?: string
       }

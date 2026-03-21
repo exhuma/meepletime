@@ -95,7 +95,14 @@ def get_current_user(
     return user
 
 
-# Simple alias kept for backward compat with existing routers
+# Alias for existing routers. The previous is_active check is no
+# longer needed because the users table has no is_active column;
+# OIDC-authenticated users are always considered active.
 get_current_active_user = get_current_user
 
-__all__ = ["get_db", "get_current_user", "get_current_active_user", "bearer"]
+__all__ = [
+    "get_db",
+    "get_current_user",
+    "get_current_active_user",
+    "bearer",
+]
