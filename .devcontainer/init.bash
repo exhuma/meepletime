@@ -3,11 +3,24 @@
 #
 # Runs once after the devcontainer is created.
 # Installs all backend and frontend dependencies, and seeds
-# local env files from the checked-in example so the developer
-# only needs to fill in secrets they actually want to change.
+# local env files so the developer only needs to override
+# secrets they actually want to change.
+#
+# OIDC URLs use the nip.io hostname keycloak.127.0.0.1.nip.io
+# so that the Keycloak issuer claim is identical whether the
+# request originates inside the container (backend) or from the
+# browser on the host machine (frontend). The backend service
+# resolves this hostname via the extra_hosts entry in the
+# devcontainer docker-compose.yml; the browser resolves it via
+# standard DNS (nip.io encodes 127.0.0.1 in the name).
 set -euo pipefail
 
 REPO_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+
+KEYCLOAK_HOST="keycloak.127.0.0.1.nip.io"
+KEYCLOAK_URL="http://${KEYCLOAK_HOST}:8080"
+REALM="meepletime"
+REALM_URL="${KEYCLOAK_URL}/realms/${REALM}"
 
 echo "==> Installing backend dependencies (uv sync) ..."
 pip install --quiet uv
@@ -30,34 +43,39 @@ fi
 cd "${REPO_ROOT}/frontend"
 npm ci
 
-# Seed backend/.env from .env.example if it does not exist yet.
-# Developers can then override individual values in backend/.env
-# without touching the shared example file.
+# Seed backend/.env with nip.io-based OIDC URLs so the resource
+# server's iss validation matches the tokens issued by Keycloak.
 if [[ ! -f "${REPO_ROOT}/backend/.env" ]]; then
-    echo "==> Creating backend/.env from .env.example ..."
-    # Keep only backend-relevant variables (no VITE_ prefix).
-    grep -v '^VITE_' "${REPO_ROOT}/.env.example" \
-        | grep -v '^#' \
-        | grep -v '^[[:space:]]*$' \
-        > "${REPO_ROOT}/backend/.env" || true
-    echo "    Edit backend/.env to set real secrets before" \
-         "starting the backend."
+    echo "==> Creating backend/.env ..."
+    cat > "${REPO_ROOT}/backend/.env" <<EOF
+DATABASE_URL=postgresql://meepletime:changeme@db:5432/meepletime
+OIDC_AUTHORITY=${REALM_URL}
+OIDC_AUDIENCE=meepletime-frontend
+OIDC_ISSUER=${REALM_URL}
+FRONTEND_URL=http://localhost:5173
+EOF
+    echo "    Edit backend/.env to set real secrets."
 fi
 
-# Seed frontend/.env.local from .env.example if it does not
-# exist yet. Only VITE_-prefixed lines are relevant to Vite.
+# Seed frontend/.env.local with nip.io-based authority so
+# oidc-client-ts discovers Keycloak via the same hostname the
+# backend validates against.
 if [[ ! -f "${REPO_ROOT}/frontend/.env.local" ]]; then
-    echo "==> Creating frontend/.env.local from .env.example ..."
-    grep '^VITE_' "${REPO_ROOT}/.env.example" \
-        > "${REPO_ROOT}/frontend/.env.local" || true
-    echo "    Edit frontend/.env.local to adjust OIDC" \
-         "coordinates if needed."
+    echo "==> Creating frontend/.env.local ..."
+    cat > "${REPO_ROOT}/frontend/.env.local" <<EOF
+VITE_OIDC_AUTHORITY=${REALM_URL}
+VITE_OIDC_CLIENT_ID=meepletime-frontend
+VITE_OIDC_REDIRECT_URI=http://localhost:5173/auth/callback
+VITE_OIDC_POST_LOGOUT_URI=http://localhost:5173/
+VITE_API_BASE_URL=http://localhost:8000
+EOF
+    echo "    Edit frontend/.env.local to override if needed."
 fi
 
 echo ""
 echo "==> Dev container ready."
 echo "    Run services:"
-echo "      Backend : cd backend && uv run uvicorn app.main:app" \
-     "--reload"
+echo "      Backend : cd backend && uv run uvicorn app.main:app --reload"
 echo "      Frontend: cd frontend && npm run dev"
-echo "    Keycloak admin: http://localhost:8080 (admin / changeme)"
+echo "    Keycloak admin: ${KEYCLOAK_URL} (admin / admin)"
+echo "    Dev login:  devuser / devpass"

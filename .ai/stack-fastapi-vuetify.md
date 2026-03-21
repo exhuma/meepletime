@@ -386,18 +386,43 @@ COPY nginx.conf /etc/nginx/conf.d/default.conf
 
 ## Dev container
 
-Every project must include `.devcontainer/devcontainer.json`.
-Agents must create or update it when scaffolding a new project.
+Every project must include `.devcontainer/devcontainer.json` and
+`.devcontainer/docker-compose.yml`.
+Agents must create or update both files when scaffolding a project
+that uses a database or identity provider.
 
-### Reference template
+### Structure
+
+Use the `dockerComposeFile` pattern — not `image` + `runServices`.
+The docker-compose file defines all sidecar services (db, keycloak)
+and a `devcontainer` service that VS Code attaches to.
+
+```
+.devcontainer/
+  devcontainer.json       — VS Code attachment config
+  docker-compose.yml      — full sidecar stack
+  init.bash               — post-create dependency installer
+deploy/
+  dev/
+    keycloak-realm.json   — importable Keycloak realm
+```
+
+### devcontainer.json reference
 
 ```jsonc
 {
   "name": "<project-name>",
-  "image": "mcr.microsoft.com/devcontainers/python",
-  // ADAPT: add "runServices": ["db"] if the project uses postgres
+  "dockerComposeFile": "docker-compose.yml",
+  "service": "devcontainer",
+  "workspaceFolder": "/workspace",
   "postCreateCommand": "bash .devcontainer/init.bash",
-  "forwardPorts": [8000, 5173, 5432],
+  "forwardPorts": [8000, 5173, 5432, 8080],
+  "portsAttributes": {
+    "8000": { "label": "Backend API" },
+    "5173": { "label": "Frontend (Vite)" },
+    "5432": { "label": "PostgreSQL" },
+    "8080": { "label": "Keycloak" }
+  },
   "customizations": {
     "vscode": {
       "extensions": [
@@ -421,13 +446,133 @@ Agents must create or update it when scaffolding a new project.
 }
 ```
 
+### docker-compose.yml reference
+
+```yaml
+version: "3.9"
+
+services:
+
+  devcontainer:
+    image: mcr.microsoft.com/devcontainers/python:3.12
+    volumes:
+      - ..:/workspace:cached
+    command: sleep infinity
+    extra_hosts:
+      - "keycloak.127.0.0.1.nip.io:host-gateway"
+    depends_on:
+      db:
+        condition: service_healthy
+      keycloak:
+        condition: service_healthy
+
+  db:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_DB: <project>
+      POSTGRES_USER: <project>
+      POSTGRES_PASSWORD: changeme
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U <project>"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  keycloak:
+    image: quay.io/keycloak/keycloak:26.5
+    command: start-dev --import-realm
+    environment:
+      KC_BOOTSTRAP_ADMIN_USERNAME: admin
+      KC_BOOTSTRAP_ADMIN_PASSWORD: admin
+      KC_HOSTNAME: keycloak.127.0.0.1.nip.io
+      KC_HTTP_PORT: "8080"
+      KC_HEALTH_ENABLED: "true"
+    volumes:
+      - ../deploy/dev/keycloak-realm.json:/opt/keycloak/data/import/<project>-realm.json:ro
+    ports:
+      - "8080:8080"
+    healthcheck:
+      test:
+        - CMD
+        - bash
+        - -c
+        - >-
+          exec 3<>/dev/tcp/localhost/8080 &&
+          printf 'GET /realms/<realm> HTTP/1.0\r\nHost: localhost\r\n\r\n' >&3 &&
+          grep -q '"realm":"<realm>"' <&3
+      interval: 10s
+      timeout: 5s
+      retries: 20
+      start_period: 30s
+
+volumes:
+  postgres_data:
+```
+
+### Keycloak nip.io hostname strategy
+
+With a 2-tier OIDC setup (public client + resource server), the
+`iss` claim in access tokens must resolve identically from:
+
+- The **browser** (Vue frontend, running on the developer's host)
+- The **backend container** (FastAPI, validating tokens inside
+  the devcontainer network)
+
+Use `keycloak.<project-ip>.nip.io` as the Keycloak hostname.
+`nip.io` is a free wildcard DNS service: any name of the form
+`<label>.<A>.<B>.<C>.<D>.nip.io` resolves to the IPv4 address
+`A.B.C.D`. The canonical dev address is `127.0.0.1`, so:
+
+```
+keycloak.127.0.0.1.nip.io  →  127.0.0.1  (localhost)
+```
+
+The frontend reaches Keycloak on port 8080 via localhost (port
+forwarded by the devcontainer). The backend container resolves
+the same hostname to the Docker host via the `extra_hosts` entry
+`keycloak.127.0.0.1.nip.io:host-gateway` in the devcontainer
+service. Both paths arrive at the same Keycloak, so the `iss`
+claim is consistent and JWKS validation succeeds.
+
+Set `KC_HOSTNAME` to the nip.io address and set the backend's
+`OIDC_AUTHORITY` / `OIDC_ISSUER` and the frontend's
+`VITE_OIDC_AUTHORITY` to `http://keycloak.127.0.0.1.nip.io:8080/realms/<realm>`.
+
+### Keycloak healthcheck
+
+The slim Keycloak image does not include `curl`. Use a raw TCP
+socket check instead:
+
+```yaml
+healthcheck:
+  test:
+    - CMD
+    - bash
+    - -c
+    - >-
+      exec 3<>/dev/tcp/localhost/8080 &&
+      printf 'GET /realms/<realm> HTTP/1.0\r\nHost: localhost\r\n\r\n' >&3 &&
+      grep -q '"realm":"<realm>"' <&3
+  interval: 10s
+  timeout: 5s
+  retries: 20
+  start_period: 30s
+```
+
+This opens a raw TCP connection to port 8080, sends a minimal
+HTTP/1.0 request, and checks that the realm name appears in the
+JSON response.
+
+### init.bash rules
+
 - `postCreateCommand` must always point to
-  `.devcontainer/init.bash`. This file runs all setup steps
-  (uv sync, npm ci, any seed scripts). It must be committed
-  alongside `devcontainer.json`.
-- Never commit `.env` into the devcontainer image or container
-  environment. Use `.env.local` (gitignored) for local secrets.
-- If the project uses a database service, add
-  `"runServices": ["db"]` so postgres starts automatically when
-  the devcontainer opens.
+  `.devcontainer/init.bash`.
+- Run `uv sync` in `backend/` and `npm ci` in `frontend/`.
+- Seed `backend/.env` and `frontend/.env.local` with nip.io
+  OIDC URLs on first run (idempotent — skip if files exist).
+- Never commit `.env` or `.env.local`. Use `.env.example` as the
+  canonical variable reference only.
 - Forward port `5432` only when the database module is active.
+

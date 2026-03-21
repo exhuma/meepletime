@@ -1,0 +1,91 @@
+# .devcontainer/docker-compose.yml
+#
+# Dev-container stack: devcontainer shell + PostgreSQL + Keycloak.
+#
+# Keycloak is exposed on port 8080. It uses the nip.io wildcard
+# DNS hostname keycloak.127.0.0.1.nip.io so that the issuer URL
+# in tokens looks identical both inside the container (via
+# extra_hosts) and in the browser on the host machine (via port
+# forwarding). This prevents iss-claim mismatches during token
+# validation.
+#
+# The keycloak healthcheck uses a raw TCP socket so it works
+# inside the slim Keycloak image that ships without curl.
+
+services:
+
+  # ----------------------------------------------------------------
+  # Main development container — the developer's shell.
+  # VS Code / Cursor attach here; source code is mounted from the
+  # repository root.
+  # ----------------------------------------------------------------
+  devcontainer:
+    image: mcr.microsoft.com/devcontainers/python:3.12
+    volumes:
+      - ..:/workspace:cached
+    # Keep the container alive so VS Code can attach.
+    command: sleep infinity
+    # Resolve the nip.io Keycloak hostname to the Docker host so
+    # the backend (run manually inside this container) can reach
+    # Keycloak via the same URL that the browser uses.
+    extra_hosts:
+      - "keycloak.127.0.0.1.nip.io:host-gateway"
+    depends_on:
+      db:
+        condition: service_healthy
+      keycloak:
+        condition: service_healthy
+
+  # ----------------------------------------------------------------
+  # PostgreSQL 16
+  # ----------------------------------------------------------------
+  db:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_DB: meepletime
+      POSTGRES_USER: meepletime
+      POSTGRES_PASSWORD: changeme
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U meepletime"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  # ----------------------------------------------------------------
+  # Keycloak 26.5
+  # Uses nip.io DNS so the issuer URL resolves identically from
+  # inside and outside the container network.
+  # The healthcheck uses a raw TCP/HTTP request because the slim
+  # Keycloak image does not include curl.
+  # ----------------------------------------------------------------
+  keycloak:
+    image: quay.io/keycloak/keycloak:26.5
+    command: start-dev --import-realm
+    environment:
+      KC_BOOTSTRAP_ADMIN_USERNAME: admin
+      KC_BOOTSTRAP_ADMIN_PASSWORD: admin
+      KC_HOSTNAME: keycloak.127.0.0.1.nip.io
+      KC_HTTP_PORT: "8080"
+      KC_HEALTH_ENABLED: "true"
+    volumes:
+      - ../deploy/dev/keycloak-realm.json:/opt/keycloak/data/import/meepletime-realm.json:ro
+    ports:
+      - "8080:8080"
+    healthcheck:
+      test:
+        - CMD
+        - bash
+        - -c
+        - >-
+          exec 3<>/dev/tcp/localhost/8080 &&
+          printf 'GET /realms/meepletime HTTP/1.0\r\nHost: localhost\r\n\r\n' >&3 &&
+          grep -q '"realm":"meepletime"' <&3
+      interval: 10s
+      timeout: 5s
+      retries: 20
+      start_period: 30s
+
+volumes:
+  postgres_data:

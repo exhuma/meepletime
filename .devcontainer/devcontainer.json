@@ -1,13 +1,12 @@
 {
   // MeepleTime — FastAPI + Vue 3 + PostgreSQL + Keycloak
   "name": "meepletime",
-  // Use the Python devcontainer image; Docker-in-Docker lets us
-  // start the db and keycloak compose services below.
-  "image": "mcr.microsoft.com/devcontainers/python:3.12",
 
-  // Start postgres and keycloak automatically so the backend can
-  // connect on first run.
-  "runServices": ["db", "keycloak"],
+  // Use a docker-compose stack so PostgreSQL and Keycloak start
+  // automatically alongside the devcontainer.
+  "dockerComposeFile": "docker-compose.yml",
+  "service": "devcontainer",
+  "workspaceFolder": "/workspace",
 
   // Install backend and frontend dependencies after the container
   // is created.
@@ -41,7 +40,7 @@
       "settings": {
         "python.defaultInterpreterPath":
           "${workspaceFolder}/backend/.venv/bin/python",
-        "js/ts.tsdk.path":
+        "typescript.tsdk":
           "frontend/node_modules/typescript/lib",
         "editor.formatOnSave": true
       }
