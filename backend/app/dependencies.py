@@ -1,60 +1,102 @@
-from typing import Generator
+"""FastAPI dependencies for authentication and database access."""
+from __future__ import annotations
 
 import jwt
 from fastapi import Depends, HTTPException, status
-from fastapi.security import OAuth2PasswordBearer
+from fastapi.security import (
+    HTTPAuthorizationCredentials,
+    HTTPBearer,
+)
+from sqlalchemy import select
 from sqlalchemy.orm import Session
 
-from app.config import settings
+from app.auth.jwks import get_jwks_client
+from app.config import Settings, get_settings
+from app.database import get_db  # noqa: F401 — re-exported for routers
 from app.database import SessionLocal
+from app.models.auth_identity import AuthIdentity
 from app.models.user import User
-from app.schemas.user import TokenData
 
-oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/auth/token")
-
-
-def get_db() -> Generator:
-    """Yield a SQLAlchemy database session and close it when done."""
-    db = SessionLocal()
-    try:
-        yield db
-    finally:
-        db.close()
+bearer = HTTPBearer()
 
 
 def get_current_user(
-    token: str = Depends(oauth2_scheme),
+    credentials: HTTPAuthorizationCredentials = Depends(bearer),
+    settings: Settings = Depends(get_settings),
     db: Session = Depends(get_db),
 ) -> User:
-    """Decode the Bearer JWT and return the corresponding active user.
-
-    Raises HTTP 401 if the token is missing, malformed, or the user does not exist.
     """
-    credentials_exception = HTTPException(
-        status_code=status.HTTP_401_UNAUTHORIZED,
-        detail="Could not validate credentials",
-        headers={"WWW-Authenticate": "Bearer"},
-    )
-    try:
-        payload = jwt.decode(token, settings.SECRET_KEY, algorithms=[settings.ALGORITHM])
-        email: str | None = payload.get("sub")
-        if email is None:
-            raise credentials_exception
-        token_data = TokenData(email=email)
-    except jwt.InvalidTokenError:
-        raise credentials_exception
+    Validate the OIDC bearer token and return the local User.
 
-    user = db.query(User).filter(User.email == token_data.email).first()
+    Decodes the access token using the Keycloak JWKS endpoint,
+    then finds or creates the corresponding User and AuthIdentity
+    rows.  The first successful call for a new identity provisions
+    the local user account.
+
+    :param credentials: Authorization header bearer token.
+    :param settings: Application configuration.
+    :param db: Database session.
+    :returns: Local User record for the authenticated identity.
+    :raises HTTPException: 401 when the token is missing, expired,
+        has the wrong audience/issuer, or has a tampered signature.
+    """
+    token = credentials.credentials
+    jwks_client = get_jwks_client(settings.OIDC_AUTHORITY)
+    try:
+        signing_key = jwks_client.get_signing_key_from_jwt(token)
+        payload: dict = jwt.decode(
+            token,
+            signing_key.key,
+            algorithms=["RS256"],
+            audience=settings.OIDC_AUDIENCE,
+            issuer=settings.OIDC_ISSUER,
+        )
+    except jwt.ExpiredSignatureError:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Token has expired",
+        )
+    except jwt.InvalidTokenError:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Invalid token",
+        )
+
+    subject: str = payload["sub"]
+    provider: str = settings.OIDC_ISSUER
+    email: str = payload.get("email", "")
+    display_name: str | None = payload.get("name")
+
+    identity = db.execute(
+        select(AuthIdentity).where(
+            AuthIdentity.provider == provider,
+            AuthIdentity.subject == subject,
+        )
+    ).scalar_one_or_none()
+
+    if identity is not None:
+        return identity.user
+
+    user = db.execute(
+        select(User).where(User.email == email)
+    ).scalar_one_or_none()
     if user is None:
-        raise credentials_exception
+        user = User(email=email, display_name=display_name)
+        db.add(user)
+        db.flush()
+
+    identity = AuthIdentity(
+        user_id=user.id,
+        provider=provider,
+        subject=subject,
+    )
+    db.add(identity)
+    db.commit()
+    db.refresh(user)
     return user
 
 
-def get_current_active_user(current_user: User = Depends(get_current_user)) -> User:
-    """Return *current_user* only when their account is active.
+# Simple alias kept for backward compat with existing routers
+get_current_active_user = get_current_user
 
-    Raises HTTP 400 for inactive accounts.
-    """
-    if not current_user.is_active:
-        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Inactive user")
-    return current_user
+__all__ = ["get_db", "get_current_user", "get_current_active_user", "bearer"]

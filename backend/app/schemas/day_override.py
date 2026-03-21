@@ -1,3 +1,4 @@
+"""Pydantic schemas for day overrides."""
 import uuid
 from datetime import date, datetime
 

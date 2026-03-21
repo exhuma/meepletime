@@ -1,3 +1,4 @@
+"""Memberships router: circle membership management."""
 import uuid
 
 from fastapi import APIRouter, Depends, HTTPException, status

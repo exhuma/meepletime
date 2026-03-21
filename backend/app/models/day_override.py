@@ -1,3 +1,4 @@
+"""ORM model for per-day circle overrides."""
 import uuid
 from datetime import datetime, date, timezone
 

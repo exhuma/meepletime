@@ -1,3 +1,4 @@
+"""Day notes router: per-day notes for circle members."""
 import uuid
 from datetime import date
 

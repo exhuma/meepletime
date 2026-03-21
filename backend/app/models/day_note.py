@@ -1,3 +1,4 @@
+"""ORM model for day notes."""
 import uuid
 from datetime import datetime, date, timezone
 

@@ -1,3 +1,4 @@
+"""ORM model for circle memberships."""
 import uuid
 from datetime import datetime, timezone
 

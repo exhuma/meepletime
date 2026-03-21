@@ -1,3 +1,4 @@
+"""Pydantic schemas for circle resources."""
 import uuid
 from datetime import datetime
 from typing import Any

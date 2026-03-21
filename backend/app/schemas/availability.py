@@ -1,3 +1,4 @@
+"""Pydantic schemas for availability records."""
 import uuid
 from datetime import date, datetime
 import enum

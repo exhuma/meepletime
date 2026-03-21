@@ -1,3 +1,4 @@
+"""Viability computation service."""
 from datetime import date
 
 from sqlalchemy.orm import Session

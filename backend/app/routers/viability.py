@@ -1,3 +1,4 @@
+"""Viability router: day viability computation endpoints."""
 import uuid
 from datetime import date, timedelta
 

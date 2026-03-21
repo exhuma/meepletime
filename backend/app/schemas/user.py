@@ -1,27 +1,18 @@
+"""Pydantic schemas for user responses."""
+from __future__ import annotations
+
 import uuid
 from datetime import datetime
 
-from pydantic import BaseModel, EmailStr
-
-
-class UserCreate(BaseModel):
-    email: EmailStr
-    password: str
+from pydantic import BaseModel
 
 
 class UserOut(BaseModel):
+    """Public representation of a user profile."""
+
     id: uuid.UUID
     email: str
-    is_active: bool
+    display_name: str | None = None
     created_at: datetime
 
     model_config = {"from_attributes": True}
-
-
-class Token(BaseModel):
-    access_token: str
-    token_type: str
-
-
-class TokenData(BaseModel):
-    email: str | None = None

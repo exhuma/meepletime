@@ -1,3 +1,4 @@
+"""ORM model for circles."""
 import uuid
 from datetime import datetime, timezone
 

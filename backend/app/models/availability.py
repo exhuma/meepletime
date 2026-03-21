@@ -1,3 +1,4 @@
+"""ORM model for day availability records."""
 import uuid
 from datetime import datetime, date, timezone
 import enum

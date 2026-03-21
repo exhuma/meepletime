@@ -1,0 +1,1 @@
+"""MeepleTime backend application package."""

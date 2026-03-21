@@ -1,3 +1,4 @@
+"""Day overrides router: per-day circle setting overrides."""
 import uuid
 from datetime import date
 

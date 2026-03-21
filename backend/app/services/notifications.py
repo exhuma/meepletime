@@ -1,3 +1,4 @@
+"""Background notification scheduling and evaluation service."""
 import uuid
 import logging
 from datetime import date, datetime, timezone
@@ -5,7 +6,7 @@ from datetime import date, datetime, timezone
 from apscheduler.schedulers.background import BackgroundScheduler
 from sqlalchemy.orm import Session
 
-from app.config import settings
+from app.config import get_settings
 from app.models.circle import Circle
 
 logger = logging.getLogger(__name__)
@@ -48,7 +49,9 @@ def trigger_notification_eval(circle_id: uuid.UUID, local_date: date, db_factory
 
     from datetime import timedelta
 
-    run_at = datetime.now(timezone.utc) + timedelta(seconds=settings.NOTIFICATION_DEBOUNCE_SECONDS)
+    run_at = datetime.now(timezone.utc) + timedelta(
+        seconds=get_settings().NOTIFICATION_DEBOUNCE_SECONDS
+    )
     job = scheduler.add_job(
         _run_evaluation,
         "date",
@@ -99,7 +102,9 @@ def evaluate_and_notify(circle_id: uuid.UUID, local_date: date, db: Session) -> 
     # Anti-storm: check if an identical event was already emitted recently
     from datetime import timedelta
 
-    recent_cutoff = datetime.now(timezone.utc) - timedelta(seconds=settings.NOTIFICATION_DEBOUNCE_SECONDS * 2)
+    recent_cutoff = datetime.now(timezone.utc) - timedelta(
+        seconds=get_settings().NOTIFICATION_DEBOUNCE_SECONDS * 2
+    )
     existing = (
         db.query(NotificationEvent)
         .filter(

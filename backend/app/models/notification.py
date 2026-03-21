@@ -1,3 +1,4 @@
+"""ORM models for notification events and deliveries."""
 import uuid
 from datetime import datetime, date, timezone
 
