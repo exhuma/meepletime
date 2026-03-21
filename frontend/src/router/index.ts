@@ -1,12 +1,23 @@
-import { createRouter, createWebHistory, type RouteRecordRaw } from 'vue-router'
+/**
+ * Vue Router configuration with OIDC navigation guard.
+ */
+import {
+  createRouter,
+  createWebHistory,
+  type RouteRecordRaw,
+} from 'vue-router'
+import { userManager } from '../auth/oidc'
 
 const routes: RouteRecordRaw[] = [
   {
     path: '/',
-    redirect: () => (localStorage.getItem('meepletime_token') ? '/circles' : '/login'),
+    redirect: '/circles',
   },
-  { path: '/login', component: () => import('../views/LoginView.vue') },
-  { path: '/register', component: () => import('../views/RegisterView.vue') },
+  {
+    path: '/auth/callback',
+    component: () =>
+      import('../views/AuthCallbackView.vue'),
+  },
   {
     path: '/circles',
     component: () => import('../views/CirclesView.vue'),
@@ -14,12 +25,14 @@ const routes: RouteRecordRaw[] = [
   },
   {
     path: '/circles/:id',
-    component: () => import('../views/CircleCalendarView.vue'),
+    component: () =>
+      import('../views/CircleCalendarView.vue'),
     meta: { requiresAuth: true },
   },
   {
     path: '/circles/:id/day/:date',
-    component: () => import('../views/DayDetailView.vue'),
+    component: () =>
+      import('../views/DayDetailView.vue'),
     meta: { requiresAuth: true },
   },
   {
@@ -34,12 +47,16 @@ const router = createRouter({
   routes,
 })
 
-router.beforeEach((to, _from, next) => {
-  if (to.meta.requiresAuth && !localStorage.getItem('meepletime_token')) {
-    next('/login')
-  } else {
-    next()
+router.beforeEach(async (to) => {
+  if (!to.meta.requiresAuth) return true
+  const user = await userManager.getUser()
+  if (!user || user.expired) {
+    await userManager.signinRedirect({
+      state: to.fullPath,
+    })
+    return false
   }
+  return true
 })
 
 export default router

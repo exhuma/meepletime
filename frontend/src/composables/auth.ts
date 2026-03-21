@@ -1,66 +1,67 @@
-import { ref, readonly, computed } from 'vue'
-import type { ComputedRef, DeepReadonly, Ref } from 'vue'
-import api from '../api'
-import type { User } from '../types'
+/**
+ * Authentication composable backed by oidc-client-ts.
+ *
+ * Replaces the previous local password authentication.
+ * State is derived directly from the UserManager so there
+ * is no separate token ref to keep in sync.
+ */
+import { computed, ref } from 'vue'
+import type { User as OidcUser } from 'oidc-client-ts'
+import { userManager } from '../auth/oidc'
+import type { ComputedRef } from 'vue'
 
-// Module-level singleton state shared across all component instances
-const token = ref<string | null>(localStorage.getItem('meepletime_token'))
-const user = ref<User | null>(null)
+const _oidcUser = ref<OidcUser | null>(null)
 
-/** Return the reactive auth state and actions for the signed-in user. */
+/** Refresh the cached OIDC user from the UserManager. */
+async function _syncUser(): Promise<void> {
+  _oidcUser.value = await userManager.getUser()
+}
+
+// Keep cached user in sync when tokens renew silently.
+userManager.events.addUserLoaded((u) => {
+  _oidcUser.value = u
+})
+userManager.events.addUserUnloaded(() => {
+  _oidcUser.value = null
+})
+
+/**
+ * Return reactive auth state and OIDC actions.
+ */
 export function useAuth() {
-  /** True when a valid JWT token is present in state. */
-  const isLoggedIn: ComputedRef<boolean> = computed(() => token.value !== null)
+  /** True when a valid, non-expired OIDC session exists. */
+  const isLoggedIn: ComputedRef<boolean> = computed(
+    () =>
+      _oidcUser.value !== null &&
+      !_oidcUser.value.expired,
+  )
 
   /**
-   * Authenticate with email/password, store the JWT, and fetch the user profile.
+   * Initiate the OIDC authorization-code + PKCE redirect.
+   *
+   * @param returnTo - Path to redirect to after login.
    */
-  async function login(email: string, password: string): Promise<void> {
-    const formData = new URLSearchParams()
-    formData.append('username', email)
-    formData.append('password', password)
-    const data = await api.post<{ access_token: string }>('/auth/token', formData)
-    token.value = data.access_token
-    localStorage.setItem('meepletime_token', token.value)
-    await fetchMe()
+  async function login(returnTo = '/'): Promise<void> {
+    await userManager.signinRedirect({ state: returnTo })
   }
 
-  /** Register a new account. Does not log in automatically. */
-  async function register(email: string, password: string): Promise<void> {
-    await api.post('/auth/register', { email, password })
+  /** Sign the user out and redirect to the post-logout URI. */
+  async function logout(): Promise<void> {
+    await userManager.signoutRedirect()
   }
 
-  /** Clear the session token and user from state and localStorage. */
-  function logout(): void {
-    token.value = null
-    user.value = null
-    localStorage.removeItem('meepletime_token')
-  }
-
-  /** Restore auth state from localStorage on app startup. */
+  /**
+   * Restore auth state from session storage on app startup.
+   * Call once from App.vue before mounting.
+   */
   async function loadFromStorage(): Promise<void> {
-    const stored = localStorage.getItem('meepletime_token')
-    if (stored) {
-      token.value = stored
-      try {
-        await fetchMe()
-      } catch {
-        // expired token — unauthorized handler redirects
-      }
-    }
-  }
-
-  /** Fetch the authenticated user's profile from /auth/me and update state. */
-  async function fetchMe(): Promise<void> {
-    user.value = await api.get<User>('/auth/me')
+    await _syncUser()
   }
 
   return {
-    user: readonly(user) as DeepReadonly<Ref<User | null>>,
-    token: readonly(token),
+    oidcUser: _oidcUser,
     isLoggedIn,
     login,
-    register,
     logout,
     loadFromStorage,
   }

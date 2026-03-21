@@ -6,7 +6,10 @@ export default defineConfig({
   plugins: [vue(), vuetify({ autoImport: true })],
   server: {
     proxy: {
-      '/api': { target: 'http://localhost:8000', changeOrigin: true }
-    }
-  }
+      '/api': {
+        target: 'http://localhost:8000',
+        changeOrigin: true,
+      },
+    },
+  },
 })

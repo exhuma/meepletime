@@ -6,7 +6,9 @@
       </v-app-bar-title>
       <template v-if="auth.isLoggedIn.value">
         <v-avatar color="secondary" size="32" class="mr-2">
-          <span class="text-caption font-weight-bold">{{ userInitial }}</span>
+          <span class="text-caption font-weight-bold">
+            {{ userInitial }}
+          </span>
         </v-avatar>
         <v-btn icon @click="handleLogout">
           <v-icon>mdi-logout</v-icon>
@@ -21,24 +23,24 @@
 
 <script setup lang="ts">
 import { computed, onMounted } from 'vue'
-import { useRouter } from 'vue-router'
 import { useAuth } from './composables/auth'
 
 const auth = useAuth()
-const router = useRouter()
 
-onMounted(() => {
-  auth.loadFromStorage()
+onMounted(async () => {
+  await auth.loadFromStorage()
 })
 
 const userInitial = computed<string>(() => {
-  const email = auth.user.value?.email ?? ''
-  return email.charAt(0).toUpperCase() || '?'
+  const name =
+    auth.oidcUser.value?.profile?.name ??
+    auth.oidcUser.value?.profile?.email ??
+    ''
+  return (name as string).charAt(0).toUpperCase() || '?'
 })
 
-/** Sign out the current user and navigate to the login page. */
-function handleLogout(): void {
-  auth.logout()
-  router.push('/login')
+/** Sign out the current user via OIDC. */
+async function handleLogout(): Promise<void> {
+  await auth.logout()
 }
 </script>

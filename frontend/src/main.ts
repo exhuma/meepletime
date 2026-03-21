@@ -6,7 +6,39 @@ import * as components from 'vuetify/components'
 import * as directives from 'vuetify/directives'
 import router from './router'
 import App from './App.vue'
-import { setUnauthorizedHandler } from './api'
+import {
+  setUnauthorizedHandler,
+  setTokenProvider,
+} from './api'
+import { userManager } from './auth/oidc'
+
+setTokenProvider({
+  getToken: () => {
+    // Read access token synchronously from sessionStorage.
+    // oidc-client-ts stores user data under a key prefixed
+    // with "oidc.user:".
+    const key = Object.keys(sessionStorage).find((k) =>
+      k.startsWith('oidc.user:'),
+    )
+    if (!key) return null
+    try {
+      const raw = sessionStorage.getItem(key)
+      if (!raw) return null
+      const parsed = JSON.parse(raw) as {
+        access_token?: string
+      }
+      return parsed.access_token ?? null
+    } catch {
+      return null
+    }
+  },
+})
+
+setUnauthorizedHandler(() => {
+  userManager.signinRedirect({
+    state: router.currentRoute.value.fullPath,
+  })
+})
 
 const vuetify = createVuetify({
   components,
@@ -28,7 +60,7 @@ const vuetify = createVuetify({
           'primary-container': '#ffdbd0',
           'on-primary-container': '#3a0a00',
 
-          // Neutral warm secondary (muted tone from palette)
+          // Neutral warm secondary
           secondary: '#8c7f70',
           'on-secondary': '#ffffff',
           'secondary-container': '#f2e8e0',
@@ -77,7 +109,8 @@ const vuetify = createVuetify({
       dark: {
         dark: true,
         variables: {
-          'font-family-base': "'Plus Jakarta Sans', sans-serif",
+          'font-family-base':
+            "'Plus Jakarta Sans', sans-serif",
           'font-family-display': "'Noto Serif', serif",
         },
         colors: {
@@ -138,5 +171,5 @@ const vuetify = createVuetify({
 const app = createApp(App)
 app.use(router)
 app.use(vuetify)
-setUnauthorizedHandler(() => router.push('/login'))
 app.mount('#app')
+
