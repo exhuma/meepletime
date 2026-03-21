@@ -1,25 +1,15 @@
 /**
  * Token provider abstraction — the OIDC integration seam.
  *
- * Today: reads from localStorage after a local password grant.
+ * Authentication is handled exclusively via Keycloak (OIDC Option A).
+ * The active provider is set at bootstrap in main.ts by calling
+ * setTokenProvider() with an implementation that reads the access
+ * token from sessionStorage using the oidc-client-ts key format:
  *
- * When integrating oidc-client-ts, construct a UserManager and
- * call setTokenProvider() before mounting the app:
+ *   oidc.user:<authority>:<client_id>
  *
- *   import { UserManager } from 'oidc-client-ts'
- *   const mgr = new UserManager({
- *     authority: 'https://accounts.google.com', // or Microsoft,
- *     client_id: '...',                          // GitHub, etc.
- *     redirect_uri: `${window.location.origin}/auth/callback`,
- *     scope: 'openid profile email',
- *   })
- *   setTokenProvider({
- *     getToken: async () =>
- *       (await mgr.getUser())?.access_token ?? null,
- *   })
- *
- * The API server validates the bearer token as a plain OAuth
- * resource server — no OIDC awareness needed on the backend.
+ * The API server validates the bearer token as a stateless OAuth
+ * resource server using Keycloak's JWKS endpoint.
  */
 
 export interface TokenProvider {
@@ -30,11 +20,11 @@ export interface TokenProvider {
   getToken(): string | null
 }
 
-const _local: TokenProvider = {
-  getToken: () => localStorage.getItem('meepletime_token'),
+const _null: TokenProvider = {
+  getToken: () => null,
 }
 
-let _provider: TokenProvider = _local
+let _provider: TokenProvider = _null
 
 /**
  * Replace the active token provider.
