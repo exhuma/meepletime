@@ -12,20 +12,47 @@ availability for that day.
 The application is invite-only. It supports self-hosting and should be simple to
 operate.
 
+## 1a. Authentication strategy
+
+Authentication is handled exclusively via **Keycloak** (self-hosted
+OIDC provider), Option A of the OIDC module.
+
+- The Vue frontend is a public OIDC client. It performs the
+  authorization code + PKCE flow and holds tokens in the browser.
+  There is no in-app login form.
+- The FastAPI backend is a stateless resource server. It validates
+  bearer tokens on every request using Keycloak's JWKS endpoint.
+  It never participates in the OIDC flow.
+- `client_secret` must never appear in frontend code or build
+  artefacts.
+- Local password authentication is explicitly out of scope and
+  must not be re-introduced.
+- GitHub and Twitter login are out of scope for v1. Social
+  providers may be configured inside Keycloak at a later date
+  without changes to application code.
+- Keycloak provider configuration (realm, client, redirect URIs)
+  is documented in `docs/operator/keycloak.md`.
+
 ## 2. Chosen stack
 
 Use these technologies for v1:
 
-- Backend: FastAPI
+- Backend: FastAPI (Python)
 - Database: PostgreSQL
-- Frontend: Vue.js
+- Frontend: Vue 3 with TypeScript
 - UI framework: Vuetify
-- Containerization: Docker and docker-compose or Docker stack compatible setup
+- Identity provider: Keycloak (self-hosted OIDC)
+- Containerization: Docker and docker-compose or Docker stack
+  compatible setup
 
 Rationale:
 - These choices align with existing operator experience.
 - They are mature and sufficient for the expected scale.
 - No strong argument exists to deviate for v1.
+- Keycloak adds operational surface but provides a proven,
+  auditable identity layer that removes password handling from
+  the application entirely. This trade-off is explicitly
+  accepted.
 
 ## 3. Product terminology
 
@@ -396,11 +423,36 @@ A practical initial relational model is:
 - notification_events
 - notification_deliveries
 
-Exact schema naming may vary, but the separation of concerns should remain.
+Exact schema naming may vary, but the separation of concerns should
+remain.
+
+### users
+
+Holds project-local profile data only. There is no password field,
+no password hash, and no credential of any kind on this table.
+Identity is established exclusively via `auth_identities`.
+
+### auth_identities
+
+Maps an external OIDC identity to a local user record. Each row
+represents one `(provider, subject)` pair:
+
+- `user_id` — foreign key to `users`
+- `provider` — issuer identifier (e.g. Keycloak realm URL)
+- `subject` — the `sub` claim from the OIDC token
+- `created_at`
+
+One user may have at most one identity per provider in v1. The
+application creates or updates a `users` row on first successful
+token validation, then upserts the matching `auth_identities` row.
 
 ## 18. Non-functional expectations
 
-- Self-hostable with Docker
+- Self-hostable with Docker; the full stack (app + database +
+  Keycloak) is defined in a single `docker-compose.yml`
+- Keycloak is a required service. Its operational complexity is
+  accepted as a deliberate trade-off (see section 1a). A
+  `docs/operator/keycloak.md` runbook must exist before v1 ships.
 - Reasonable defaults for low traffic
 - Clean environment-based configuration
 - Database migrations included

@@ -1,0 +1,25 @@
+@import url('https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;700&family=Noto+Serif:ital,wght@0,400;0,700;1,400&family=Plus+Jakarta+Sans:wght@400;500;600&display=swap');
+
+/* Apply theme-driven font families to all Vuetify content.
+   --v-font-family-base and --v-font-family-display are defined per theme
+   in main.ts under each theme's `variables` block. */
+.v-application {
+  font-family: var(--v-font-family-base, 'Manrope', sans-serif);
+}
+
+.v-application h1,
+.v-application h2,
+.v-application h3,
+.v-application h4,
+.v-application h5,
+.v-application h6,
+.v-application .v-card-title,
+.v-application .text-h1,
+.v-application .text-h2,
+.v-application .text-h3,
+.v-application .text-h4,
+.v-application .text-h5,
+.v-application .text-h6 {
+  font-family: var(--v-font-family-display, 'Manrope', sans-serif);
+}
+
