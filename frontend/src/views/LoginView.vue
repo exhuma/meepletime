@@ -17,16 +17,15 @@
 
 <script setup lang="ts">
 import { onMounted } from 'vue'
-import { useRouter } from 'vue-router'
+import { useRoute } from 'vue-router'
 import { useAuth } from '../composables/auth'
 
 const auth = useAuth()
-const router = useRouter()
+const route = useRoute()
 
 onMounted(async () => {
   await auth.login(
-    (router.currentRoute.value.query.returnTo as string)
-      ?? '/',
+    (route.query.returnTo as string) ?? '/',
   )
 })
 </script>

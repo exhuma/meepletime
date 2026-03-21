@@ -13,6 +13,15 @@ const routes: RouteRecordRaw[] = [
     path: '/',
     redirect: '/circles',
   },
+  // LoginView initiates the OIDC redirect from onMounted.
+  // Keeping login as a proper route avoids calling
+  // signinRedirect() inside the navigation guard, which
+  // can race with Vue Router's history restoration and
+  // cause an infinite redirect loop.
+  {
+    path: '/login',
+    component: () => import('../views/LoginView.vue'),
+  },
   {
     path: '/auth/callback',
     component: () =>
@@ -47,14 +56,20 @@ const router = createRouter({
   routes,
 })
 
+// Redirect unauthenticated users to /login rather than
+// calling signinRedirect() directly from the guard.
+// Calling signinRedirect (which sets window.location.href)
+// and then returning false causes Vue Router to call
+// history.go(-1), which races with the browser navigation
+// and produces an infinite redirect loop.
 router.beforeEach(async (to) => {
   if (!to.meta.requiresAuth) return true
   const user = await userManager.getUser()
   if (!user || user.expired) {
-    await userManager.signinRedirect({
-      state: to.fullPath,
-    })
-    return false
+    return {
+      path: '/login',
+      query: { returnTo: to.fullPath },
+    }
   }
   return true
 })

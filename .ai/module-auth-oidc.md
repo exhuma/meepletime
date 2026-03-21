@@ -151,21 +151,54 @@ setTokenProvider({
 
 ### Routes
 
-Two routes are always required:
+Three routes are always required:
 
 | Path | Component | Purpose |
 |---|---|---|
+| `/login` | `LoginView.vue` | OIDC redirect interstitial |
 | `/auth/callback` | `AuthCallbackView.vue` | Exchange code, store tokens |
 | `/auth/logout` | *(inline redirect)* | Call `signoutRedirect` |
+
+`LoginView.vue` must:
+
+1. Read `returnTo` from the route query (passed by the guard).
+2. Call `userManager.signinRedirect({ state: returnTo })`.
+3. Show a loading spinner while the redirect is pending.
+
+```typescript
+// src/views/LoginView.vue
+<script setup lang="ts">
+import { onMounted } from 'vue'
+import { useRoute } from 'vue-router'
+import { userManager } from '../auth/oidc'
+
+const route = useRoute()
+
+onMounted(async () => {
+  const returnTo = (route.query.returnTo as string) ?? '/'
+  await userManager.signinRedirect({ state: returnTo })
+})
+```
 
 `AuthCallbackView.vue` must:
 
 1. Call `userManager.signinRedirectCallback()`.
-2. Read the `returnTo` query parameter (if present) and redirect
-   there; otherwise redirect to `/`.
+2. Read `user.state` — this is the `returnTo` value that
+   `LoginView` passed as the OIDC `state` parameter when
+   calling `signinRedirect`. Redirect there; otherwise
+   redirect to `/`.
 3. Handle errors and display a user-visible message.
 
 ### Navigation guard
+
+**Important**: do NOT call `signinRedirect()` directly from
+the guard and then `return false`. This causes Vue Router 4
+to call `history.go(-1)` (to restore the previous URL) which
+races with the `window.location.href` assignment made by
+`signinRedirect`, creating an infinite redirect loop.
+
+Instead, redirect to the `/login` route and let that component
+call `signinRedirect` from `onMounted`:
 
 ```typescript
 // src/router/index.ts
@@ -173,18 +206,22 @@ router.beforeEach(async (to) => {
   if (to.meta.requiresAuth) {
     const user = await userManager.getUser()
     if (!user || user.expired) {
-      await userManager.signinRedirect({
-        state: to.fullPath,
-      })
-      return false
+      return {
+        path: '/login',
+        query: { returnTo: to.fullPath },
+      }
     }
   }
 })
 ```
 
+The full `returnTo` chain is:
+1. Guard passes `to.fullPath` as `query.returnTo` to `/login`.
+2. `LoginView` passes it as `state` to `signinRedirect`.
+3. After Keycloak redirects back, `AuthCallbackView` reads
+   `user.state` to restore the protected route.
+
 - Mark protected routes with `meta: { requiresAuth: true }`.
-- Store `to.fullPath` as `state` so the callback can redirect
-  back after login.
 
 ### Logout
 
