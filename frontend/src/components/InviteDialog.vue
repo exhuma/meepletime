@@ -27,7 +27,7 @@
           <v-progress-circular v-else indeterminate color="primary" />
         </div>
 
-        <p class="text-caption text-grey text-center mb-2">
+        <p class="text-caption text-medium-emphasis text-center mb-2">
           Scan or share the link. Token: <code>{{ circle.invite_token }}</code>
         </p>
 
@@ -37,7 +37,7 @@
       </v-card-text>
       <v-divider />
       <v-card-actions class="pa-3">
-        <v-btn v-if="isAdmin" color="warning" variant="tonal" :loading="regenerating" @click="regenerate">
+        <v-btn v-if="isAdmin" color="tertiary" variant="tonal" :loading="regenerating" @click="regenerate">
           <v-icon start>mdi-refresh</v-icon>Regenerate Token
         </v-btn>
         <v-spacer />

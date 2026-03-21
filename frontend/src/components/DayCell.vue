@@ -21,9 +21,9 @@
         >
           <!-- Date info -->
           <div class="mr-3 text-center" style="min-width:44px">
-            <div class="text-caption text-grey-darken-1 font-weight-medium">{{ dayName }}</div>
+            <div class="text-caption text-medium-emphasis font-weight-medium">{{ dayName }}</div>
             <div class="text-h6 font-weight-bold" style="line-height:1.1">{{ dayNumber }}</div>
-            <div class="text-caption text-grey">{{ monthName }}</div>
+            <div class="text-caption text-medium-emphasis">{{ monthName }}</div>
           </div>
 
           <!-- Center info -->
@@ -40,29 +40,29 @@
 
               <v-icon
                 v-if="viability?.is_viable"
-                color="green"
+                color="primary"
                 size="16"
                 title="Viable day"
               >mdi-circle</v-icon>
 
               <v-icon
                 v-if="viability?.is_soft_max_exceeded"
-                color="orange"
+                color="tertiary"
                 size="16"
                 title="Over soft max"
               >mdi-alert</v-icon>
 
               <v-icon
                 v-if="viability?.has_multiple_hosts_warning"
-                color="blue"
+                color="secondary"
                 size="16"
                 title="Multiple hosts"
               >mdi-home-group</v-icon>
             </div>
 
             <div v-if="attendees.length > 0" class="d-flex align-center">
-              <v-icon size="14" color="grey" class="mr-1">mdi-account-multiple</v-icon>
-              <span class="text-caption text-grey">{{ attendees.length }} attending</span>
+              <v-icon size="14" color="on-surface-variant" class="mr-1">mdi-account-multiple</v-icon>
+              <span class="text-caption text-medium-emphasis">{{ attendees.length }} attending</span>
             </div>
           </div>
         </div>
@@ -110,15 +110,15 @@ const myState = computed(() => props.myState ?? 'empty')
 const attendees = computed(() => props.attendees ?? [])
 
 const stripeColor = computed(() => {
-  if (myState.value === 'hosting') return '#4CAF50'
-  if (myState.value === 'attending') return '#2196F3'
-  return '#E0E0E0'
+  if (myState.value === 'hosting') return 'rgb(var(--v-theme-primary))'
+  if (myState.value === 'attending') return 'rgb(var(--v-theme-secondary))'
+  return 'rgb(var(--v-theme-outline-variant))'
 })
 
 const stateColor = computed(() => {
-  if (myState.value === 'hosting') return 'green'
-  if (myState.value === 'attending') return 'blue'
-  return 'grey'
+  if (myState.value === 'hosting') return 'primary'
+  if (myState.value === 'attending') return 'secondary'
+  return 'surface-variant'
 })
 </script>
 

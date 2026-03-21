@@ -1,14 +1,13 @@
 <template>
   <div>
-    <v-app-bar elevation="1" color="white">
+    <v-app-bar elevation="1" color="surface">
       <v-btn icon @click="router.back()">
         <v-icon>mdi-arrow-left</v-icon>
       </v-btn>
       <v-app-bar-title>{{ formattedDate }}</v-app-bar-title>
       <v-chip
         v-if="viability"
-        :color="viability.is_viable ? 'green' : 'red'"
-        text-color="white"
+        :color="viability.is_viable ? 'primary' : 'error'"
         size="small"
         class="mr-3"
       >
@@ -24,7 +23,7 @@
         <v-list v-if="enrichedAttendees.length > 0" lines="one" class="rounded-lg" elevation="1">
           <v-list-item v-for="a in enrichedAttendees" :key="a.user_id">
             <template #prepend>
-              <v-icon :color="a.state === 'hosting' ? 'green' : 'blue'" class="mr-2">
+              <v-icon :color="a.state === 'hosting' ? 'primary' : 'secondary'" class="mr-2">
                 {{ a.state === 'hosting' ? 'mdi-home' : 'mdi-calendar-check' }}
               </v-icon>
             </template>
@@ -42,7 +41,7 @@
             <v-card-text class="pa-3">
               <div class="d-flex justify-space-between mb-1">
                 <span class="text-caption font-weight-bold">{{ note.pseudonym || 'User' }}</span>
-                <span class="text-caption text-grey">{{ formatTime(note.created_at) }}</span>
+                <span class="text-caption text-medium-emphasis">{{ formatTime(note.created_at) }}</span>
               </div>
               <p class="text-body-2 mb-0">{{ note.content }}</p>
             </v-card-text>

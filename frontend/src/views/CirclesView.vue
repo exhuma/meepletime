@@ -25,7 +25,7 @@
       >
         <template #prepend>
           <v-avatar color="primary" size="44">
-            <v-icon color="white">mdi-account-group</v-icon>
+            <v-icon color="on-primary">mdi-account-group</v-icon>
           </v-avatar>
         </template>
         <v-list-item-title class="font-weight-semibold">{{ circle.name }}</v-list-item-title>

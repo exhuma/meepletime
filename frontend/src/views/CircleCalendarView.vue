@@ -1,6 +1,6 @@
 <template>
   <div>
-    <v-app-bar elevation="1" color="white">
+    <v-app-bar elevation="1" color="surface">
       <v-btn icon @click="router.back()">
         <v-icon>mdi-arrow-left</v-icon>
       </v-btn>
@@ -77,13 +77,13 @@
 
       <!-- Legend -->
       <div class="d-flex flex-wrap gap-2 px-2 py-3">
-        <v-chip size="x-small" color="blue" variant="tonal">✓ Attending</v-chip>
-        <v-chip size="x-small" color="green" variant="tonal">🏠 Hosting</v-chip>
-        <v-chip size="x-small" color="success" variant="flat">Viable day</v-chip>
-        <v-chip size="x-small" color="orange" variant="tonal">Over soft max</v-chip>
+        <v-chip size="x-small" color="secondary" variant="tonal">✓ Attending</v-chip>
+        <v-chip size="x-small" color="primary" variant="tonal">🏠 Hosting</v-chip>
+        <v-chip size="x-small" color="primary" variant="flat">Viable day</v-chip>
+        <v-chip size="x-small" color="tertiary" variant="tonal">Over soft max</v-chip>
       </div>
 
-      <p class="text-caption text-grey text-center mt-1">Tap a future date to toggle your availability</p>
+      <p class="text-caption text-medium-emphasis text-center mt-1">Tap a future date to toggle your availability</p>
     </v-container>
 
     <!-- Invite / QR Code dialog -->
@@ -254,23 +254,23 @@ onMounted(async () => {
   display: grid;
   grid-template-columns: repeat(7, 1fr);
   gap: 2px;
-  background: #e0e0e0;
-  border: 1px solid #e0e0e0;
+  background: rgb(var(--v-theme-outline-variant));
+  border: 1px solid rgb(var(--v-theme-outline-variant));
   border-radius: 8px;
   overflow: hidden;
 }
 
 .calendar-header {
-  background: #f5f5f5;
+  background: rgb(var(--v-theme-surface-container-low));
   text-align: center;
   font-size: 0.75rem;
   font-weight: 600;
   padding: 6px 2px;
-  color: #666;
+  color: rgb(var(--v-theme-on-surface-variant));
 }
 
 .calendar-cell {
-  background: #fff;
+  background: rgb(var(--v-theme-surface));
   min-height: 72px;
   padding: 4px;
   display: flex;
@@ -281,12 +281,12 @@ onMounted(async () => {
 }
 
 .calendar-cell--blank {
-  background: #fafafa;
+  background: rgb(var(--v-theme-surface-container-lowest));
   cursor: default;
 }
 
 .calendar-cell--past {
-  background: #fafafa;
+  background: rgb(var(--v-theme-surface-container-lowest));
   opacity: 0.5;
 }
 
@@ -295,20 +295,20 @@ onMounted(async () => {
 }
 
 .calendar-cell--future:hover {
-  background: #f3faf3;
+  background: rgb(var(--v-theme-surface-container));
 }
 
 .calendar-cell--today {
-  outline: 2px solid #4CAF50;
+  outline: 2px solid rgb(var(--v-theme-primary));
   outline-offset: -2px;
 }
 
 .calendar-cell--viable {
-  background: #f0fff0;
+  background: rgb(var(--v-theme-primary-container));
 }
 
 .calendar-cell--over-soft-max {
-  background: #fff8e1;
+  background: rgb(var(--v-theme-tertiary-container));
 }
 
 .calendar-cell--hidden {
@@ -318,7 +318,7 @@ onMounted(async () => {
 .calendar-cell__date {
   font-size: 0.8rem;
   font-weight: 500;
-  color: #333;
+  color: rgb(var(--v-theme-on-surface));
   line-height: 1.2;
 }
 
@@ -328,11 +328,11 @@ onMounted(async () => {
 }
 
 .chip--attending {
-  color: #1565C0;
+  color: rgb(var(--v-theme-secondary));
 }
 
 .chip--hosting {
-  color: #2E7D32;
+  color: rgb(var(--v-theme-primary));
 }
 
 .calendar-cell__count {
@@ -341,8 +341,8 @@ onMounted(async () => {
   right: 4px;
   font-size: 0.7rem;
   font-weight: 700;
-  color: #666;
-  background: rgba(0,0,0,0.08);
+  color: rgb(var(--v-theme-on-surface-variant));
+  background: rgba(var(--v-theme-on-surface), 0.08);
   border-radius: 4px;
   padding: 1px 4px;
 }
