@@ -6,6 +6,7 @@ from apscheduler.schedulers.background import BackgroundScheduler
 from sqlalchemy.orm import Session
 
 from app.config import settings
+from app.models.circle import Circle
 
 logger = logging.getLogger(__name__)
 
