@@ -49,7 +49,7 @@
 import { ref, onMounted } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { useCircles } from '../composables/circles'
-import api from '../api'
+import api, { ApiError } from '../api'
 import type { Circle } from '../types'
 
 const route = useRoute()
@@ -66,8 +66,7 @@ const canHostDefault = ref(false)
 
 onMounted(async () => {
   try {
-    const res = await api.get<Circle>(`/circles/join/${token}`)
-    circleInfo.value = res.data
+    circleInfo.value = await api.get<Circle>(`/circles/join/${token}`)
   } catch {
     error.value = 'Invalid or expired invite token.'
   } finally {
@@ -81,8 +80,8 @@ async function handleJoin(): Promise<void> {
     await circles.joinCircle(token, pseudonym.value.trim(), canHostDefault.value)
     router.push('/circles')
   } catch (e: unknown) {
-    const err = e as { response?: { data?: { detail?: string } } }
-    error.value = err.response?.data?.detail || 'Failed to join circle.'
+    const detail = e instanceof ApiError ? (e.data as { detail?: string } | null)?.detail : null
+    error.value = detail ?? 'Failed to join circle.'
   } finally {
     joining.value = false
   }

@@ -19,11 +19,9 @@ export function useAuth() {
     const formData = new URLSearchParams()
     formData.append('username', email)
     formData.append('password', password)
-    const response = await api.post('/auth/token', formData, {
-      headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-    })
-    token.value = response.data.access_token
-    localStorage.setItem('meepletime_token', token.value as string)
+    const data = await api.post<{ access_token: string }>('/auth/token', formData)
+    token.value = data.access_token
+    localStorage.setItem('meepletime_token', token.value)
     await fetchMe()
   }
 
@@ -47,15 +45,14 @@ export function useAuth() {
       try {
         await fetchMe()
       } catch {
-        // expired token - interceptor handles redirect
+        // expired token — unauthorized handler redirects
       }
     }
   }
 
   /** Fetch the authenticated user's profile from /auth/me and update state. */
   async function fetchMe(): Promise<void> {
-    const res = await api.get<User>('/auth/me')
-    user.value = res.data
+    user.value = await api.get<User>('/auth/me')
   }
 
   return {

@@ -90,6 +90,7 @@
 <script setup lang="ts">
 import { ref, reactive } from 'vue'
 import { useCircles } from '../composables/circles'
+import { ApiError } from '../api'
 
 defineProps<{
   modelValue: boolean
@@ -155,8 +156,8 @@ async function handleCreate(): Promise<void> {
     form.soft_max_attendees = null
     form.hard_max_attendees = null
   } catch (e: unknown) {
-    const err = e as { response?: { data?: { detail?: string } } }
-    error.value = err.response?.data?.detail || 'Failed to create circle.'
+    const detail = e instanceof ApiError ? (e.data as { detail?: string } | null)?.detail : null
+    error.value = detail ?? 'Failed to create circle.'
   } finally {
     loading.value = false
   }
