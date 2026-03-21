@@ -15,6 +15,18 @@ cd "${REPO_ROOT}/backend"
 uv sync
 
 echo "==> Installing frontend dependencies (npm ci) ..."
+export NVM_DIR="${NVM_DIR:-${HOME}/.nvm}"
+if [[ -s "${NVM_DIR}/nvm.sh" ]]; then
+    # nvm is not fully compatible with `set -u`.
+    # shellcheck disable=SC1090
+    set +u
+    . "${NVM_DIR}/nvm.sh"
+    nvm install --lts
+    nvm use --lts
+    set -u
+else
+    echo "==> nvm not found; using preinstalled node/npm ..."
+fi
 cd "${REPO_ROOT}/frontend"
 npm ci
 

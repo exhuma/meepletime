@@ -8,10 +8,9 @@ from sqlalchemy import pool
 
 from alembic import context
 
-# Add the backend directory to sys.path so app can be imported
-sys.path.insert(
-    0, os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-)
+# Add backend/src to sys.path so the app package can be imported
+_backend_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+sys.path.insert(0, os.path.join(_backend_dir, "src"))
 
 config = context.config
 

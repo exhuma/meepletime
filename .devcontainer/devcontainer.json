@@ -41,7 +41,7 @@
       "settings": {
         "python.defaultInterpreterPath":
           "${workspaceFolder}/backend/.venv/bin/python",
-        "typescript.tsdk":
+        "js/ts.tsdk.path":
           "frontend/node_modules/typescript/lib",
         "editor.formatOnSave": true
       }
