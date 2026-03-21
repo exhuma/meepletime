@@ -7,6 +7,7 @@ from datetime import date, datetime, timedelta, timezone
 
 import pytz
 from fastapi import APIRouter, Depends, HTTPException, Query, status
+from sqlalchemy import select
 from sqlalchemy.orm import Session
 
 from app.database import SessionLocal
@@ -29,7 +30,9 @@ def _get_circle_or_404(
     db: Session, circle_id: uuid.UUID
 ) -> Circle:
     """Return the circle or raise HTTP 404 if it does not exist."""
-    circle = db.query(Circle).filter(Circle.id == circle_id).first()
+    circle = db.execute(
+        select(Circle).where(Circle.id == circle_id)
+    ).scalar_one_or_none()
     if not circle:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
@@ -44,14 +47,12 @@ def _require_membership(
     user_id: uuid.UUID,
 ) -> CircleMembership:
     """Return the membership or raise HTTP 403 if not a member."""
-    membership = (
-        db.query(CircleMembership)
-        .filter(
+    membership = db.execute(
+        select(CircleMembership).where(
             CircleMembership.circle_id == circle_id,
             CircleMembership.user_id == user_id,
         )
-        .first()
-    )
+    ).scalar_one_or_none()
     if not membership:
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
@@ -119,14 +120,14 @@ def get_availability(
     _get_circle_or_404(db, circle_id)
     _require_membership(db, circle_id, current_user.id)
 
-    return (
-        db.query(DayAvailability)
-        .filter(
-            DayAvailability.circle_id == circle_id,
-            DayAvailability.local_date >= start_date,
-            DayAvailability.local_date <= end_date,
-        )
-        .all()
+    return list(
+        db.execute(
+            select(DayAvailability).where(
+                DayAvailability.circle_id == circle_id,
+                DayAvailability.local_date >= start_date,
+                DayAvailability.local_date <= end_date,
+            )
+        ).scalars().all()
     )
 
 
@@ -157,15 +158,13 @@ def set_availability(
     membership = _require_membership(db, circle_id, current_user.id)
     _validate_date(local_date, circle, membership)
 
-    existing = (
-        db.query(DayAvailability)
-        .filter(
+    existing = db.execute(
+        select(DayAvailability).where(
             DayAvailability.circle_id == circle_id,
             DayAvailability.user_id == current_user.id,
             DayAvailability.local_date == local_date,
         )
-        .first()
-    )
+    ).scalar_one_or_none()
 
     if existing:
         existing.state = DBAvailabilityState(avail_in.state.value)
@@ -223,15 +222,13 @@ def delete_availability(
     membership = _require_membership(db, circle_id, current_user.id)
     _validate_date(local_date, circle, membership)
 
-    existing = (
-        db.query(DayAvailability)
-        .filter(
+    existing = db.execute(
+        select(DayAvailability).where(
             DayAvailability.circle_id == circle_id,
             DayAvailability.user_id == current_user.id,
             DayAvailability.local_date == local_date,
         )
-        .first()
-    )
+    ).scalar_one_or_none()
     if existing:
         db.delete(existing)
         db.commit()
