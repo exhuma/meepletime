@@ -25,7 +25,7 @@ class Settings(BaseSettings):
     OIDC_AUDIENCE: str
     OIDC_ISSUER: str
     NOTIFICATION_DEBOUNCE_SECONDS: int = 10
-    FRONTEND_URL: str = "http://localhost:5173"
+    FRONTEND_URL: str = "http://127.0.0.1:5173"
 
     model_config = SettingsConfigDict(
         env_file=".env",

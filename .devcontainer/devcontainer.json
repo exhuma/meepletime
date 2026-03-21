@@ -1,28 +1,16 @@
 {
   // MeepleTime — FastAPI + Vue 3 + PostgreSQL + Keycloak
   "name": "meepletime",
-
   // Use a docker-compose stack so PostgreSQL and Keycloak start
   // automatically alongside the devcontainer.
   "dockerComposeFile": "docker-compose.yml",
   "service": "devcontainer",
   "workspaceFolder": "/workspace",
-
   // Install backend and frontend dependencies after the container
   // is created.
   "postCreateCommand": "bash .devcontainer/init.bash",
-
   // Forward backend API, Vite dev server, PostgreSQL, and
   // Keycloak admin UI.
-  "forwardPorts": [8000, 5173, 5432, 8080],
-
-  "portsAttributes": {
-    "8000": { "label": "Backend API" },
-    "5173": { "label": "Frontend (Vite)" },
-    "5432": { "label": "PostgreSQL" },
-    "8080": { "label": "Keycloak" }
-  },
-
   "customizations": {
     "vscode": {
       "extensions": [
@@ -38,10 +26,8 @@
         "ms-azuretools.vscode-docker"
       ],
       "settings": {
-        "python.defaultInterpreterPath":
-          "${workspaceFolder}/backend/.venv/bin/python",
-        "typescript.tsdk":
-          "frontend/node_modules/typescript/lib",
+        "python.defaultInterpreterPath": "${workspaceFolder}/backend/.venv/bin/python",
+        "typescript.tsdk": "frontend/node_modules/typescript/lib",
         "editor.formatOnSave": true
       }
     }

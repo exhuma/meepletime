@@ -25,6 +25,14 @@ services:
       - ..:/workspace:cached
     # Keep the container alive so VS Code can attach.
     command: sleep infinity
+    environment:
+      DATABASE_URL: >-
+        postgresql://meepletime:changeme@db:5432/meepletime
+      OIDC_AUTHORITY: >-
+        http://keycloak.127.0.0.1.nip.io:8080/realms/meepletime
+      OIDC_AUDIENCE: meepletime-frontend
+      OIDC_ISSUER: >-
+        http://keycloak.127.0.0.1.nip.io:8080/realms/meepletime
     # Resolve the nip.io Keycloak hostname to the Docker host so
     # the backend (run manually inside this container) can reach
     # Keycloak via the same URL that the browser uses.
