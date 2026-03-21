@@ -13,7 +13,6 @@ from sqlalchemy.orm import Session
 from app.auth.jwks import get_jwks_client
 from app.config import Settings, get_settings
 from app.database import get_db  # noqa: F401 — re-exported for routers
-from app.database import SessionLocal
 from app.models.auth_identity import AuthIdentity
 from app.models.user import User
 
