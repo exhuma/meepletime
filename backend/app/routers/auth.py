@@ -13,11 +13,11 @@ from app.schemas.user import Token, UserCreate, UserOut
 
 router = APIRouter(prefix="/auth", tags=["auth"])
 
-pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
+pwd_context = CryptContext(schemes=["argon2"], deprecated="auto")
 
 
 def hash_password(password: str) -> str:
-    """Return a bcrypt hash of *password*."""
+    """Return an argon2 hash of *password*."""
     return pwd_context.hash(password)
 
 
