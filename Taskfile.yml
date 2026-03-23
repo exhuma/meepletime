@@ -18,3 +18,11 @@ tasks:
     desc: Start the Vite dev server
     dir: frontend
     cmd: npm run dev -- --host 0.0.0.0
+
+  dev:token:
+    desc: >-
+      Mint a self-signed HS256 dev JWT for headless API testing.
+      Requires DEV_SHARED_SECRET in backend/.env.
+      Usage: task dev:token [-- --sub agent --email a@dev.local]
+    dir: backend
+    cmd: uv run python scripts/dev_token.py {{.CLI_ARGS}}

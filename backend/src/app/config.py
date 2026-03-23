@@ -16,6 +16,10 @@ class Settings(BaseSettings):
     :param OIDC_AUTHORITY: OIDC issuer base URL (Keycloak realm URL).
     :param OIDC_AUDIENCE: Expected audience claim in access tokens.
     :param OIDC_ISSUER: Expected iss claim in access tokens.
+    :param DEV_SHARED_SECRET: When set, the backend accepts
+        self-minted HS256 JWTs (signed with this secret) instead
+        of validating tokens via Keycloak JWKS.  **Development
+        and headless-agent use only. Never set in production.**
     :param NOTIFICATION_DEBOUNCE_SECONDS: Debounce window for
         notification coalescing, in seconds.
     :param FRONTEND_URL: Allowed CORS origin for the Vue frontend.
@@ -25,6 +29,7 @@ class Settings(BaseSettings):
     OIDC_AUTHORITY: str
     OIDC_AUDIENCE: str
     OIDC_ISSUER: str
+    DEV_SHARED_SECRET: str | None = None
     NOTIFICATION_DEBOUNCE_SECONDS: int = 10
     FRONTEND_URL: str = "http://localhost:5173"
 

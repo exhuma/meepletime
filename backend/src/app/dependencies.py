@@ -23,18 +23,64 @@ bearer = HTTPBearer()
 LOG = logging.getLogger(__name__)
 
 
+def _decode_dev_token(
+    token: str,
+    settings: Settings,
+) -> dict:
+    """
+    Decode a self-minted HS256 dev token.
+
+    Used only when ``DEV_SHARED_SECRET`` is configured.
+    Production deployments must never set that variable.
+
+    :param token: Raw bearer token string.
+    :param settings: Application settings.
+    :returns: Decoded JWT payload.
+    :raises jwt.InvalidTokenError: When the token is invalid.
+    """
+    return jwt.decode(
+        token,
+        settings.DEV_SHARED_SECRET,  # type: ignore[arg-type]
+        algorithms=["HS256"],
+        audience=settings.OIDC_AUDIENCE,
+        issuer=settings.OIDC_ISSUER,
+    )
+
+
+def _decode_oidc_token(
+    token: str,
+    settings: Settings,
+) -> dict:
+    """
+    Decode a Keycloak-issued RS256 token via JWKS.
+
+    :param token: Raw bearer token string.
+    :param settings: Application settings.
+    :returns: Decoded JWT payload.
+    :raises jwt.InvalidTokenError: When the token is invalid.
+    """
+    jwks_client = get_jwks_client(settings.OIDC_AUTHORITY)
+    signing_key = jwks_client.get_signing_key_from_jwt(token)
+    return jwt.decode(
+        token,
+        signing_key.key,
+        algorithms=["RS256"],
+        audience=settings.OIDC_AUDIENCE,
+        issuer=settings.OIDC_ISSUER,
+    )
+
+
 def get_current_user(
     credentials: HTTPAuthorizationCredentials = Depends(bearer),
     settings: Settings = Depends(get_settings),
     db: Session = Depends(get_db),
 ) -> User:
     """
-    Validate the OIDC bearer token and return the local User.
+    Validate the bearer token and return the local User.
 
-    Decodes the access token using the Keycloak JWKS endpoint,
-    then finds or creates the corresponding User and AuthIdentity
-    rows.  The first successful call for a new identity provisions
-    the local user account.
+    When ``DEV_SHARED_SECRET`` is set the token is validated as a
+    self-minted HS256 JWT (no Keycloak required).  Otherwise the
+    token is validated against the Keycloak JWKS endpoint.
 
     :param credentials: Authorization header bearer token.
     :param settings: Application configuration.
@@ -44,16 +90,11 @@ def get_current_user(
         has the wrong audience/issuer, or has a tampered signature.
     """
     token = credentials.credentials
-    jwks_client = get_jwks_client(settings.OIDC_AUTHORITY)
     try:
-        signing_key = jwks_client.get_signing_key_from_jwt(token)
-        payload: dict = jwt.decode(
-            token,
-            signing_key.key,
-            algorithms=["RS256"],
-            audience=settings.OIDC_AUDIENCE,
-            issuer=settings.OIDC_ISSUER,
-        )
+        if settings.DEV_SHARED_SECRET is not None:
+            payload: dict = _decode_dev_token(token, settings)
+        else:
+            payload = _decode_oidc_token(token, settings)
     except jwt.ExpiredSignatureError:
         LOG.debug("Token has expired")
         raise HTTPException(

@@ -449,6 +449,55 @@ resource server client ID), not the frontend client ID.
 
 ---
 
+## Dev-token: headless-agent authentication
+
+Coding agents (e.g. GitHub Copilot in the cloud) cannot spin up
+Keycloak, and running a full OIDC flow requires a browser.  To
+support automated / headless development, the backend accepts
+**self-minted HS256 JWTs** when `DEV_SHARED_SECRET` is set.
+
+### How it works
+
+1. `DEV_SHARED_SECRET` is an optional env var in `backend/.env`.
+   When absent (production), only JWKS/RS256 tokens are accepted.
+   When present, the backend validates tokens as HS256 JWTs
+   signed with that secret (bypassing Keycloak JWKS validation
+   entirely).  OIDC/RS256 validation is not performed.
+
+2. The token is generated with `task dev:token`:
+
+   ```
+   task dev:token
+   task dev:token -- --sub myagent --email agent@dev.local
+   task dev:token -- --ttl 3600
+   ```
+
+   The token includes `iss`, `aud`, `sub`, `email`, `name`, `iat`,
+   and `exp`.  `iss` and `aud` are read from `.env` and must match
+   `OIDC_ISSUER` / `OIDC_AUDIENCE`.  Default lifespan is 1 year.
+
+3. Pass the token as a bearer header to API calls:
+
+   ```
+   TOKEN=$(task dev:token -s)
+   curl -H "Authorization: Bearer $TOKEN" http://localhost:8000/...
+   ```
+
+### Implementation rules
+
+- `DEV_SHARED_SECRET: str | None = None` in `Settings`.
+- In `get_current_user`, branch on `settings.DEV_SHARED_SECRET`:
+  - Set → `jwt.decode(..., algorithms=["HS256"])`.
+  - Not set → existing JWKS path with `algorithms=["RS256"]`.
+- The token generator lives in `backend/scripts/dev_token.py`.
+  It is **outside `src/app/`** and is therefore not included in
+  the production wheel.
+- **NEVER** set `DEV_SHARED_SECRET` in production config.
+- Add `DEV_SHARED_SECRET` to the `.env.example` as a commented-out
+  line with a clear "dev-only" warning.
+
+---
+
 ## Testing
 
 ### Backend
