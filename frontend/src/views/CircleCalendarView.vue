@@ -5,7 +5,7 @@
         <v-icon>mdi-arrow-left</v-icon>
       </v-btn>
       <v-app-bar-title class="text-truncate">
-        {{ circlesState.currentCircle.value?.name || 'Loading...' }}
+        {{ circlesState.currentCircle.value?.name || "Loading..." }}
       </v-app-bar-title>
       <v-switch
         v-model="viableOnly"
@@ -14,24 +14,29 @@
         hide-details
         density="compact"
         class="mr-2"
-        style="max-width:140px"
+        style="max-width: 140px"
       />
-      <v-btn icon :title="'Invite / QR Code'" @click="inviteDialog = true" class="mr-1">
+      <v-btn
+        icon
+        :title="'Invite / QR Code'"
+        @click="inviteDialog = true"
+        class="mr-1"
+      >
         <v-icon>mdi-qrcode</v-icon>
       </v-btn>
     </v-app-bar>
 
-    <v-container class="pa-2" style="max-width:700px">
-      <v-progress-linear v-if="loading" indeterminate color="primary" class="mb-2" />
+    <v-container class="pa-2" style="max-width: 700px">
+      <v-progress-linear
+        v-if="loading"
+        indeterminate
+        color="primary"
+        class="mb-2"
+      />
 
       <!-- Month navigation -->
       <div class="d-flex align-center px-2 py-2">
-        <v-btn
-          icon
-          variant="text"
-          :disabled="!canGoPrev"
-          @click="prevMonth"
-        >
+        <v-btn icon variant="text" :disabled="!canGoPrev" @click="prevMonth">
           <v-icon>mdi-chevron-left</v-icon>
         </v-btn>
         <span class="flex-grow-1 text-center text-subtitle-1 font-weight-bold">
@@ -45,10 +50,16 @@
       <!-- Calendar grid -->
       <div class="calendar-grid">
         <!-- Day headers -->
-        <div class="calendar-header" v-for="day in dayHeaders" :key="day">{{ day }}</div>
+        <div class="calendar-header" v-for="day in dayHeaders" :key="day">
+          {{ day }}
+        </div>
 
         <!-- Blank cells for first week offset -->
-        <div v-for="n in firstDayOffset" :key="`blank-${n}`" class="calendar-cell calendar-cell--blank"></div>
+        <div
+          v-for="n in firstDayOffset"
+          :key="`blank-${n}`"
+          class="calendar-cell calendar-cell--blank"
+        ></div>
 
         <!-- Day cells -->
         <div
@@ -59,17 +70,25 @@
             'calendar-cell--today': day.date === todayStr,
             'calendar-cell--past': day.date < todayStr,
             'calendar-cell--future': day.date >= todayStr,
-            'calendar-cell--viable': day.viability?.is_viable && !day.viability.is_soft_max_exceeded,
+            'calendar-cell--viable':
+              day.viability?.is_viable && !day.viability.is_soft_max_exceeded,
             'calendar-cell--over-soft-max': day.viability?.is_soft_max_exceeded,
             'calendar-cell--hidden': viableOnly && !day.viability?.is_viable,
           }"
           @click="day.date >= todayStr ? handleDayClick(day.date) : undefined"
         >
           <div class="calendar-cell__date">{{ day.dayOfMonth }}</div>
-          <div v-if="day.myState" class="calendar-cell__chip" :class="`chip--${day.myState}`">
-            {{ day.myState === 'hosting' ? '🏠' : '✓' }}
+          <div
+            v-if="day.myState"
+            class="calendar-cell__chip"
+            :class="`chip--${day.myState}`"
+          >
+            {{ day.myState === "hosting" ? "🏠" : "✓" }}
           </div>
-          <div v-if="day.viability && day.viability.attendee_count > 0" class="calendar-cell__count">
+          <div
+            v-if="day.viability && day.viability.attendee_count > 0"
+            class="calendar-cell__count"
+          >
             {{ day.viability.attendee_count }}
           </div>
         </div>
@@ -77,13 +96,23 @@
 
       <!-- Legend -->
       <div class="d-flex flex-wrap gap-2 px-2 py-3">
-        <v-chip size="x-small" color="secondary" variant="tonal">✓ Attending</v-chip>
-        <v-chip size="x-small" color="primary" variant="tonal">🏠 Hosting</v-chip>
-        <v-chip size="x-small" color="primary" variant="flat">Viable day</v-chip>
-        <v-chip size="x-small" color="tertiary" variant="tonal">Over soft max</v-chip>
+        <v-chip size="x-small" color="secondary" variant="tonal"
+          >✓ Attending</v-chip
+        >
+        <v-chip size="x-small" color="primary" variant="tonal"
+          >🏠 Hosting</v-chip
+        >
+        <v-chip size="x-small" color="primary" variant="flat"
+          >Viable day</v-chip
+        >
+        <v-chip size="x-small" color="tertiary" variant="tonal"
+          >Over soft max</v-chip
+        >
       </div>
 
-      <p class="text-caption text-medium-emphasis text-center mt-1">Tap a future date to toggle your availability</p>
+      <p class="text-caption text-medium-emphasis text-center mt-1">
+        Tap a future date to toggle your availability
+      </p>
     </v-container>
 
     <!-- Invite / QR Code dialog -->
