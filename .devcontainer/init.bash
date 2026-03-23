@@ -73,8 +73,6 @@ if [[ ! -f "${REPO_ROOT}/frontend/.env.local" ]]; then
     cat > "${REPO_ROOT}/frontend/.env.local" <<EOF
 VITE_OIDC_AUTHORITY=${REALM_URL}
 VITE_OIDC_CLIENT_ID=meepletime-frontend
-VITE_OIDC_REDIRECT_URI=http://127.0.0.1:5173/auth/callback
-VITE_OIDC_POST_LOGOUT_URI=http://127.0.0.1:5173/
 VITE_API_BASE_URL=http://127.0.0.1:8000
 EOF
     echo "    Edit frontend/.env.local to override if needed."

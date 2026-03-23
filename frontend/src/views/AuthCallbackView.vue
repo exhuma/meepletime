@@ -31,13 +31,29 @@ const errorMsg = ref<string | null>(null)
 onMounted(async () => {
   try {
     const user = await userManager.signinRedirectCallback()
-    const returnTo =
-      (user.state as string | undefined) ?? '/circles'
+    const raw = (user.state as string | undefined) ?? ''
+    // Reject auth-flow paths as returnTo targets to prevent
+    // edge-case loops caused by corrupted PKCE state.
+    const unsafe =
+      raw === '/login' ||
+      raw.startsWith('/auth/callback') ||
+      raw === ''
+    const returnTo = unsafe ? '/circles' : raw
     await router.replace(returnTo)
   } catch (err) {
+    console.error('OIDC callback error:', err)
+    // "No matching state" means the PKCE state was lost
+    // (e.g. origin mismatch, stale tab). Restarting the
+    // login flow recovers automatically.
+    if (
+      err instanceof Error &&
+      err.message.includes('No matching state')
+    ) {
+      await router.replace('/login')
+      return
+    }
     errorMsg.value =
       'Authentication failed. Please try again.'
-    console.error('OIDC callback error:', err)
   }
 })
 </script>
