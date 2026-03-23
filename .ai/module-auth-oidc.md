@@ -1,7 +1,8 @@
 # Agent instructions: module-auth-oidc
 
-This module adds OIDC/OAuth2 authentication to a project built on
-the `stack-fastapi-vuetify` core template.
+This module documents the OIDC authentication implementation for
+this project, which uses Keycloak (self-hosted) as the sole
+identity provider (Option A).
 
 **Prerequisite**: `stack-fastapi-vuetify/.ai/instructions.md` must
 already be loaded and followed. All rules there remain in force.
@@ -10,88 +11,91 @@ already be loaded and followed. All rules there remain in force.
 
 ## Architecture invariants
 
-These are non-negotiable regardless of provider or project size.
+These are non-negotiable.
 
-- **Vue = public OIDC client.** It initiates flows and holds tokens.
-- **FastAPI = stateless OAuth resource server.** It validates bearer
-  tokens on every request. It never participates in the auth flow
-  except in Option B (see below).
-- PKCE (`S256`) is mandatory on every authorization code flow.
+- **Vue = public OIDC client.** It initiates flows and holds
+  tokens in the browser. There is no in-app login form.
+- **FastAPI = stateless OAuth resource server.** It validates
+  bearer tokens on every request via Keycloak's JWKS endpoint.
+  It never participates in the OIDC flow.
+- PKCE (`S256`) is mandatory on the authorization code flow.
 - The `state` parameter is mandatory to prevent CSRF.
-- `client_secret` must never appear in frontend code or be bundled
-  into the built artefact.
+- `client_secret` must never appear in frontend code or be
+  bundled into the built artefact.
 - Never log raw token values anywhere.
-- The default architecture is stateless (no server-side session).
+- The architecture is stateless (no server-side session).
   If requirements emerge that would benefit from server-side
-  sessions (e.g. immediate token revocation, high-security
-  compliance contexts), **stop and ask the developer** before
-  implementing session state.
+  sessions, **stop and ask the developer** before implementing.
+- GitHub and Twitter login are out of scope. Social providers
+  may be configured inside Keycloak at a later date without
+  changes to application code.
 
 ---
 
-## Choose a provider strategy
+## Keycloak client setup — two-client pattern
 
-**Before writing any auth code**, document the chosen option in
-`contract.md` under a section named `## Authentication strategy`.
+Keycloak is the sole identity provider. Two clients are
+configured in the Keycloak realm:
 
-The choice is driven by the project's audience size and provider
-requirements:
+### 1. `meepletime-frontend` (public OIDC client)
 
-### Option A — True OIDC (small/internal or federated audience)
+- **Type**: Public (no `client_secret`)
+- **Protocol**: OpenID Connect
+- **Flow**: Authorization code + PKCE (`S256`)
+- **Redirect URIs**: `http://localhost:5173/*` (add production
+  URL alongside in production deployments)
+- **Web origins**: `http://localhost:5173`
+- This is the client the Vue app uses to authenticate users.
 
-Use when all providers expose a standard OIDC discovery document
-at `/.well-known/openid-configuration`. No backend token exchange
-logic is required.
+### 2. `meepletime-backend` (bearer-only resource server)
 
-**Cloud providers** (managed):
-- Google Identity
-- Microsoft Entra ID
+- **Type**: Bearer-only (no login flow, no `client_secret`
+  required for validation)
+- **Protocol**: OpenID Connect
+- This client exists solely so that Keycloak includes
+  `meepletime-backend` in the `aud` claim of access tokens.
 
-**Self-hosted federation layer**:
-- Keycloak — configure upstream social/AD providers inside it;
-  Vue and FastAPI code remains identical to the managed-provider
-  case. Document the Keycloak configuration in
-  `docs/developer/auth.md`.
+**Why two clients?**
+Keycloak only adds a client to the access token's `aud` claim
+when the authenticating user has at least one client-scoped role
+assigned on that client. Creating a separate bearer-only client
+(`meepletime-backend`) and assigning a `user` role to application
+users is the correct OIDC-compliant way to achieve a distinct,
+validatable audience in the token. The frontend client alone
+cannot appear as audience in the way needed by the backend.
 
-GitHub and Twitter are explicitly **out of scope** for Option A
-because they do not implement OIDC. Document this exclusion in
-`contract.md` if applicable.
+### `user` role and audience propagation
 
-### Option B — OAuth2 userinfo normalization (large/public audience)
+1. Define a `user` client role on `meepletime-backend`.
+2. Assign that role to every application user (or via a default
+   role group in Keycloak).
+3. Keycloak then automatically includes `"meepletime-backend"` in
+   the `aud` array of the issued access token.
+4. The FastAPI backend validates `audience="meepletime-backend"`.
 
-Use when GitHub, Twitter, or other non-OIDC providers must be
-supported and the user base is large (broad attack surface).
+Do **not** add the `user` role to `meepletime-frontend`. The
+frontend client remains a clean, role-free public client.
 
-- Vue still performs authorization code + PKCE.
-- A dedicated `POST /auth/exchange` endpoint on FastAPI:
-  1. Receives the authorization code.
-  2. Exchanges it at the upstream provider (holds the
-     `client_secret` server-side).
-  3. Calls the provider's userinfo or `/user` endpoint.
-  4. Normalizes claims to a standard shape:
-     `sub`, `email`, `name`, `picture`.
-  5. Issues a project-signed JWT (via `pyjwt`).
-- One provider adapter per upstream (interface-based):
+### Keycloak hostname configuration (v26+)
 
-  ```python
-  class ProviderAdapter(Protocol):
-      async def exchange(
-          self,
-          code: str,
-          code_verifier: str,
-      ) -> NormalizedUser: ...
-  ```
+In Keycloak 26+, `KC_HOSTNAME` must be a full URL including
+scheme and port, not just a hostname. Otherwise the `iss` claim
+omits the port, which causes PyJWT's strict issuer check to fail:
 
-- FastAPI gains an internal "auth client" module that is separate
-  from the resource-server validation logic.
-- The PKCE `code_verifier` must be sent by the frontend and
-  validated by the backend during the exchange.
-- All project-issued JWTs are validated by the same
-  `get_current_user` dependency as Option A.
+```
+# Correct (Keycloak 26+)
+KC_HOSTNAME=http://keycloak.127.0.0.1.nip.io:8080
+
+# Wrong — iss in token will omit :8080
+KC_HOSTNAME=keycloak.127.0.0.1.nip.io
+```
+
+The realm configuration is in `deploy/dev/keycloak-realm.json`
+and is imported automatically on first startup in dev.
 
 ---
 
-## Frontend rules (all options)
+## Frontend rules
 
 ### Package
 
@@ -101,53 +105,123 @@ npm install oidc-client-ts
 
 `oidc-client-ts` is the only permitted OIDC library.
 
+### Token storage
+
+This project uses `sessionStorage` via `WebStorageStateStore`.
+
+| Strategy | Pro | Con |
+|---|---|---|
+| Memory | Safest (no XSS persistence) | Lost on page reload |
+| **sessionStorage** | Survives reload within tab | Lost on new tab |
+| localStorage | Persistent | Accessible to XSS |
+
 ### UserManager configuration
 
 ```typescript
 // src/auth/oidc.ts
 import { UserManager, WebStorageStateStore } from 'oidc-client-ts'
 
-// ADAPT: storage is project-specific — choose one:
-//   WebStorageStateStore({ store: window.sessionStorage })
-//   WebStorageStateStore({ store: window.localStorage })
-//   In-memory (default, most secure, lost on reload)
 export const userManager = new UserManager({
-  authority: import.meta.env.VITE_OIDC_AUTHORITY,
-  client_id: import.meta.env.VITE_OIDC_CLIENT_ID,
-  redirect_uri: import.meta.env.VITE_OIDC_REDIRECT_URI,
-  post_logout_redirect_uri:
-    import.meta.env.VITE_OIDC_POST_LOGOUT_URI,
+  authority: import.meta.env.VITE_OIDC_AUTHORITY as string,
+  client_id: import.meta.env.VITE_OIDC_CLIENT_ID as string,
+  // Derived at runtime so the callback origin always matches
+  // the origin where signinRedirect() was called, keeping
+  // sessionStorage accessible throughout the PKCE flow.
+  // Do NOT use a hardcoded env var or 127.0.0.1/localhost
+  // mismatch will cause "No matching state found" errors.
+  redirect_uri: `${window.location.origin}/auth/callback`,
+  post_logout_redirect_uri: `${window.location.origin}/`,
   scope: 'openid email profile',
   response_type: 'code',
   automaticSilentRenew: true,
+  userStore: new WebStorageStateStore({
+    store: window.sessionStorage,
+  }),
 })
 ```
 
-Token storage strategy is left unspecified. Document the choice
-and its trade-offs in `contract.md`:
+**Critical**: `redirect_uri` must be derived from
+`window.location.origin` at runtime. Hard-coding a URL (even via
+an environment variable) causes `sessionStorage` key mismatches
+when the app is accessed under a different origin (e.g.
+`localhost` vs `127.0.0.1`), resulting in
+`"No matching state found in storage"` errors.
 
-| Strategy | Pro | Con |
-|---|---|---|
-| Memory | Safest (no XSS persistence) | Lost on page reload |
-| sessionStorage | Survives reload within tab | Lost on new tab |
-| localStorage | Persistent | Accessible to XSS |
+### Frontend environment variables
+
+Only two variables are required in `.env.local`:
+
+```
+VITE_OIDC_AUTHORITY=http://keycloak.127.0.0.1.nip.io:8080/realms/meepletime
+VITE_OIDC_CLIENT_ID=meepletime-frontend
+```
+
+Do **not** add `VITE_OIDC_REDIRECT_URI` or
+`VITE_OIDC_POST_LOGOUT_URI` — these are derived at runtime.
 
 ### TokenProvider wiring
 
-Wire `oidc-client-ts` into the core `TokenProvider` seam at
-bootstrap (in `main.ts`):
+Read the access token directly from `sessionStorage` at the
+well-known key that `oidc-client-ts` uses internally. This avoids
+an async `getUser()` call on every API request:
 
 ```typescript
-import { setTokenProvider } from './api/token'
+// src/main.ts
+import { setTokenProvider } from './api'
 import { userManager } from './auth/oidc'
 
+const authority = import.meta.env.VITE_OIDC_AUTHORITY as string
+const clientId = import.meta.env.VITE_OIDC_CLIENT_ID as string
+// Key format: oidc.user:<authority>:<client_id>
+const key = `oidc.user:${authority}:${clientId}`
+
 setTokenProvider({
-  getToken: async () => {
-    const user = await userManager.getUser()
-    return user?.access_token ?? null
+  getToken: () => {
+    const raw = sessionStorage.getItem(key)
+    if (!raw) return null
+    try {
+      return (JSON.parse(raw) as { access_token?: string })
+        .access_token ?? null
+    } catch {
+      return null
+    }
   },
 })
 ```
+
+### `useAuth()` composable
+
+The composable wraps `userManager` and exposes reactive state.
+All components and views must use it rather than importing
+`userManager` directly for auth state:
+
+```typescript
+// src/composables/auth.ts
+export function useAuth() {
+  return {
+    /** Reactive OIDC User object (null when logged out). */
+    oidcUser,           // Ref<OidcUser | null>
+
+    /** Reactive OIDC subject (profile.sub). */
+    userId,             // ComputedRef<string | undefined>
+
+    /** True when a valid non-expired session exists. */
+    isLoggedIn,         // ComputedRef<boolean>
+
+    /** Initiate OIDC redirect, passing returnTo as state. */
+    login,              // (returnTo?: string) => Promise<void>
+
+    /** Call signoutRedirect and clear the session. */
+    logout,             // () => Promise<void>
+
+    /** Restore state from sessionStorage on app startup. */
+    loadFromStorage,    // () => Promise<void>
+  }
+}
+```
+
+Call `loadFromStorage()` once from `App.vue` during `onMounted`
+before rendering any auth-gated content.
 
 ### Routes
 
@@ -156,86 +230,91 @@ Three routes are always required:
 | Path | Component | Purpose |
 |---|---|---|
 | `/login` | `LoginView.vue` | OIDC redirect interstitial |
-| `/auth/callback` | `AuthCallbackView.vue` | Exchange code, store tokens |
-| `/auth/logout` | *(inline redirect)* | Call `signoutRedirect` |
+| `/auth/callback` | `AuthCallbackView.vue` | Handle code exchange |
+| *(inline)* | *(call `signoutRedirect`)* | Logout |
 
-`LoginView.vue` must:
+**`LoginView.vue`**:
 
-1. Read `returnTo` from the route query (passed by the guard).
-2. Call `userManager.signinRedirect({ state: returnTo })`.
-3. Show a loading spinner while the redirect is pending.
+1. Read `returnTo` from the route query.
+2. If the user already has a valid session (from
+   `userManager.getUser()`), skip OIDC and redirect to
+   `returnTo` immediately. This prevents an unnecessary OIDC
+   round trip when the user navigates to `/login` while
+   already authenticated.
+3. Otherwise call `userManager.signinRedirect({ state: returnTo })`.
+4. Show a loading spinner while the redirect is pending.
 
-```typescript
-// src/views/LoginView.vue
-<script setup lang="ts">
-import { onMounted } from 'vue'
-import { useRoute } from 'vue-router'
-import { userManager } from '../auth/oidc'
-
-const route = useRoute()
-
-onMounted(async () => {
-  const returnTo = (route.query.returnTo as string) ?? '/'
-  await userManager.signinRedirect({ state: returnTo })
-})
-```
-
-`AuthCallbackView.vue` must:
+**`AuthCallbackView.vue`**:
 
 1. Call `userManager.signinRedirectCallback()`.
-2. Read `user.state` — this is the `returnTo` value that
-   `LoginView` passed as the OIDC `state` parameter when
-   calling `signinRedirect`. Redirect there; otherwise
-   redirect to `/`.
-3. Handle errors and display a user-visible message.
+2. Read `user.state` as `returnTo`. Reject unsafe values:
+   `/login`, paths starting with `/auth/callback`, and empty
+   strings — fall back to `/circles` in those cases.
+3. Handle `"No matching state found in storage"` errors by
+   redirecting to `/login` (clean recovery from stale/cross-
+   origin state), rather than showing a raw error.
+4. Handle other errors by displaying a user-visible message.
 
 ### Navigation guard
 
-**Important**: do NOT call `signinRedirect()` directly from
-the guard and then `return false`. This causes Vue Router 4
-to call `history.go(-1)` (to restore the previous URL) which
-races with the `window.location.href` assignment made by
-`signinRedirect`, creating an infinite redirect loop.
+**Do NOT call `signinRedirect()` directly from the guard.**
+Calling `signinRedirect` (which sets `window.location.href`)
+and then returning `false` causes Vue Router 4 to call
+`history.go(-1)` to restore the previous URL. This races with
+the browser navigation initiated by `signinRedirect` and
+produces an infinite redirect loop.
 
-Instead, redirect to the `/login` route and let that component
-call `signinRedirect` from `onMounted`:
+Instead, redirect to the `/login` route and let
+`LoginView.vue` call `signinRedirect` from `onMounted`:
 
 ```typescript
 // src/router/index.ts
 router.beforeEach(async (to) => {
-  if (to.meta.requiresAuth) {
-    const user = await userManager.getUser()
-    if (!user || user.expired) {
-      return {
-        path: '/login',
-        query: { returnTo: to.fullPath },
-      }
-    }
+  if (!to.meta.requiresAuth) return true
+  const user = await userManager.getUser()
+  if (!user || user.expired) {
+    return { path: '/login', query: { returnTo: to.fullPath } }
   }
+  return true
 })
 ```
 
 The full `returnTo` chain is:
 1. Guard passes `to.fullPath` as `query.returnTo` to `/login`.
 2. `LoginView` passes it as `state` to `signinRedirect`.
-3. After Keycloak redirects back, `AuthCallbackView` reads
-   `user.state` to restore the protected route.
+3. Keycloak redirects to `/auth/callback`.
+4. `AuthCallbackView` reads `user.state` to restore the route.
 
-- Mark protected routes with `meta: { requiresAuth: true }`.
+Mark protected routes with `meta: { requiresAuth: true }`.
 
-### Logout
+### Unauthorized handler
+
+The global 401 handler (wired in `main.ts`) must check for an
+existing session before calling `signinRedirect`. Triggering
+`signinRedirect` when the user already has a valid token (e.g.
+after a transient 401 from a misconfigured backend) would cause
+Keycloak to SSO-login them immediately and create a loop:
 
 ```typescript
-await userManager.signoutRedirect()
-// or for silent/popup logout:
-await userManager.signoutSilent()
+setUnauthorizedHandler(async () => {
+  const user = await userManager.getUser()
+  if (user && !user.expired) {
+    // Token exists but backend rejected it — go home rather
+    // than re-triggering the OIDC flow.
+    await router.replace('/')
+  } else {
+    await userManager.signinRedirect({
+      state: router.currentRoute.value.fullPath,
+    })
+  }
+})
 ```
 
 ---
 
-## Backend rules (Options A and C)
+## Backend rules
 
-### Package
+### Packages
 
 ```
 uv add pyjwt[crypto] httpx
@@ -248,54 +327,70 @@ uv add pyjwt[crypto] httpx
 
 ```python
 # app/auth/jwks.py
+from functools import lru_cache
 import httpx
 import jwt
-from functools import lru_cache
 
-@lru_cache(maxsize=1)
+@lru_cache(maxsize=8)
 def get_jwks_client(authority: str) -> jwt.PyJWKClient:
     """Return a cached JWKS client for the given authority.
 
     :param authority: OIDC issuer base URL.
     :returns: Configured PyJWKClient with auto key refresh.
     """
-    discovery_url = f"{authority.rstrip('/')}
-/.well-known/openid-configuration"
+    discovery_url = (
+        f"{authority.rstrip('/')}/.well-known/openid-configuration"
+    )
     with httpx.Client() as client:
         doc = client.get(discovery_url).raise_for_status().json()
     return jwt.PyJWKClient(doc["jwks_uri"])
 ```
 
-- Cache the `PyJWKClient`. It handles unknown `kid` by
-  re-fetching the JWKS automatically.
+- Cache the `PyJWKClient` per authority. It handles unknown
+  `kid` by re-fetching the JWKS automatically.
 - Never hard-code JWKS URIs; always resolve from discovery.
 
 ### Token validation dependency
 
+The `get_current_user` dependency validates the bearer token
+**and** provisions a local user account on first login. It
+links the OIDC identity (`sub` + issuer) to a local `User` row
+via an `AuthIdentity` join, so the rest of the application
+works with typed ORM objects rather than raw JWT payloads:
+
 ```python
-# app/auth/dependencies.py
+# app/dependencies.py
 import jwt
 from fastapi import Depends, HTTPException, status
-from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
+from fastapi.security import (
+    HTTPAuthorizationCredentials,
+    HTTPBearer,
+)
 
-from app.config import get_settings
 from app.auth.jwks import get_jwks_client
+from app.config import Settings, get_settings
+from app.database import get_db
 
 bearer = HTTPBearer()
 
-async def get_current_user(
+def get_current_user(
     credentials: HTTPAuthorizationCredentials = Depends(bearer),
-    settings = Depends(get_settings),
-) -> dict:
-    """Validate the bearer token and return decoded claims.
+    settings: Settings = Depends(get_settings),
+    db: Session = Depends(get_db),
+) -> User:
+    """Validate the OIDC bearer token and return the local User.
 
-    :param credentials: Authorization header value.
+    Finds or creates the User and AuthIdentity rows on first
+    login (auto-provisioning). Subsequent calls hit the DB
+    but perform no writes.
+
+    :param credentials: Authorization header bearer token.
     :param settings: Application configuration.
-    :returns: Decoded JWT payload dict.
-    :raises HTTPException: 401 if token is invalid or expired.
-    ---
-    Route handlers receive the decoded payload; they must not
-    perform raw JWT operations themselves.
+    :param db: Database session.
+    :returns: Local User record for the authenticated identity.
+    :raises HTTPException: 401 when the token is missing,
+        expired, has the wrong audience/issuer, or has a
+        tampered signature.
     """
     token = credentials.credentials
     client = get_jwks_client(settings.OIDC_AUTHORITY)
@@ -313,80 +408,44 @@ async def get_current_user(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Token has expired",
         )
-    except jwt.InvalidTokenError as exc:
+    except jwt.InvalidTokenError:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Invalid token",
         )
-    return payload
+    # Auto-provision: find-or-create User + AuthIdentity.
+    ...
+    return user
 ```
 
 - Validate `exp`, `nbf`, `aud`, and `iss` on every call.
-- Inject `get_current_user` into every protected route via
-  `Depends`.
+- Inject into every protected route via `Depends`.
 - Never expose raw exception messages to the client.
+
+### User auto-provisioning
+
+On the first successful token validation for a new identity,
+the backend creates:
+
+1. A `User` row (`email`, `display_name` from JWT claims).
+2. An `AuthIdentity` row linking `User.id` to the OIDC
+   `provider` (the issuer URL) and `subject` (`sub` claim).
+
+Subsequent calls look up the existing `AuthIdentity` row and
+return the linked `User` directly. No manual registration flow
+is needed.
 
 ### Required environment variables
 
-Add to `Settings`:
-
 ```python
-OIDC_AUTHORITY: str        # e.g. https://accounts.google.com
-OIDC_AUDIENCE: str         # client_id or resource identifier
-OIDC_ISSUER: str           # must match token iss claim
+OIDC_AUTHORITY: str  # Keycloak realm URL
+                     # http://keycloak:8080/realms/meepletime
+OIDC_AUDIENCE: str   # meepletime-backend
+OIDC_ISSUER: str     # same as OIDC_AUTHORITY (Keycloak realm URL)
 ```
 
----
-
-## Backend rules — Option B additions
-
-In addition to the validation rules above:
-
-### Exchange endpoint
-
-```python
-# app/routers/auth.py
-@router.post("/auth/exchange")
-async def exchange_code(
-    body: ExchangeRequest,
-    settings = Depends(get_settings),
-) -> TokenResponse:
-    """Exchange an authorization code for a project JWT.
-
-    Accepts the code and PKCE verifier from the frontend,
-    exchanges at the upstream provider, normalizes the user
-    claims, and returns a signed project JWT.
-    """
-```
-
-The `ExchangeRequest` schema includes:
-
-- `code: str` — authorization code
-- `code_verifier: str` — PKCE verifier
-- `provider: str` — identifies which adapter to use
-
-### Provider adapter interface
-
-```python
-from typing import Protocol
-
-class ProviderAdapter(Protocol):
-    async def exchange(
-        self,
-        code: str,
-        code_verifier: str,
-        redirect_uri: str,
-    ) -> NormalizedUser: ...
-
-class NormalizedUser(BaseModel):
-    sub: str
-    email: str
-    name: str | None = None
-    picture: str | None = None
-```
-
-One adapter per provider, registered in a dict keyed by provider
-name. New providers add one file, no other changes.
+`OIDC_AUDIENCE` must be `meepletime-backend` (the bearer-only
+resource server client ID), not the frontend client ID.
 
 ---
 
@@ -395,14 +454,15 @@ name. New providers add one file, no other changes.
 ### Backend
 
 - Mock the JWKS endpoint with `respx` or `pytest-httpserver`.
-- Test cases required: valid token, expired token, wrong audience,
-  wrong issuer, tampered signature.
+- Required test cases: valid token, expired token, wrong
+  audience, wrong issuer, tampered signature.
 - Never make real HTTP calls to identity providers in tests.
 
 ### Frontend
 
 - Mock `userManager` methods with `vi.fn()` in vitest.
 - Test the navigation guard with mocked `getUser()` returning
-  valid user, expired user, and `null`.
+  a valid user, an expired user, and `null`.
 - Test `AuthCallbackView` with mocked
-  `signinRedirectCallback()`.
+  `signinRedirectCallback()` for success, state-not-found
+  error, and other errors.
