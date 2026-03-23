@@ -2,9 +2,16 @@
 version: "3"
 
 tasks:
+
+  migrate:
+    desc: Run database migrations
+    dir: backend
+    cmd: uv run alembic upgrade head
+
   backend:
     desc: Start the FastAPI dev server with hot-reload
     dir: backend
+    deps: [migrate]
     cmd: uv run uvicorn app.main:app --reload --host 0.0.0.0
 
   frontend:
