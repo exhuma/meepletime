@@ -9,6 +9,11 @@
   // Install backend and frontend dependencies after the container
   // is created.
   "postCreateCommand": "bash .devcontainer/init.bash",
+  // Ensure ~/.local/bin (where Task is installed) is on PATH
+  // for every terminal and task launched inside the container.
+  "remoteEnv": {
+    "PATH": "${containerEnv:PATH}:/root/.local/bin"
+  },
   // Forward backend API, Vite dev server, PostgreSQL, and
   // Keycloak admin UI.
   "customizations": {

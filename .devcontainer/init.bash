@@ -22,6 +22,14 @@ KEYCLOAK_URL="http://${KEYCLOAK_HOST}:8080"
 REALM="meepletime"
 REALM_URL="${KEYCLOAK_URL}/realms/${REALM}"
 
+echo "==> Installing Task (taskfile.dev) ..."
+# Install into ~/.local/bin and ensure it is on the PATH for
+# subsequent steps in this script and for the dev shell.
+export PATH="${HOME}/.local/bin:${PATH}"
+mkdir -p "${HOME}/.local/bin"
+sh -c "$(curl --location https://taskfile.dev/install.sh)" \
+    -- -d -b "${HOME}/.local/bin"
+
 echo "==> Installing backend dependencies (uv sync) ..."
 pip install --quiet uv
 cd "${REPO_ROOT}/backend"
