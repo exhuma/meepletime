@@ -3,18 +3,36 @@
     <div class="d-flex align-center mb-4">
       <h2 class="text-h6 font-weight-bold">My Circles</h2>
       <v-spacer />
-      <v-btn variant="text" color="primary" @click="joinDialog = true" size="small">
+      <v-btn
+        variant="text"
+        color="primary"
+        @click="joinDialog = true"
+        size="small"
+      >
         <v-icon start>mdi-key</v-icon> Join
       </v-btn>
     </div>
 
-    <v-progress-circular v-if="loading" indeterminate color="primary" class="d-block mx-auto my-8" />
+    <v-progress-circular
+      v-if="loading"
+      indeterminate
+      color="primary"
+      class="d-block mx-auto my-8"
+    />
 
-    <v-alert v-if="!loading && circlesState.circles.value.length === 0" type="info" class="mb-4">
+    <v-alert
+      v-if="!loading && circlesState.circles.value.length === 0"
+      type="info"
+      class="mb-4"
+    >
       You're not in any circles yet. Create one or join with an invite token!
     </v-alert>
 
-    <v-list v-if="!loading && circlesState.circles.value.length > 0" lines="two" class="mb-4">
+    <v-list
+      v-if="!loading && circlesState.circles.value.length > 0"
+      lines="two"
+      class="mb-4"
+    >
       <v-list-item
         v-for="circle in circlesState.circles.value"
         :key="circle.id"
@@ -28,15 +46,25 @@
             <v-icon color="on-primary">mdi-account-group</v-icon>
           </v-avatar>
         </template>
-        <v-list-item-title class="font-weight-semibold">{{ circle.name }}</v-list-item-title>
-        <v-list-item-subtitle>{{ circle.description || 'No description' }}</v-list-item-subtitle>
+        <v-list-item-title class="font-weight-semibold">{{
+          circle.name
+        }}</v-list-item-title>
+        <v-list-item-subtitle>{{
+          circle.description || 'No description'
+        }}</v-list-item-subtitle>
         <template #append>
           <v-icon>mdi-chevron-right</v-icon>
         </template>
       </v-list-item>
     </v-list>
 
-    <v-btn color="primary" size="large" block prepend-icon="mdi-plus" @click="createDialog = true">
+    <v-btn
+      color="primary"
+      size="large"
+      block
+      prepend-icon="mdi-plus"
+      @click="createDialog = true"
+    >
       Create Circle
     </v-btn>
 
@@ -56,7 +84,9 @@
         <v-card-actions>
           <v-spacer />
           <v-btn variant="text" @click="joinDialog = false">Cancel</v-btn>
-          <v-btn color="primary" @click="goToJoin" :disabled="!joinToken">Join</v-btn>
+          <v-btn color="primary" @click="goToJoin" :disabled="!joinToken"
+            >Join</v-btn
+          >
         </v-card-actions>
       </v-card>
     </v-dialog>

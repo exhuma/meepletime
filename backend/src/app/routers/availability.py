@@ -1,9 +1,10 @@
 """Availability router: day-level availability management."""
+
 from __future__ import annotations
 
 import logging
 import uuid
-from datetime import date, datetime, timedelta, timezone
+from datetime import date, datetime, timedelta
 
 import pytz
 from fastapi import APIRouter, Depends, HTTPException, Query, status
@@ -14,6 +15,8 @@ from app.database import SessionLocal
 from app.dependencies import get_current_active_user, get_db
 from app.models.availability import (
     AvailabilityState as DBAvailabilityState,
+)
+from app.models.availability import (
     DayAvailability,
 )
 from app.models.circle import Circle
@@ -26,9 +29,7 @@ logger = logging.getLogger(__name__)
 router = APIRouter(tags=["availability"])
 
 
-def _get_circle_or_404(
-    db: Session, circle_id: uuid.UUID
-) -> Circle:
+def _get_circle_or_404(db: Session, circle_id: uuid.UUID) -> Circle:
     """Return the circle or raise HTTP 404 if it does not exist."""
     circle = db.execute(
         select(Circle).where(Circle.id == circle_id)
@@ -127,7 +128,9 @@ def get_availability(
                 DayAvailability.local_date >= start_date,
                 DayAvailability.local_date <= end_date,
             )
-        ).scalars().all()
+        )
+        .scalars()
+        .all()
     )
 
 
@@ -186,6 +189,7 @@ def set_availability(
         from app.services.notifications import (
             trigger_notification_eval,
         )
+
         trigger_notification_eval(circle_id, local_date, SessionLocal)
     except Exception:
         logger.warning(
@@ -237,6 +241,7 @@ def delete_availability(
         from app.services.notifications import (
             trigger_notification_eval,
         )
+
         trigger_notification_eval(circle_id, local_date, SessionLocal)
     except Exception:
         logger.warning(

@@ -1,7 +1,8 @@
 """Database engine, session factory, and ORM base for the application."""
+
 from __future__ import annotations
 
-from typing import Generator
+from collections.abc import Generator
 
 from sqlalchemy import create_engine
 from sqlalchemy.orm import DeclarativeBase, Session, sessionmaker
@@ -16,18 +17,14 @@ def _make_engine_url(raw_url: str) -> str:
     :param raw_url: Plain postgresql:// DSN from the environment.
     :returns: URL with +psycopg modifier for SQLAlchemy.
     """
-    return raw_url.replace(
-        "postgresql://", "postgresql+psycopg://", 1
-    )
+    return raw_url.replace("postgresql://", "postgresql+psycopg://", 1)
 
 
 engine = create_engine(
     _make_engine_url(str(get_settings().DATABASE_URL)),
     pool_pre_ping=True,
 )
-SessionLocal = sessionmaker(
-    autocommit=False, autoflush=False, bind=engine
-)
+SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
 
 
 class Base(DeclarativeBase):

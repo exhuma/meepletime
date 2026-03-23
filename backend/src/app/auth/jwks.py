@@ -1,4 +1,5 @@
 """JWKS client factory for OIDC token validation."""
+
 from __future__ import annotations
 
 from functools import lru_cache
@@ -18,14 +19,7 @@ def get_jwks_client(authority: str) -> jwt.PyJWKClient:
     :param authority: OIDC issuer base URL.
     :returns: Configured PyJWKClient with automatic key refresh.
     """
-    discovery_url = (
-        f"{authority.rstrip('/')}"
-        "/.well-known/openid-configuration"
-    )
+    discovery_url = f"{authority.rstrip('/')}/.well-known/openid-configuration"
     with httpx.Client() as client:
-        doc = (
-            client.get(discovery_url)
-            .raise_for_status()
-            .json()
-        )
+        doc = client.get(discovery_url).raise_for_status().json()
     return jwt.PyJWKClient(doc["jwks_uri"])

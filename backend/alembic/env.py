@@ -1,10 +1,10 @@
 """Alembic environment configuration for database migrations."""
+
 import os
 import sys
 from logging.config import fileConfig
 
-from sqlalchemy import engine_from_config
-from sqlalchemy import pool
+from sqlalchemy import engine_from_config, pool
 
 from alembic import context
 
@@ -17,9 +17,9 @@ config = context.config
 if config.config_file_name is not None:
     fileConfig(config.config_file_name)
 
+import app.models  # noqa: F401, E402
 from app.config import get_settings  # noqa: E402
 from app.database import Base, _make_engine_url  # noqa: E402
-import app.models  # noqa: F401, E402
 
 settings = get_settings()
 config.set_main_option(

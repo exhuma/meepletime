@@ -1,4 +1,5 @@
 """Authentication router: user profile endpoint."""
+
 from __future__ import annotations
 
 from fastapi import APIRouter, Depends

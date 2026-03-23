@@ -10,25 +10,25 @@
 </template>
 
 <script setup lang="ts">
-import { onMounted } from "vue";
-import { useRoute, useRouter } from "vue-router";
-import { useAuth } from "../composables/auth";
-import { userManager } from "../auth/oidc";
+import { onMounted } from 'vue'
+import { useRoute, useRouter } from 'vue-router'
+import { useAuth } from '../composables/auth'
+import { userManager } from '../auth/oidc'
 
-const auth = useAuth();
-const route = useRoute();
-const router = useRouter();
+const auth = useAuth()
+const route = useRoute()
+const router = useRouter()
 
 onMounted(async () => {
-  const returnTo = (route.query.returnTo as string) ?? "/";
+  const returnTo = (route.query.returnTo as string) ?? '/'
   // Skip the OIDC redirect if the user already has a valid
   // session — navigating to /login while authenticated should
   // just take them to their destination immediately.
-  const existing = await userManager.getUser();
+  const existing = await userManager.getUser()
   if (existing && !existing.expired) {
-    await router.replace(returnTo);
-    return;
+    await router.replace(returnTo)
+    return
   }
-  await auth.login(returnTo);
-});
+  await auth.login(returnTo)
+})
 </script>

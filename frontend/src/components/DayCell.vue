@@ -10,19 +10,27 @@
         <!-- Color stripe -->
         <div
           class="flex-shrink-0"
-          :style="{ width: '6px', borderRadius: '8px 0 0 8px', backgroundColor: stripeColor }"
+          :style="{
+            width: '6px',
+            borderRadius: '8px 0 0 8px',
+            backgroundColor: stripeColor,
+          }"
         />
 
         <!-- Main content (clickable for toggle) -->
         <div
           class="flex-grow-1 pa-3 d-flex align-center"
-          style="cursor: pointer; min-width: 0;"
+          style="cursor: pointer; min-width: 0"
           @click="!isPast && $emit('toggle')"
         >
           <!-- Date info -->
-          <div class="mr-3 text-center" style="min-width:44px">
-            <div class="text-caption text-medium-emphasis font-weight-medium">{{ dayName }}</div>
-            <div class="text-h6 font-weight-bold" style="line-height:1.1">{{ dayNumber }}</div>
+          <div class="mr-3 text-center" style="min-width: 44px">
+            <div class="text-caption text-medium-emphasis font-weight-medium">
+              {{ dayName }}
+            </div>
+            <div class="text-h6 font-weight-bold" style="line-height: 1.1">
+              {{ dayNumber }}
+            </div>
             <div class="text-caption text-medium-emphasis">{{ monthName }}</div>
           </div>
 
@@ -43,26 +51,33 @@
                 color="primary"
                 size="16"
                 title="Viable day"
-              >mdi-circle</v-icon>
+                >mdi-circle</v-icon
+              >
 
               <v-icon
                 v-if="viability?.is_soft_max_exceeded"
                 color="tertiary"
                 size="16"
                 title="Over soft max"
-              >mdi-alert</v-icon>
+                >mdi-alert</v-icon
+              >
 
               <v-icon
                 v-if="viability?.has_multiple_hosts_warning"
                 color="secondary"
                 size="16"
                 title="Multiple hosts"
-              >mdi-home-group</v-icon>
+                >mdi-home-group</v-icon
+              >
             </div>
 
             <div v-if="attendees.length > 0" class="d-flex align-center">
-              <v-icon size="14" color="on-surface-variant" class="mr-1">mdi-account-multiple</v-icon>
-              <span class="text-caption text-medium-emphasis">{{ attendees.length }} attending</span>
+              <v-icon size="14" color="on-surface-variant" class="mr-1"
+                >mdi-account-multiple</v-icon
+              >
+              <span class="text-caption text-medium-emphasis"
+                >{{ attendees.length }} attending</span
+              >
             </div>
           </div>
         </div>
@@ -97,14 +112,20 @@ const props = defineProps<{
 defineEmits(['toggle', 'detail'])
 
 const parsedDate = computed(() => {
-  try { return parseISO(props.date) } catch { return new Date() }
+  try {
+    return parseISO(props.date)
+  } catch {
+    return new Date()
+  }
 })
 
 const dayName = computed(() => format(parsedDate.value, 'EEE'))
 const dayNumber = computed(() => format(parsedDate.value, 'd'))
 const monthName = computed(() => format(parsedDate.value, 'MMM'))
 
-const isPast = computed(() => isBefore(parsedDate.value, startOfDay(new Date())))
+const isPast = computed(() =>
+  isBefore(parsedDate.value, startOfDay(new Date())),
+)
 
 const myState = computed(() => props.myState ?? 'empty')
 const attendees = computed(() => props.attendees ?? [])
@@ -124,7 +145,9 @@ const stateColor = computed(() => {
 
 <style scoped>
 .day-cell {
-  transition: transform 0.1s, box-shadow 0.1s;
+  transition:
+    transform 0.1s,
+    box-shadow 0.1s;
 }
 .day-cell:active {
   transform: scale(0.99);

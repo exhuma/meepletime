@@ -10,8 +10,9 @@ import { getToken } from './token'
 export { setTokenProvider } from './token'
 export type { TokenProvider } from './token'
 
-const BASE = (import.meta.env.VITE_API_BASE_URL as string | undefined)
-  ?? 'http://localhost:8000'
+const BASE =
+  (import.meta.env.VITE_API_BASE_URL as string | undefined) ??
+  'http://localhost:8000'
 
 let _onUnauthorized: (() => void) | null = null
 
@@ -42,10 +43,7 @@ export class ApiError extends Error {
 async function request<T>(
   method: string,
   path: string,
-  {
-    body,
-    params,
-  }: { body?: unknown; params?: Record<string, string> } = {},
+  { body, params }: { body?: unknown; params?: Record<string, string> } = {},
 ): Promise<T> {
   const url = new URL(path, BASE)
   if (params) {
@@ -79,7 +77,11 @@ async function request<T>(
 
   if (!res.ok) {
     let data: unknown = null
-    try { data = await res.json() } catch { /* non-JSON error body */ }
+    try {
+      data = await res.json()
+    } catch {
+      /* non-JSON error body */
+    }
     throw new ApiError(res.status, data)
   }
 

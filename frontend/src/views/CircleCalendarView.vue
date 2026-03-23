@@ -5,7 +5,7 @@
         <v-icon>mdi-arrow-left</v-icon>
       </v-btn>
       <v-app-bar-title class="text-truncate">
-        {{ circlesState.currentCircle.value?.name || "Loading..." }}
+        {{ circlesState.currentCircle.value?.name || 'Loading...' }}
       </v-app-bar-title>
       <v-switch
         v-model="viableOnly"
@@ -83,7 +83,7 @@
             class="calendar-cell__chip"
             :class="`chip--${day.myState}`"
           >
-            {{ day.myState === "hosting" ? "🏠" : "✓" }}
+            {{ day.myState === 'hosting' ? '🏠' : '✓' }}
           </div>
           <div
             v-if="day.viability && day.viability.attendee_count > 0"
@@ -127,57 +127,57 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, onMounted } from "vue";
-import { useRoute, useRouter } from "vue-router";
+import { ref, computed, onMounted } from 'vue'
+import { useRoute, useRouter } from 'vue-router'
 import {
   format,
   addMonths,
   startOfMonth,
   getDaysInMonth,
   getDay,
-} from "date-fns";
-import { useCircles } from "../composables/circles";
-import { useAuth } from "../composables/auth";
-import InviteDialog from "../components/InviteDialog.vue";
-import type { DayViability } from "../types";
+} from 'date-fns'
+import { useCircles } from '../composables/circles'
+import { useAuth } from '../composables/auth'
+import InviteDialog from '../components/InviteDialog.vue'
+import type { DayViability } from '../types'
 
-const route = useRoute();
-const router = useRouter();
-const circlesState = useCircles();
-const auth = useAuth();
+const route = useRoute()
+const router = useRouter()
+const circlesState = useCircles()
+const auth = useAuth()
 
-const circleId = route.params.id as string;
-const viableOnly = ref(false);
-const loading = ref(false);
-const inviteDialog = ref(false);
+const circleId = route.params.id as string
+const viableOnly = ref(false)
+const loading = ref(false)
+const inviteDialog = ref(false)
 
-const today = new Date();
-const todayStr = format(today, "yyyy-MM-dd");
+const today = new Date()
+const todayStr = format(today, 'yyyy-MM-dd')
 
 // Start at current month; do not allow navigating to past months
-const currentMonthStart = ref(startOfMonth(today));
+const currentMonthStart = ref(startOfMonth(today))
 
 const monthLabel = computed<string>(() =>
-  format(currentMonthStart.value, "MMMM yyyy"),
-);
+  format(currentMonthStart.value, 'MMMM yyyy'),
+)
 
-const dayHeaders = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
+const dayHeaders = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat']
 
 /** Offset of the first day (0 = Sunday). */
-const firstDayOffset = computed<number>(() => getDay(currentMonthStart.value));
+const firstDayOffset = computed<number>(() => getDay(currentMonthStart.value))
 
 interface DayCell {
-  date: string;
-  dayOfMonth: number;
-  myState: "attending" | "hosting" | null;
-  viability: DayViability | null;
+  date: string
+  dayOfMonth: number
+  myState: 'attending' | 'hosting' | null
+  viability: DayViability | null
 }
 
 /** Build the array of day cells for the current month. */
 const daysInMonth = computed<DayCell[]>(() => {
-  const count = getDaysInMonth(currentMonthStart.value);
-  const userId = auth.userId.value;
-  const cells: DayCell[] = [];
+  const count = getDaysInMonth(currentMonthStart.value)
+  const userId = auth.userId.value
+  const cells: DayCell[] = []
   for (let d = 1; d <= count; d++) {
     const date = format(
       new Date(
@@ -185,64 +185,64 @@ const daysInMonth = computed<DayCell[]>(() => {
         currentMonthStart.value.getMonth(),
         d,
       ),
-      "yyyy-MM-dd",
-    );
-    const entries = circlesState.calendar.value[date] ?? [];
-    const mine = userId ? entries.find((a) => a.user_id === userId) : undefined;
-    const viab = circlesState.viability.value[date] ?? null;
+      'yyyy-MM-dd',
+    )
+    const entries = circlesState.calendar.value[date] ?? []
+    const mine = userId ? entries.find((a) => a.user_id === userId) : undefined
+    const viab = circlesState.viability.value[date] ?? null
     cells.push({
       date,
       dayOfMonth: d,
       myState: mine?.state ?? null,
       viability: viab,
-    });
+    })
   }
-  return cells;
-});
+  return cells
+})
 
 /** True when navigating back would go before the current month. */
 const canGoPrev = computed<boolean>(() => {
-  const prevMonth = addMonths(currentMonthStart.value, -1);
-  return prevMonth >= startOfMonth(today);
-});
+  const prevMonth = addMonths(currentMonthStart.value, -1)
+  return prevMonth >= startOfMonth(today)
+})
 
 /** Navigate the calendar one month back, stopping at the current month. */
 function prevMonth(): void {
-  if (!canGoPrev.value) return;
-  currentMonthStart.value = addMonths(currentMonthStart.value, -1);
-  reloadMonth();
+  if (!canGoPrev.value) return
+  currentMonthStart.value = addMonths(currentMonthStart.value, -1)
+  reloadMonth()
 }
 
 /** Navigate the calendar one month forward. */
 function nextMonth(): void {
-  currentMonthStart.value = addMonths(currentMonthStart.value, 1);
-  reloadMonth();
+  currentMonthStart.value = addMonths(currentMonthStart.value, 1)
+  reloadMonth()
 }
 
 /** Fetch availability and viability data for the currently displayed month. */
 async function reloadMonth(): Promise<void> {
-  const start = format(currentMonthStart.value, "yyyy-MM-dd");
-  const end = format(addMonths(currentMonthStart.value, 1), "yyyy-MM-dd");
+  const start = format(currentMonthStart.value, 'yyyy-MM-dd')
+  const end = format(addMonths(currentMonthStart.value, 1), 'yyyy-MM-dd')
   await Promise.all([
     circlesState.fetchCalendar(circleId, start, end),
     circlesState.fetchViability(circleId, start, end),
-  ]);
+  ])
 }
 
 /** True if the current user is an owner or admin of this circle. */
 const isAdminOrOwner = computed<boolean>(() => {
-  const userId = auth.userId.value;
-  if (!userId) return false;
-  const member = circlesState.members.value.find((m) => m.user_id === userId);
-  return member?.role === "owner" || member?.role === "admin";
-});
+  const userId = auth.userId.value
+  if (!userId) return false
+  const member = circlesState.members.value.find((m) => m.user_id === userId)
+  return member?.role === 'owner' || member?.role === 'admin'
+})
 
 /**
  * Handle a day cell click: cycle the user's availability for that day.
  */
 async function handleDayClick(date: string): Promise<void> {
-  if (date < todayStr) return;
-  await cycleAvailability(date);
+  if (date < todayStr) return
+  await cycleAvailability(date)
 }
 
 /**
@@ -250,45 +250,45 @@ async function handleDayClick(date: string): Promise<void> {
  * empty → attending → hosting → empty
  */
 async function cycleAvailability(date: string): Promise<void> {
-  const userId = auth.userId.value;
-  if (!userId) return;
-  const entries = circlesState.calendar.value[date] ?? [];
-  const mine = entries.find((a) => a.user_id === userId);
-  const current = mine?.state ?? "empty";
+  const userId = auth.userId.value
+  if (!userId) return
+  const entries = circlesState.calendar.value[date] ?? []
+  const mine = entries.find((a) => a.user_id === userId)
+  const current = mine?.state ?? 'empty'
   try {
-    if (current === "empty") {
-      await circlesState.setAvailability(circleId, date, "attending");
-    } else if (current === "attending") {
-      await circlesState.setAvailability(circleId, date, "hosting");
+    if (current === 'empty') {
+      await circlesState.setAvailability(circleId, date, 'attending')
+    } else if (current === 'attending') {
+      await circlesState.setAvailability(circleId, date, 'hosting')
     } else {
-      await circlesState.deleteAvailability(circleId, date, userId);
+      await circlesState.deleteAvailability(circleId, date, userId)
     }
-    await circlesState.fetchViability(circleId, date, date);
+    await circlesState.fetchViability(circleId, date, date)
   } catch (e) {
-    console.error("Availability toggle error", e);
+    console.error('Availability toggle error', e)
   }
 }
 
 /** Refresh circle data after invite token regeneration. */
 function onInviteRegenerated(): void {
-  circlesState.fetchCircle(circleId);
+  circlesState.fetchCircle(circleId)
 }
 
 onMounted(async () => {
-  loading.value = true;
+  loading.value = true
   try {
-    const start = format(currentMonthStart.value, "yyyy-MM-dd");
-    const end = format(addMonths(currentMonthStart.value, 3), "yyyy-MM-dd");
+    const start = format(currentMonthStart.value, 'yyyy-MM-dd')
+    const end = format(addMonths(currentMonthStart.value, 3), 'yyyy-MM-dd')
     await Promise.all([
       circlesState.fetchCircle(circleId),
       circlesState.fetchMembers(circleId),
       circlesState.fetchCalendar(circleId, start, end),
       circlesState.fetchViability(circleId, start, end),
-    ]);
+    ])
   } finally {
-    loading.value = false;
+    loading.value = false
   }
-});
+})
 </script>
 
 <style scoped>

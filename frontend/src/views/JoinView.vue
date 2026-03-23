@@ -2,15 +2,24 @@
   <v-container class="fill-height pa-4" fluid>
     <v-row justify="center" align="center">
       <v-col cols="12" sm="8" md="5" lg="4">
-        <v-progress-circular v-if="loading" indeterminate color="primary" class="d-block mx-auto my-8" />
+        <v-progress-circular
+          v-if="loading"
+          indeterminate
+          color="primary"
+          class="d-block mx-auto my-8"
+        />
 
-        <v-alert v-if="error && !loading" type="error" class="mb-4">{{ error }}</v-alert>
+        <v-alert v-if="error && !loading" type="error" class="mb-4">{{
+          error
+        }}</v-alert>
 
         <v-card v-if="!loading && circleInfo" class="pa-4" elevation="4">
           <v-card-title class="text-h6 mb-1">Join Circle</v-card-title>
           <v-card-subtitle class="mb-4">{{ circleInfo.name }}</v-card-subtitle>
           <v-card-text>
-            <p v-if="circleInfo.description" class="text-body-2 mb-4">{{ circleInfo.description }}</p>
+            <p v-if="circleInfo.description" class="text-body-2 mb-4">
+              {{ circleInfo.description }}
+            </p>
             <v-form @submit.prevent="handleJoin">
               <v-text-field
                 v-model="pseudonym"
@@ -77,10 +86,17 @@ onMounted(async () => {
 async function handleJoin(): Promise<void> {
   joining.value = true
   try {
-    await circles.joinCircle(token, pseudonym.value.trim(), canHostDefault.value)
+    await circles.joinCircle(
+      token,
+      pseudonym.value.trim(),
+      canHostDefault.value,
+    )
     router.push('/circles')
   } catch (e: unknown) {
-    const detail = e instanceof ApiError ? (e.data as { detail?: string } | null)?.detail : null
+    const detail =
+      e instanceof ApiError
+        ? (e.data as { detail?: string } | null)?.detail
+        : null
     error.value = detail ?? 'Failed to join circle.'
   } finally {
     joining.value = false

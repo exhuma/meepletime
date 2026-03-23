@@ -51,6 +51,12 @@ fi
 cd "${REPO_ROOT}/frontend"
 npm ci
 
+echo "==> Installing pre-commit hooks ..."
+# pre-commit is installed into the backend venv by uv (dev dep).
+# Register the hooks so they run automatically on every commit.
+cd "${REPO_ROOT}"
+"${REPO_ROOT}/backend/.venv/bin/pre-commit" install
+
 # Seed backend/.env with nip.io-based OIDC URLs so the resource
 # server's iss validation matches the tokens issued by Keycloak.
 if [[ ! -f "${REPO_ROOT}/backend/.env" ]]; then

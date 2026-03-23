@@ -1,13 +1,13 @@
-import { createApp } from "vue";
-import { createVuetify } from "vuetify";
-import "vuetify/styles";
-import "@mdi/font/css/materialdesignicons.css";
-import * as components from "vuetify/components";
-import * as directives from "vuetify/directives";
-import router from "./router";
-import App from "./App.vue";
-import { setUnauthorizedHandler, setTokenProvider } from "./api";
-import { userManager } from "./auth/oidc";
+import { createApp } from 'vue'
+import { createVuetify } from 'vuetify'
+import 'vuetify/styles'
+import '@mdi/font/css/materialdesignicons.css'
+import * as components from 'vuetify/components'
+import * as directives from 'vuetify/directives'
+import router from './router'
+import App from './App.vue'
+import { setUnauthorizedHandler, setTokenProvider } from './api'
+import { userManager } from './auth/oidc'
 
 setTokenProvider({
   getToken: () => {
@@ -16,21 +16,21 @@ setTokenProvider({
     //   oidc.user:<authority>:<client_id>
     // This is the documented key format used by the library's
     // own WebStorageStateStore implementation.
-    const authority = import.meta.env.VITE_OIDC_AUTHORITY as string;
-    const clientId = import.meta.env.VITE_OIDC_CLIENT_ID as string;
-    const key = `oidc.user:${authority}:${clientId}`;
-    const raw = sessionStorage.getItem(key);
-    if (!raw) return null;
+    const authority = import.meta.env.VITE_OIDC_AUTHORITY as string
+    const clientId = import.meta.env.VITE_OIDC_CLIENT_ID as string
+    const key = `oidc.user:${authority}:${clientId}`
+    const raw = sessionStorage.getItem(key)
+    if (!raw) return null
     try {
       const parsed = JSON.parse(raw) as {
-        access_token?: string;
-      };
-      return parsed.access_token ?? null;
+        access_token?: string
+      }
+      return parsed.access_token ?? null
     } catch {
       return null
     }
   },
-});
+})
 
 setUnauthorizedHandler(async () => {
   // Only call signinRedirect when there is genuinely no active
@@ -38,15 +38,15 @@ setUnauthorizedHandler(async () => {
   // misconfigured) token, fall back to /login instead of
   // immediately re-triggering Keycloak — which would SSO-login
   // them right back and cause an infinite redirect loop.
-  const user = await userManager.getUser();
+  const user = await userManager.getUser()
   if (user && !user.expired) {
-    await router.replace("/");
+    await router.replace('/')
   } else {
     await userManager.signinRedirect({
       state: router.currentRoute.value.fullPath,
-    });
+    })
   }
-});
+})
 
 const vuetify = createVuetify({
   components,
@@ -117,8 +117,7 @@ const vuetify = createVuetify({
       dark: {
         dark: true,
         variables: {
-          'font-family-base':
-            "'Plus Jakarta Sans', sans-serif",
+          'font-family-base': "'Plus Jakarta Sans', sans-serif",
           'font-family-display': "'Noto Serif', serif",
         },
         colors: {
@@ -180,4 +179,3 @@ const app = createApp(App)
 app.use(router)
 app.use(vuetify)
 app.mount('#app')
-

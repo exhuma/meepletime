@@ -1,11 +1,7 @@
 /**
  * Vue Router configuration with OIDC navigation guard.
  */
-import {
-  createRouter,
-  createWebHistory,
-  type RouteRecordRaw,
-} from 'vue-router'
+import { createRouter, createWebHistory, type RouteRecordRaw } from 'vue-router'
 import { userManager } from '../auth/oidc'
 
 const routes: RouteRecordRaw[] = [
@@ -24,8 +20,7 @@ const routes: RouteRecordRaw[] = [
   },
   {
     path: '/auth/callback',
-    component: () =>
-      import('../views/AuthCallbackView.vue'),
+    component: () => import('../views/AuthCallbackView.vue'),
   },
   {
     path: '/circles',
@@ -34,14 +29,12 @@ const routes: RouteRecordRaw[] = [
   },
   {
     path: '/circles/:id',
-    component: () =>
-      import('../views/CircleCalendarView.vue'),
+    component: () => import('../views/CircleCalendarView.vue'),
     meta: { requiresAuth: true },
   },
   {
     path: '/circles/:id/day/:date',
-    component: () =>
-      import('../views/DayDetailView.vue'),
+    component: () => import('../views/DayDetailView.vue'),
     meta: { requiresAuth: true },
   },
   {

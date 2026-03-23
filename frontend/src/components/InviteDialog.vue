@@ -1,5 +1,9 @@
 <template>
-  <v-dialog :model-value="modelValue" @update:model-value="$emit('update:modelValue', $event)" max-width="480">
+  <v-dialog
+    :model-value="modelValue"
+    @update:model-value="$emit('update:modelValue', $event)"
+    max-width="480"
+  >
     <v-card>
       <v-card-title class="d-flex align-center">
         <v-icon class="mr-2">mdi-qrcode</v-icon>
@@ -23,7 +27,13 @@
         </div>
 
         <div class="d-flex justify-center mb-4">
-          <img v-if="qrDataUrl" :src="qrDataUrl" alt="QR Code for invite link" width="200" height="200" />
+          <img
+            v-if="qrDataUrl"
+            :src="qrDataUrl"
+            alt="QR Code for invite link"
+            width="200"
+            height="200"
+          />
           <v-progress-circular v-else indeterminate color="primary" />
         </div>
 
@@ -31,13 +41,25 @@
           Scan or share the link. Token: <code>{{ circle.invite_token }}</code>
         </p>
 
-        <v-alert v-if="regenerateError" type="error" class="mb-3" closable @click:close="regenerateError = ''">
+        <v-alert
+          v-if="regenerateError"
+          type="error"
+          class="mb-3"
+          closable
+          @click:close="regenerateError = ''"
+        >
           {{ regenerateError }}
         </v-alert>
       </v-card-text>
       <v-divider />
       <v-card-actions class="pa-3">
-        <v-btn v-if="isAdmin" color="tertiary" variant="tonal" :loading="regenerating" @click="regenerate">
+        <v-btn
+          v-if="isAdmin"
+          color="tertiary"
+          variant="tonal"
+          :loading="regenerating"
+          @click="regenerate"
+        >
           <v-icon start>mdi-refresh</v-icon>Regenerate Token
         </v-btn>
         <v-spacer />
@@ -90,7 +112,9 @@ async function copyLink(): Promise<void> {
   try {
     await navigator.clipboard.writeText(inviteUrl.value)
     copied.value = true
-    setTimeout(() => { copied.value = false }, 2000)
+    setTimeout(() => {
+      copied.value = false
+    }, 2000)
   } catch {
     // clipboard API not available
   }

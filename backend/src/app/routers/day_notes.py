@@ -1,4 +1,5 @@
 """Day notes router: per-day notes for circle members."""
+
 import uuid
 from datetime import date
 
@@ -19,24 +20,37 @@ def _get_circle_or_404(db: Session, circle_id: uuid.UUID) -> Circle:
     """Return the circle or raise HTTP 404 if it does not exist."""
     circle = db.query(Circle).filter(Circle.id == circle_id).first()
     if not circle:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Circle not found")
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND, detail="Circle not found"
+        )
     return circle
 
 
-def _require_membership(db: Session, circle_id: uuid.UUID, user_id: uuid.UUID) -> CircleMembership:
+def _require_membership(
+    db: Session, circle_id: uuid.UUID, user_id: uuid.UUID
+) -> CircleMembership:
     """Return the membership or raise HTTP 403 if the user is not a member."""
     m = (
         db.query(CircleMembership)
-        .filter(CircleMembership.circle_id == circle_id, CircleMembership.user_id == user_id)
+        .filter(
+            CircleMembership.circle_id == circle_id,
+            CircleMembership.user_id == user_id,
+        )
         .first()
     )
     if not m:
-        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Not a member of this circle")
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Not a member of this circle",
+        )
     return m
 
 
 def _enrich_note(note: DayNote, db: Session) -> DayNoteOut:
-    """Attach the author's circle pseudonym to a *DayNoteOut* response object."""
+    """
+    Attach the author's circle pseudonym to a *DayNoteOut* response
+    object.
+    """
     membership = (
         db.query(CircleMembership)
         .filter(
@@ -51,20 +65,27 @@ def _enrich_note(note: DayNote, db: Session) -> DayNoteOut:
     return out
 
 
-@router.get("/circles/{circle_id}/notes/{local_date}", response_model=list[DayNoteOut])
+@router.get(
+    "/circles/{circle_id}/notes/{local_date}", response_model=list[DayNoteOut]
+)
 def list_notes(
     circle_id: uuid.UUID,
     local_date: date,
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_active_user),
 ):
-    """Return all notes for *local_date* in *circle_id*, ordered by creation time."""
+    """
+    Return all notes for *local_date* in *circle_id*, ordered by
+    creation time.
+    """
     _get_circle_or_404(db, circle_id)
     _require_membership(db, circle_id, current_user.id)
 
     notes = (
         db.query(DayNote)
-        .filter(DayNote.circle_id == circle_id, DayNote.local_date == local_date)
+        .filter(
+            DayNote.circle_id == circle_id, DayNote.local_date == local_date
+        )
         .order_by(DayNote.created_at)
         .all()
     )
@@ -83,7 +104,10 @@ def add_note(
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_active_user),
 ):
-    """Append a plain-text note to *local_date* in *circle_id*. Any member may add notes."""
+    """
+    Append a plain-text note to *local_date* in *circle_id*. Any
+    member may add notes.
+    """
     _get_circle_or_404(db, circle_id)
     _require_membership(db, circle_id, current_user.id)
 

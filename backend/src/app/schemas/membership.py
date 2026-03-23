@@ -1,4 +1,5 @@
 """Pydantic schemas for circle memberships."""
+
 import uuid
 from datetime import datetime
 

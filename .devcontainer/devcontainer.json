@@ -33,7 +33,28 @@
       "settings": {
         "python.defaultInterpreterPath": "${workspaceFolder}/backend/.venv/bin/python",
         "typescript.tsdk": "frontend/node_modules/typescript/lib",
-        "editor.formatOnSave": true
+        "editor.formatOnSave": true,
+        // Python — ruff as both linter and formatter.
+        // Config source: backend/pyproject.toml [tool.ruff]
+        "[python]": {
+          "editor.defaultFormatter": "charliermarsh.ruff"
+        },
+        "ruff.configuration": "${workspaceFolder}/backend/pyproject.toml",
+        // JS / TS / Vue / JSON — prettier as formatter.
+        // Config source: frontend/.prettierrc.json
+        "[javascript]": {
+          "editor.defaultFormatter": "esbenp.prettier-vscode"
+        },
+        "[typescript]": {
+          "editor.defaultFormatter": "esbenp.prettier-vscode"
+        },
+        "[vue]": {
+          "editor.defaultFormatter": "esbenp.prettier-vscode"
+        },
+        "[json]": {
+          "editor.defaultFormatter": "esbenp.prettier-vscode"
+        },
+        "prettier.configPath": "${workspaceFolder}/frontend/.prettierrc.json"
       }
     }
   }

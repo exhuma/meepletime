@@ -1,4 +1,5 @@
 """Pydantic schemas for viability responses."""
+
 import uuid
 from datetime import date
 

@@ -5,7 +5,7 @@
  * VITE_OIDC_AUTHORITY and VITE_OIDC_CLIENT_ID must be set in
  * .env or .env.local.
  */
-import { UserManager, WebStorageStateStore } from "oidc-client-ts";
+import { UserManager, WebStorageStateStore } from 'oidc-client-ts'
 
 /**
  * Singleton UserManager used across the entire application.
@@ -21,10 +21,10 @@ export const userManager = new UserManager({
   // sessionStorage accessible throughout the PKCE flow.
   redirect_uri: `${window.location.origin}/auth/callback`,
   post_logout_redirect_uri: `${window.location.origin}/`,
-  scope: "openid email profile",
-  response_type: "code",
+  scope: 'openid email profile',
+  response_type: 'code',
   automaticSilentRenew: true,
   userStore: new WebStorageStateStore({
     store: window.sessionStorage,
   }),
-});
+})

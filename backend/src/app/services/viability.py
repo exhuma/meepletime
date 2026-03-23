@@ -1,20 +1,24 @@
 """Viability computation service."""
+
 from datetime import date
 
 from sqlalchemy.orm import Session
 
+from app.models.availability import AvailabilityState, DayAvailability
 from app.models.circle import Circle
-from app.models.availability import DayAvailability, AvailabilityState
 from app.models.day_override import DayOverride
-from app.schemas.viability import DayViability
 from app.schemas.availability import AvailabilityOut
+from app.schemas.viability import DayViability
 
 
-def compute_viability(circle: Circle, local_date: date, db: Session) -> DayViability:
+def compute_viability(
+    circle: Circle, local_date: date, db: Session
+) -> DayViability:
     """Compute the derived viability for *local_date* in *circle*.
 
-    Resolves effective settings by merging circle defaults with any day override,
-    then evaluates attendee/hosting counts against the viability rules from the contract.
+    Resolves effective settings by merging circle defaults with any
+    day override, then evaluates attendee/hosting counts against the
+    viability rules from the contract.
     """
     availabilities = (
         db.query(DayAvailability)
@@ -51,7 +55,9 @@ def compute_viability(circle: Circle, local_date: date, db: Session) -> DayViabi
             hard_max = override.override_hard_max_attendees
 
     attendee_count = len(availabilities)
-    hosting_count = sum(1 for a in availabilities if a.state == AvailabilityState.hosting)
+    hosting_count = sum(
+        1 for a in availabilities if a.state == AvailabilityState.hosting
+    )
 
     # Viability rules
     is_viable = attendee_count > 0

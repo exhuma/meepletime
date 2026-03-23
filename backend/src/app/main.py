@@ -1,8 +1,9 @@
 """Application entry point: creates the FastAPI app via factory."""
+
 from __future__ import annotations
 
+from collections.abc import AsyncGenerator
 from contextlib import asynccontextmanager
-from typing import AsyncGenerator
 
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
@@ -30,6 +31,7 @@ def create_app() -> FastAPI:
             shutdown_scheduler,
             start_scheduler,
         )
+
         start_scheduler()
         yield
         shutdown_scheduler()
@@ -39,8 +41,7 @@ def create_app() -> FastAPI:
     app = FastAPI(
         title="MeepleTime API",
         description=(
-            "Backend API for the MeepleTime meeting "
-            "availability application"
+            "Backend API for the MeepleTime meeting availability application"
         ),
         version="1.0.0",
         lifespan=lifespan,

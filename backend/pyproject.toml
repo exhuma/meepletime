@@ -26,9 +26,32 @@ dev = [
 
 [tool.uv]
 dev-dependencies = [
+    "pre-commit>=3.7",
     "pytest>=8",
     "pytest-asyncio>=0.23",
+    "ruff>=0.4",
 ]
+
+[tool.ruff]
+# Targets must match the Python version in pyproject.toml.
+target-version = "py312"
+line-length = 80
+
+[tool.ruff.lint]
+# E/W — pycodestyle, F — pyflakes, I — isort, UP — pyupgrade
+select = ["E", "W", "F", "I", "UP"]
+
+[tool.ruff.lint.per-file-ignores]
+# SQLAlchemy 2 ORM uses string-quoted forward references inside
+# Mapped[] annotations (e.g. Mapped["Circle"]).  Ruff's F821
+# cannot see that these are resolved by SQLAlchemy at runtime.
+"src/app/models/*.py" = ["F821"]
+
+[tool.ruff.format]
+# Black-compatible formatting — double quotes, trailing commas.
+quote-style = "double"
+indent-style = "space"
+skip-magic-trailing-comma = false
 
 [tool.hatch.build.targets.wheel]
 packages = ["src/app"]

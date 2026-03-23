@@ -1,4 +1,5 @@
 """Pydantic schemas for day notes."""
+
 import uuid
 from datetime import date, datetime
 

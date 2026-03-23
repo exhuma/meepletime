@@ -1,8 +1,9 @@
 """ORM model for OIDC identity mappings."""
+
 from __future__ import annotations
 
 import uuid
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 
 from sqlalchemy import DateTime, ForeignKey, String, UniqueConstraint
 from sqlalchemy.dialects.postgresql import UUID
@@ -49,11 +50,11 @@ class AuthIdentity(Base):
     )
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True),
-        default=lambda: datetime.now(timezone.utc),
+        default=lambda: datetime.now(UTC),
         nullable=False,
     )
 
-    user: Mapped["User"] = relationship(
+    user: Mapped[User] = relationship(
         "User",
         back_populates="auth_identities",
     )

@@ -1,8 +1,9 @@
 """ORM model for the local user profile."""
+
 from __future__ import annotations
 
 import uuid
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 
 from sqlalchemy import DateTime, String
 from sqlalchemy.dialects.postgresql import UUID
@@ -38,29 +39,29 @@ class User(Base):
     )
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True),
-        default=lambda: datetime.now(timezone.utc),
+        default=lambda: datetime.now(UTC),
         nullable=False,
     )
     updated_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True),
-        default=lambda: datetime.now(timezone.utc),
-        onupdate=lambda: datetime.now(timezone.utc),
+        default=lambda: datetime.now(UTC),
+        onupdate=lambda: datetime.now(UTC),
         nullable=False,
     )
 
-    memberships: Mapped[list["CircleMembership"]] = relationship(
+    memberships: Mapped[list[CircleMembership]] = relationship(
         "CircleMembership",
         back_populates="user",
     )
-    availabilities: Mapped[list["DayAvailability"]] = relationship(
+    availabilities: Mapped[list[DayAvailability]] = relationship(
         "DayAvailability",
         back_populates="user",
     )
-    day_notes: Mapped[list["DayNote"]] = relationship(
+    day_notes: Mapped[list[DayNote]] = relationship(
         "DayNote",
         back_populates="user",
     )
-    auth_identities: Mapped[list["AuthIdentity"]] = relationship(
+    auth_identities: Mapped[list[AuthIdentity]] = relationship(
         "AuthIdentity",
         back_populates="user",
     )

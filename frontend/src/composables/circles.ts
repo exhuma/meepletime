@@ -37,10 +37,17 @@ export function useCircles() {
   }
 
   /** Fetch availability records for circleId in [startDate, endDate] and merge into calendar state. */
-  async function fetchCalendar(circleId: string, startDate: string, endDate: string): Promise<void> {
-    const items = await api.get<Availability[]>(`/circles/${circleId}/availability`, {
-      params: { start_date: startDate, end_date: endDate },
-    })
+  async function fetchCalendar(
+    circleId: string,
+    startDate: string,
+    endDate: string,
+  ): Promise<void> {
+    const items = await api.get<Availability[]>(
+      `/circles/${circleId}/availability`,
+      {
+        params: { start_date: startDate, end_date: endDate },
+      },
+    )
     const dict: Record<string, Availability[]> = {}
     for (const item of items) {
       const key = String(item.local_date)
@@ -51,8 +58,15 @@ export function useCircles() {
   }
 
   /** Set the current user's availability for date to state, updating calendar state. */
-  async function setAvailability(circleId: string, date: string, state: 'attending' | 'hosting'): Promise<void> {
-    const updated = await api.put<Availability>(`/circles/${circleId}/availability/${date}`, { state })
+  async function setAvailability(
+    circleId: string,
+    date: string,
+    state: 'attending' | 'hosting',
+  ): Promise<void> {
+    const updated = await api.put<Availability>(
+      `/circles/${circleId}/availability/${date}`,
+      { state },
+    )
     const entries = [...(calendar.value[date] ?? [])]
     const idx = entries.findIndex((a) => a.user_id === updated.user_id)
     if (idx >= 0) {
@@ -64,7 +78,11 @@ export function useCircles() {
   }
 
   /** Delete the current user's availability for date. */
-  async function deleteAvailability(circleId: string, date: string, userId: string): Promise<void> {
+  async function deleteAvailability(
+    circleId: string,
+    date: string,
+    userId: string,
+  ): Promise<void> {
     await api.delete(`/circles/${circleId}/availability/${date}`)
     calendar.value = {
       ...calendar.value,
@@ -73,10 +91,17 @@ export function useCircles() {
   }
 
   /** Fetch viability for circleId in [startDate, endDate] and merge into viability state. */
-  async function fetchViability(circleId: string, startDate: string, endDate: string): Promise<void> {
-    const items = await api.get<DayViability[]>(`/circles/${circleId}/viability`, {
-      params: { start_date: startDate, end_date: endDate },
-    })
+  async function fetchViability(
+    circleId: string,
+    startDate: string,
+    endDate: string,
+  ): Promise<void> {
+    const items = await api.get<DayViability[]>(
+      `/circles/${circleId}/viability`,
+      {
+        params: { start_date: startDate, end_date: endDate },
+      },
+    )
     const dict: Record<string, DayViability> = {}
     for (const item of items) {
       dict[String(item.local_date)] = item
@@ -90,12 +115,20 @@ export function useCircles() {
   }
 
   /** Add a note with content for date in circleId. */
-  async function addNote(circleId: string, date: string, content: string): Promise<Note> {
+  async function addNote(
+    circleId: string,
+    date: string,
+    content: string,
+  ): Promise<Note> {
     return api.post<Note>(`/circles/${circleId}/notes/${date}`, { content })
   }
 
   /** Join a circle using inviteToken with the given pseudonym. */
-  async function joinCircle(inviteToken: string, pseudonym: string, canHostDefault: boolean): Promise<void> {
+  async function joinCircle(
+    inviteToken: string,
+    pseudonym: string,
+    canHostDefault: boolean,
+  ): Promise<void> {
     await api.post('/circles/join', {
       invite_token: inviteToken,
       pseudonym,
@@ -114,8 +147,12 @@ export function useCircles() {
     circles: readonly(circles) as DeepReadonly<Ref<Circle[]>>,
     currentCircle: readonly(currentCircle) as DeepReadonly<Ref<Circle | null>>,
     members: readonly(members) as DeepReadonly<Ref<Member[]>>,
-    calendar: readonly(calendar) as DeepReadonly<Ref<Record<string, Availability[]>>>,
-    viability: readonly(viability) as DeepReadonly<Ref<Record<string, DayViability>>>,
+    calendar: readonly(calendar) as DeepReadonly<
+      Ref<Record<string, Availability[]>>
+    >,
+    viability: readonly(viability) as DeepReadonly<
+      Ref<Record<string, DayViability>>
+    >,
     fetchCircles,
     fetchCircle,
     createCircle,

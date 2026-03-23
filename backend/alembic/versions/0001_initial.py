@@ -5,16 +5,18 @@ Revises:
 Create Date: 2024-01-01 00:00:00.000000
 
 """
-from typing import Sequence, Union
+
+from collections.abc import Sequence
 
 import sqlalchemy as sa
 from sqlalchemy.dialects import postgresql
+
 from alembic import op
 
 revision: str = "0001_initial"
-down_revision: Union[str, None] = None
-branch_labels: Union[str, Sequence[str], None] = None
-depends_on: Union[str, Sequence[str], None] = None
+down_revision: str | None = None
+branch_labels: str | Sequence[str] | None = None
+depends_on: str | Sequence[str] | None = None
 
 
 def upgrade() -> None:
@@ -23,7 +25,9 @@ def upgrade() -> None:
         sa.Column("id", postgresql.UUID(as_uuid=True), primary_key=True),
         sa.Column("email", sa.String(255), unique=True, nullable=False),
         sa.Column("hashed_password", sa.String(255), nullable=False),
-        sa.Column("is_active", sa.Boolean(), nullable=False, server_default="true"),
+        sa.Column(
+            "is_active", sa.Boolean(), nullable=False, server_default="true"
+        ),
         sa.Column("created_at", sa.DateTime(timezone=True), nullable=False),
         sa.Column("updated_at", sa.DateTime(timezone=True), nullable=False),
     )
@@ -35,9 +39,18 @@ def upgrade() -> None:
         sa.Column("name", sa.String(255), nullable=False),
         sa.Column("description", sa.Text(), nullable=True),
         sa.Column("image_ref", sa.String(512), nullable=True),
-        sa.Column("timezone", sa.String(64), nullable=False, server_default="UTC"),
-        sa.Column("invite_token", postgresql.UUID(as_uuid=True), unique=True, nullable=False),
-        sa.Column("host_needed", sa.Boolean(), nullable=False, server_default="false"),
+        sa.Column(
+            "timezone", sa.String(64), nullable=False, server_default="UTC"
+        ),
+        sa.Column(
+            "invite_token",
+            postgresql.UUID(as_uuid=True),
+            unique=True,
+            nullable=False,
+        ),
+        sa.Column(
+            "host_needed", sa.Boolean(), nullable=False, server_default="false"
+        ),
         sa.Column("minimum_attendees", sa.Integer(), nullable=True),
         sa.Column("soft_max_attendees", sa.Integer(), nullable=True),
         sa.Column("hard_max_attendees", sa.Integer(), nullable=True),
@@ -73,13 +86,24 @@ def upgrade() -> None:
             sa.Enum("owner", "admin", "member", name="memberrole"),
             nullable=False,
         ),
-        sa.Column("can_host_default", sa.Boolean(), nullable=False, server_default="false"),
+        sa.Column(
+            "can_host_default",
+            sa.Boolean(),
+            nullable=False,
+            server_default="false",
+        ),
         sa.Column("joined_at", sa.DateTime(timezone=True), nullable=False),
         sa.Column("notification_preferences", postgresql.JSON(), nullable=True),
-        sa.UniqueConstraint("circle_id", "pseudonym", name="uq_circle_pseudonym"),
+        sa.UniqueConstraint(
+            "circle_id", "pseudonym", name="uq_circle_pseudonym"
+        ),
     )
-    op.create_index("ix_circle_memberships_circle_id", "circle_memberships", ["circle_id"])
-    op.create_index("ix_circle_memberships_user_id", "circle_memberships", ["user_id"])
+    op.create_index(
+        "ix_circle_memberships_circle_id", "circle_memberships", ["circle_id"]
+    )
+    op.create_index(
+        "ix_circle_memberships_user_id", "circle_memberships", ["user_id"]
+    )
 
     op.create_table(
         "day_availabilities",
@@ -104,11 +128,19 @@ def upgrade() -> None:
         ),
         sa.Column("created_at", sa.DateTime(timezone=True), nullable=False),
         sa.Column("updated_at", sa.DateTime(timezone=True), nullable=False),
-        sa.UniqueConstraint("circle_id", "user_id", "local_date", name="uq_circle_user_date"),
+        sa.UniqueConstraint(
+            "circle_id", "user_id", "local_date", name="uq_circle_user_date"
+        ),
     )
-    op.create_index("ix_day_availabilities_circle_id", "day_availabilities", ["circle_id"])
-    op.create_index("ix_day_availabilities_user_id", "day_availabilities", ["user_id"])
-    op.create_index("ix_day_availabilities_local_date", "day_availabilities", ["local_date"])
+    op.create_index(
+        "ix_day_availabilities_circle_id", "day_availabilities", ["circle_id"]
+    )
+    op.create_index(
+        "ix_day_availabilities_user_id", "day_availabilities", ["user_id"]
+    )
+    op.create_index(
+        "ix_day_availabilities_local_date", "day_availabilities", ["local_date"]
+    )
 
     op.create_table(
         "day_overrides",
@@ -126,10 +158,16 @@ def upgrade() -> None:
         sa.Column("override_hard_max_attendees", sa.Integer(), nullable=True),
         sa.Column("created_at", sa.DateTime(timezone=True), nullable=False),
         sa.Column("updated_at", sa.DateTime(timezone=True), nullable=False),
-        sa.UniqueConstraint("circle_id", "local_date", name="uq_override_circle_date"),
+        sa.UniqueConstraint(
+            "circle_id", "local_date", name="uq_override_circle_date"
+        ),
     )
-    op.create_index("ix_day_overrides_circle_id", "day_overrides", ["circle_id"])
-    op.create_index("ix_day_overrides_local_date", "day_overrides", ["local_date"])
+    op.create_index(
+        "ix_day_overrides_circle_id", "day_overrides", ["circle_id"]
+    )
+    op.create_index(
+        "ix_day_overrides_local_date", "day_overrides", ["local_date"]
+    )
 
     op.create_table(
         "day_notes",
@@ -167,8 +205,14 @@ def upgrade() -> None:
         sa.Column("event_type", sa.String(64), nullable=False),
         sa.Column("created_at", sa.DateTime(timezone=True), nullable=False),
     )
-    op.create_index("ix_notification_events_circle_id", "notification_events", ["circle_id"])
-    op.create_index("ix_notification_events_local_date", "notification_events", ["local_date"])
+    op.create_index(
+        "ix_notification_events_circle_id", "notification_events", ["circle_id"]
+    )
+    op.create_index(
+        "ix_notification_events_local_date",
+        "notification_events",
+        ["local_date"],
+    )
 
     op.create_table(
         "notification_deliveries",
@@ -193,7 +237,11 @@ def upgrade() -> None:
         "notification_deliveries",
         ["notification_event_id"],
     )
-    op.create_index("ix_notification_deliveries_user_id", "notification_deliveries", ["user_id"])
+    op.create_index(
+        "ix_notification_deliveries_user_id",
+        "notification_deliveries",
+        ["user_id"],
+    )
 
 
 def downgrade() -> None:

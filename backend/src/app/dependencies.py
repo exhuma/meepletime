@@ -1,7 +1,9 @@
 """FastAPI dependencies for authentication and database access."""
+
 from __future__ import annotations
 
 import logging
+
 import jwt
 from fastapi import Depends, HTTPException, status
 from fastapi.security import (

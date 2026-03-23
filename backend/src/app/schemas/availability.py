@@ -1,7 +1,8 @@
 """Pydantic schemas for availability records."""
+
+import enum
 import uuid
 from datetime import date, datetime
-import enum
 
 from pydantic import BaseModel
 
