@@ -1,6 +1,7 @@
 """FastAPI dependencies for authentication and database access."""
 from __future__ import annotations
 
+import logging
 import jwt
 from fastapi import Depends, HTTPException, status
 from fastapi.security import (
@@ -17,6 +18,7 @@ from app.models.auth_identity import AuthIdentity
 from app.models.user import User
 
 bearer = HTTPBearer()
+LOG = logging.getLogger(__name__)
 
 
 def get_current_user(
@@ -51,11 +53,13 @@ def get_current_user(
             issuer=settings.OIDC_ISSUER,
         )
     except jwt.ExpiredSignatureError:
+        LOG.debug("Token has expired")
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Token has expired",
         )
-    except jwt.InvalidTokenError:
+    except jwt.InvalidTokenError as exc:
+        LOG.debug("Invalid token: %s", exc)
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Invalid token",
