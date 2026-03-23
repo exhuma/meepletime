@@ -41,7 +41,7 @@ services:
         postgresql://meepletime:${DB_PASSWORD:-changeme}@db:5432/meepletime
       OIDC_AUTHORITY: >-
         ${OIDC_AUTHORITY:-http://keycloak:8080/realms/meepletime}
-      OIDC_AUDIENCE: ${OIDC_AUDIENCE:-meepletime-frontend}
+      OIDC_AUDIENCE: ${OIDC_AUDIENCE:-meepletime-backend}
       OIDC_ISSUER: >-
         ${OIDC_ISSUER:-http://keycloak:8080/realms/meepletime}
       FRONTEND_URL: ${FRONTEND_URL:-http://localhost}

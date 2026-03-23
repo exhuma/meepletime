@@ -58,9 +58,9 @@ if [[ ! -f "${REPO_ROOT}/backend/.env" ]]; then
     cat > "${REPO_ROOT}/backend/.env" <<EOF
 DATABASE_URL=postgresql://meepletime:changeme@db:5432/meepletime
 OIDC_AUTHORITY=${REALM_URL}
-OIDC_AUDIENCE=meepletime-frontend
+OIDC_AUDIENCE=meepletime-backend
 OIDC_ISSUER=${REALM_URL}
-FRONTEND_URL=http://127.0.0.1:5173
+FRONTEND_URL=http://localhost:5173
 EOF
     echo "    Edit backend/.env to set real secrets."
 fi
@@ -73,7 +73,7 @@ if [[ ! -f "${REPO_ROOT}/frontend/.env.local" ]]; then
     cat > "${REPO_ROOT}/frontend/.env.local" <<EOF
 VITE_OIDC_AUTHORITY=${REALM_URL}
 VITE_OIDC_CLIENT_ID=meepletime-frontend
-VITE_API_BASE_URL=http://127.0.0.1:8000
+VITE_API_BASE_URL=http://localhost:8000
 EOF
     echo "    Edit frontend/.env.local to override if needed."
 fi

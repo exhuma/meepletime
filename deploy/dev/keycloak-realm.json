@@ -9,6 +9,19 @@
   "resetPasswordAllowed": false,
   "editUsernameAllowed": false,
   "bruteForceProtected": true,
+  "roles": {
+    "client": {
+      "meepletime-backend": [
+        {
+          "name": "user",
+          "description": "Standard application user",
+          "composite": false,
+          "clientRole": true,
+          "containerId": "meepletime-backend"
+        }
+      ]
+    }
+  },
   "clients": [
     {
       "clientId": "meepletime-frontend",
@@ -30,6 +43,19 @@
       "attributes": {
         "pkce.code.challenge.method": "S256"
       }
+    },
+    {
+      "clientId": "meepletime-backend",
+      "name": "MeepleTime Backend",
+      "description": "OAuth 2.0 resource server — validates bearer tokens issued by the frontend client",
+      "enabled": true,
+      "bearerOnly": true,
+      "publicClient": false,
+      "standardFlowEnabled": false,
+      "implicitFlowEnabled": false,
+      "directAccessGrantsEnabled": false,
+      "serviceAccountsEnabled": false,
+      "protocol": "openid-connect"
     }
   ],
   "users": [
@@ -46,7 +72,12 @@
           "value": "devpass",
           "temporary": false
         }
-      ]
+      ],
+      "clientRoles": {
+        "meepletime-backend": [
+          "user"
+        ]
+      }
     }
   ]
 }
