@@ -6,7 +6,14 @@ from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
-from app.dependencies import get_current_active_user, get_db
+from app.dependencies import (
+    get_circle_or_404,
+    get_current_active_user,
+    get_db,
+    get_membership_or_403,
+    require_admin_or_owner,
+    require_owner,
+)
 from app.models.circle import Circle
 from app.models.membership import CircleMembership, MemberRole
 from app.models.user import User
@@ -14,51 +21,6 @@ from app.schemas.circle import CircleCreate, CircleOut, CircleUpdate
 from app.schemas.membership import InviteJoin, MembershipOut
 
 router = APIRouter(tags=["circles"])
-
-
-def _get_membership(
-    db: Session, circle_id: uuid.UUID, user_id: uuid.UUID
-) -> CircleMembership | None:
-    """Return the CircleMembership for *user_id* in *circle_id*, or None."""
-    return db.execute(
-        select(CircleMembership).where(
-            CircleMembership.circle_id == circle_id,
-            CircleMembership.user_id == user_id,
-        )
-    ).scalar_one_or_none()
-
-
-def _require_membership(
-    db: Session, circle_id: uuid.UUID, user_id: uuid.UUID
-) -> CircleMembership:
-    """
-    Return the membership or raise HTTP 403 if *user_id* is not a member of
-    *circle_id*.
-    """
-    membership = _get_membership(db, circle_id, user_id)
-    if not membership:
-        raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN,
-            detail="Not a member of this circle",
-        )
-    return membership
-
-
-def _require_admin(membership: CircleMembership) -> None:
-    """Raise HTTP 403 if *membership* does not have owner or admin role."""
-    if membership.role not in (MemberRole.owner, MemberRole.admin):
-        raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN,
-            detail="Admin or owner role required",
-        )
-
-
-def _require_owner(membership: CircleMembership) -> None:
-    """Raise HTTP 403 if *membership* does not have owner role."""
-    if membership.role != MemberRole.owner:
-        raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN, detail="Owner role required"
-        )
 
 
 @router.get("/circles", response_model=list[CircleOut])
@@ -119,14 +81,8 @@ def get_circle(
     current_user: User = Depends(get_current_active_user),
 ) -> Circle:
     """Return a single circle by ID. The caller must be a member."""
-    circle = db.execute(
-        select(Circle).where(Circle.id == circle_id)
-    ).scalar_one_or_none()
-    if not circle:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND, detail="Circle not found"
-        )
-    _require_membership(db, circle_id, current_user.id)
+    circle = get_circle_or_404(db, circle_id)
+    get_membership_or_403(db, circle_id, current_user.id)
     return circle
 
 
@@ -138,15 +94,9 @@ def update_circle(
     current_user: User = Depends(get_current_active_user),
 ) -> Circle:
     """Update circle settings. Requires owner or admin role."""
-    circle = db.execute(
-        select(Circle).where(Circle.id == circle_id)
-    ).scalar_one_or_none()
-    if not circle:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND, detail="Circle not found"
-        )
-    membership = _require_membership(db, circle_id, current_user.id)
-    _require_admin(membership)
+    circle = get_circle_or_404(db, circle_id)
+    membership = get_membership_or_403(db, circle_id, current_user.id)
+    require_admin_or_owner(membership)
 
     update_data = circle_in.model_dump(exclude_unset=True)
     for field, value in update_data.items():
@@ -164,15 +114,9 @@ def delete_circle(
     current_user: User = Depends(get_current_active_user),
 ) -> None:
     """Permanently delete a circle. Requires owner role."""
-    circle = db.execute(
-        select(Circle).where(Circle.id == circle_id)
-    ).scalar_one_or_none()
-    if not circle:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND, detail="Circle not found"
-        )
-    membership = _require_membership(db, circle_id, current_user.id)
-    _require_owner(membership)
+    circle = get_circle_or_404(db, circle_id)
+    membership = get_membership_or_403(db, circle_id, current_user.id)
+    require_owner(membership)
     db.delete(circle)
     db.commit()
 
@@ -187,15 +131,9 @@ def regenerate_invite(
     Generate a new invite token for *circle_id*, invalidating the
     previous one. Requires owner or admin role.
     """
-    circle = db.execute(
-        select(Circle).where(Circle.id == circle_id)
-    ).scalar_one_or_none()
-    if not circle:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND, detail="Circle not found"
-        )
-    membership = _require_membership(db, circle_id, current_user.id)
-    _require_admin(membership)
+    circle = get_circle_or_404(db, circle_id)
+    membership = get_membership_or_403(db, circle_id, current_user.id)
+    require_admin_or_owner(membership)
     circle.invite_token = uuid.uuid4()
     db.commit()
     db.refresh(circle)
@@ -240,7 +178,12 @@ def join_circle(
             status_code=status.HTTP_404_NOT_FOUND, detail="Invalid invite token"
         )
 
-    existing = _get_membership(db, circle.id, current_user.id)
+    existing = db.execute(
+        select(CircleMembership).where(
+            CircleMembership.circle_id == circle.id,
+            CircleMembership.user_id == current_user.id,
+        )
+    ).scalar_one_or_none()
     if existing:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST, detail="Already a member"

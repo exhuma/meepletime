@@ -23,6 +23,7 @@ class Settings(BaseSettings):
     :param NOTIFICATION_DEBOUNCE_SECONDS: Debounce window for
         notification coalescing, in seconds.
     :param FRONTEND_URL: Allowed CORS origin for the Vue frontend.
+    :param CORS_ORIGINS: Allowed CORS origins for API requests.
     """
 
     DATABASE_URL: PostgresDsn
@@ -32,6 +33,10 @@ class Settings(BaseSettings):
     DEV_SHARED_SECRET: str | None = None
     NOTIFICATION_DEBOUNCE_SECONDS: int = 10
     FRONTEND_URL: str = "http://localhost:5173"
+    CORS_ORIGINS: list[str] = [
+        "http://localhost:5173",
+        "http://localhost:3000",
+    ]
 
     model_config = SettingsConfigDict(
         env_file=".env",

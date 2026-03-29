@@ -6,33 +6,16 @@ from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy import func, select
 from sqlalchemy.orm import Session
 
-from app.dependencies import get_current_active_user, get_db
+from app.dependencies import (
+    get_current_active_user,
+    get_db,
+    get_membership_or_403,
+)
 from app.models.membership import CircleMembership, MemberRole
 from app.models.user import User
 from app.schemas.membership import MembershipOut, MembershipUpdate
 
 router = APIRouter(tags=["memberships"])
-
-
-def _require_membership(
-    db: Session, circle_id: uuid.UUID, user_id: uuid.UUID
-) -> CircleMembership:
-    """
-    Return the membership record or raise HTTP 403 if *user_id* is
-    not a member of *circle_id*.
-    """
-    membership = db.execute(
-        select(CircleMembership).where(
-            CircleMembership.circle_id == circle_id,
-            CircleMembership.user_id == user_id,
-        )
-    ).scalar_one_or_none()
-    if not membership:
-        raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN,
-            detail="Not a member of this circle",
-        )
-    return membership
 
 
 @router.get("/circles/{circle_id}/members", response_model=list[MembershipOut])
@@ -42,7 +25,7 @@ def list_members(
     current_user: User = Depends(get_current_active_user),
 ) -> list[CircleMembership]:
     """Return all members of *circle_id*. The caller must be a member."""
-    _require_membership(db, circle_id, current_user.id)
+    get_membership_or_403(db, circle_id, current_user.id)
     return list(
         db.execute(
             select(CircleMembership).where(
@@ -69,7 +52,7 @@ def update_membership(
     Owner/admin may update any member; a member may update their
     own record.
     """
-    requester = _require_membership(db, circle_id, current_user.id)
+    requester = get_membership_or_403(db, circle_id, current_user.id)
     target = db.execute(
         select(CircleMembership).where(
             CircleMembership.circle_id == circle_id,
@@ -135,7 +118,7 @@ def remove_member(
     Remove a member from a circle. A member may leave themselves;
     owner/admin may remove others.
     """
-    requester = _require_membership(db, circle_id, current_user.id)
+    requester = get_membership_or_403(db, circle_id, current_user.id)
     target = db.execute(
         select(CircleMembership).where(
             CircleMembership.circle_id == circle_id,

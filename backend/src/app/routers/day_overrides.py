@@ -7,44 +7,18 @@ from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
-from app.dependencies import get_current_active_user, get_db
-from app.models.circle import Circle
+from app.dependencies import (
+    get_circle_or_404,
+    get_current_active_user,
+    get_db,
+    get_membership_or_403,
+)
 from app.models.day_override import DayOverride
-from app.models.membership import CircleMembership, MemberRole
+from app.models.membership import MemberRole
 from app.models.user import User
 from app.schemas.day_override import DayOverrideCreate, DayOverrideOut
 
 router = APIRouter(tags=["day_overrides"])
-
-
-def _get_circle_or_404(db: Session, circle_id: uuid.UUID) -> Circle:
-    """Return the circle or raise HTTP 404 if it does not exist."""
-    circle = db.execute(
-        select(Circle).where(Circle.id == circle_id)
-    ).scalar_one_or_none()
-    if not circle:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND, detail="Circle not found"
-        )
-    return circle
-
-
-def _require_membership(
-    db: Session, circle_id: uuid.UUID, user_id: uuid.UUID
-) -> CircleMembership:
-    """Return the membership or raise HTTP 403 if the user is not a member."""
-    m = db.execute(
-        select(CircleMembership).where(
-            CircleMembership.circle_id == circle_id,
-            CircleMembership.user_id == user_id,
-        )
-    ).scalar_one_or_none()
-    if not m:
-        raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN,
-            detail="Not a member of this circle",
-        )
-    return m
 
 
 @router.get(
@@ -61,8 +35,8 @@ def get_override(
     Return the day override for *local_date* in *circle_id*, or null
     if none exists.
     """
-    _get_circle_or_404(db, circle_id)
-    _require_membership(db, circle_id, current_user.id)
+    get_circle_or_404(db, circle_id)
+    get_membership_or_403(db, circle_id, current_user.id)
     return db.execute(
         select(DayOverride).where(
             DayOverride.circle_id == circle_id,
@@ -85,8 +59,8 @@ def upsert_override(
     Create or replace the day override for *local_date*. Requires
     owner or admin role.
     """
-    _get_circle_or_404(db, circle_id)
-    membership = _require_membership(db, circle_id, current_user.id)
+    get_circle_or_404(db, circle_id)
+    membership = get_membership_or_403(db, circle_id, current_user.id)
     if membership.role not in (MemberRole.owner, MemberRole.admin):
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
@@ -129,8 +103,8 @@ def delete_override(
     Delete the day override for *local_date* in *circle_id*. Requires
     owner or admin role.
     """
-    _get_circle_or_404(db, circle_id)
-    membership = _require_membership(db, circle_id, current_user.id)
+    get_circle_or_404(db, circle_id)
+    membership = get_membership_or_403(db, circle_id, current_user.id)
     if membership.role not in (MemberRole.owner, MemberRole.admin):
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,

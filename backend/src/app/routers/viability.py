@@ -3,39 +3,21 @@
 import uuid
 from datetime import date, timedelta
 
-from fastapi import APIRouter, Depends, HTTPException, Query, status
-from sqlalchemy import select
+from fastapi import APIRouter, Depends, Query
 from sqlalchemy.orm import Session
 
-from app.dependencies import get_current_active_user, get_db
-from app.models.circle import Circle
-from app.models.membership import CircleMembership
+from app.dependencies import (
+    get_circle_or_404,
+    get_current_active_user,
+    get_db,
+    get_membership_or_403,
+    validate_date_range,
+)
 from app.models.user import User
 from app.schemas.viability import DayViability
 from app.services.viability import compute_viability
 
 router = APIRouter(tags=["viability"])
-
-
-def _require_membership(
-    db: Session, circle_id: uuid.UUID, user_id: uuid.UUID
-) -> CircleMembership:
-    """
-    Return the membership record or raise HTTP 403 if the user is
-    not a circle member.
-    """
-    membership = db.execute(
-        select(CircleMembership).where(
-            CircleMembership.circle_id == circle_id,
-            CircleMembership.user_id == user_id,
-        )
-    ).scalar_one_or_none()
-    if not membership:
-        raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN,
-            detail="Not a member of this circle",
-        )
-    return membership
 
 
 @router.get("/circles/{circle_id}/viability", response_model=list[DayViability])
@@ -50,14 +32,9 @@ def get_viability(
     Return computed viability for each day in [start_date, end_date]
     for *circle_id*.
     """
-    circle = db.execute(
-        select(Circle).where(Circle.id == circle_id)
-    ).scalar_one_or_none()
-    if not circle:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND, detail="Circle not found"
-        )
-    _require_membership(db, circle_id, current_user.id)
+    circle = get_circle_or_404(db, circle_id)
+    get_membership_or_403(db, circle_id, current_user.id)
+    validate_date_range(start_date, end_date)
 
     results = []
     current = start_date

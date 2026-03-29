@@ -3,6 +3,8 @@
 from __future__ import annotations
 
 import logging
+import uuid
+from datetime import date
 
 import jwt
 from fastapi import Depends, HTTPException, status
@@ -17,6 +19,8 @@ from app.auth.jwks import get_jwks_client
 from app.config import Settings, get_settings
 from app.database import get_db  # noqa: F401 — re-exported for routers
 from app.models.auth_identity import AuthIdentity
+from app.models.circle import Circle
+from app.models.membership import CircleMembership, MemberRole
 from app.models.user import User
 
 bearer = HTTPBearer()
@@ -142,6 +146,108 @@ def get_current_user(
     return user
 
 
+def get_circle_or_404(
+    db: Session,
+    circle_id: uuid.UUID,
+) -> Circle:
+    """
+    Return the circle, or raise HTTP 404 when it does not exist.
+
+    :param db: Database session.
+    :param circle_id: Circle identifier.
+    :returns: Existing Circle model.
+    :raises HTTPException: 404 when circle is not found.
+    """
+    circle = db.execute(
+        select(Circle).where(Circle.id == circle_id)
+    ).scalar_one_or_none()
+    if circle is None:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Circle not found",
+        )
+    return circle
+
+
+def get_membership_or_403(
+    db: Session,
+    circle_id: uuid.UUID,
+    user_id: uuid.UUID,
+) -> CircleMembership:
+    """
+    Return membership for a user in a circle, or raise HTTP 403.
+
+    :param db: Database session.
+    :param circle_id: Circle identifier.
+    :param user_id: User identifier.
+    :returns: Existing CircleMembership model.
+    :raises HTTPException: 403 when user is not a circle member.
+    """
+    membership = db.execute(
+        select(CircleMembership).where(
+            CircleMembership.circle_id == circle_id,
+            CircleMembership.user_id == user_id,
+        )
+    ).scalar_one_or_none()
+    if membership is None:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Not a member of this circle",
+        )
+    return membership
+
+
+def require_admin_or_owner(
+    membership: CircleMembership,
+) -> CircleMembership:
+    """
+    Ensure membership has admin/owner role, else raise HTTP 403.
+
+    :param membership: Membership to check.
+    :returns: The same membership when authorized.
+    :raises HTTPException: 403 when role is insufficient.
+    """
+    if membership.role not in (MemberRole.owner, MemberRole.admin):
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Admin or owner role required",
+        )
+    return membership
+
+
+def require_owner(
+    membership: CircleMembership,
+) -> CircleMembership:
+    """
+    Ensure membership has owner role, else raise HTTP 403.
+
+    :param membership: Membership to check.
+    :returns: The same membership when authorized.
+    :raises HTTPException: 403 when role is not owner.
+    """
+    if membership.role != MemberRole.owner:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Owner role required",
+        )
+    return membership
+
+
+def validate_date_range(start_date: date, end_date: date) -> None:
+    """
+    Validate that an API date range is ordered.
+
+    :param start_date: Inclusive range start.
+    :param end_date: Inclusive range end.
+    :raises HTTPException: 400 when start_date is after end_date.
+    """
+    if start_date > end_date:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="start_date must be less than or equal to end_date",
+        )
+
+
 # Alias for existing routers. The previous is_active check is no
 # longer needed because the users table has no is_active column;
 # OIDC-authenticated users are always considered active.
@@ -151,5 +257,10 @@ __all__ = [
     "get_db",
     "get_current_user",
     "get_current_active_user",
+    "get_circle_or_404",
+    "get_membership_or_403",
+    "require_admin_or_owner",
+    "require_owner",
+    "validate_date_range",
     "bearer",
 ]

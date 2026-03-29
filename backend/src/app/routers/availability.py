@@ -12,7 +12,13 @@ from sqlalchemy import select
 from sqlalchemy.orm import Session
 
 from app.database import SessionLocal
-from app.dependencies import get_current_active_user, get_db
+from app.dependencies import (
+    get_circle_or_404,
+    get_current_active_user,
+    get_db,
+    get_membership_or_403,
+    validate_date_range,
+)
 from app.models.availability import (
     AvailabilityState as DBAvailabilityState,
 )
@@ -28,39 +34,6 @@ from app.services.notifications import trigger_notification_eval
 logger = logging.getLogger(__name__)
 
 router = APIRouter(tags=["availability"])
-
-
-def _get_circle_or_404(db: Session, circle_id: uuid.UUID) -> Circle:
-    """Return the circle or raise HTTP 404 if it does not exist."""
-    circle = db.execute(
-        select(Circle).where(Circle.id == circle_id)
-    ).scalar_one_or_none()
-    if not circle:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="Circle not found",
-        )
-    return circle
-
-
-def _require_membership(
-    db: Session,
-    circle_id: uuid.UUID,
-    user_id: uuid.UUID,
-) -> CircleMembership:
-    """Return the membership or raise HTTP 403 if not a member."""
-    membership = db.execute(
-        select(CircleMembership).where(
-            CircleMembership.circle_id == circle_id,
-            CircleMembership.user_id == user_id,
-        )
-    ).scalar_one_or_none()
-    if not membership:
-        raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN,
-            detail="Not a member of this circle",
-        )
-    return membership
 
 
 def _local_today(tz_name: str) -> date:
@@ -119,8 +92,9 @@ def get_availability(
     :param current_user: Authenticated user.
     :returns: List of DayAvailability records.
     """
-    _get_circle_or_404(db, circle_id)
-    _require_membership(db, circle_id, current_user.id)
+    get_circle_or_404(db, circle_id)
+    get_membership_or_403(db, circle_id, current_user.id)
+    validate_date_range(start_date, end_date)
 
     return list(
         db.execute(
@@ -158,8 +132,8 @@ def set_availability(
     :param current_user: Authenticated user.
     :returns: Saved DayAvailability record.
     """
-    circle = _get_circle_or_404(db, circle_id)
-    membership = _require_membership(db, circle_id, current_user.id)
+    circle = get_circle_or_404(db, circle_id)
+    membership = get_membership_or_403(db, circle_id, current_user.id)
     _validate_date(local_date, circle, membership)
 
     existing = db.execute(
@@ -219,8 +193,8 @@ def delete_availability(
     :param db: Database session.
     :param current_user: Authenticated user.
     """
-    circle = _get_circle_or_404(db, circle_id)
-    membership = _require_membership(db, circle_id, current_user.id)
+    circle = get_circle_or_404(db, circle_id)
+    membership = get_membership_or_403(db, circle_id, current_user.id)
     _validate_date(local_date, circle, membership)
 
     existing = db.execute(
