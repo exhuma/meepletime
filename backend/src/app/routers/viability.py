@@ -4,6 +4,7 @@ import uuid
 from datetime import date, timedelta
 
 from fastapi import APIRouter, Depends, HTTPException, Query, status
+from sqlalchemy import select
 from sqlalchemy.orm import Session
 
 from app.dependencies import get_current_active_user, get_db
@@ -23,14 +24,12 @@ def _require_membership(
     Return the membership record or raise HTTP 403 if the user is
     not a circle member.
     """
-    membership = (
-        db.query(CircleMembership)
-        .filter(
+    membership = db.execute(
+        select(CircleMembership).where(
             CircleMembership.circle_id == circle_id,
             CircleMembership.user_id == user_id,
         )
-        .first()
-    )
+    ).scalar_one_or_none()
     if not membership:
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
@@ -46,12 +45,14 @@ def get_viability(
     end_date: date = Query(...),
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_active_user),
-):
+) -> list[DayViability]:
     """
     Return computed viability for each day in [start_date, end_date]
     for *circle_id*.
     """
-    circle = db.query(Circle).filter(Circle.id == circle_id).first()
+    circle = db.execute(
+        select(Circle).where(Circle.id == circle_id)
+    ).scalar_one_or_none()
     if not circle:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND, detail="Circle not found"

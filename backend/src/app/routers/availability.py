@@ -23,6 +23,7 @@ from app.models.circle import Circle
 from app.models.membership import CircleMembership, MemberRole
 from app.models.user import User
 from app.schemas.availability import AvailabilityOut, AvailabilitySet
+from app.services.notifications import trigger_notification_eval
 
 logger = logging.getLogger(__name__)
 
@@ -186,10 +187,6 @@ def set_availability(
         db.refresh(record)
 
     try:
-        from app.services.notifications import (
-            trigger_notification_eval,
-        )
-
         trigger_notification_eval(circle_id, local_date, SessionLocal)
     except Exception:
         logger.warning(
@@ -238,10 +235,6 @@ def delete_availability(
         db.commit()
 
     try:
-        from app.services.notifications import (
-            trigger_notification_eval,
-        )
-
         trigger_notification_eval(circle_id, local_date, SessionLocal)
     except Exception:
         logger.warning(

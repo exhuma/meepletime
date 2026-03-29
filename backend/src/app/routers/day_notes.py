@@ -4,6 +4,7 @@ import uuid
 from datetime import date
 
 from fastapi import APIRouter, Depends, HTTPException, status
+from sqlalchemy import select
 from sqlalchemy.orm import Session
 
 from app.dependencies import get_current_active_user, get_db
@@ -18,7 +19,9 @@ router = APIRouter(tags=["day_notes"])
 
 def _get_circle_or_404(db: Session, circle_id: uuid.UUID) -> Circle:
     """Return the circle or raise HTTP 404 if it does not exist."""
-    circle = db.query(Circle).filter(Circle.id == circle_id).first()
+    circle = db.execute(
+        select(Circle).where(Circle.id == circle_id)
+    ).scalar_one_or_none()
     if not circle:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND, detail="Circle not found"
@@ -30,14 +33,12 @@ def _require_membership(
     db: Session, circle_id: uuid.UUID, user_id: uuid.UUID
 ) -> CircleMembership:
     """Return the membership or raise HTTP 403 if the user is not a member."""
-    m = (
-        db.query(CircleMembership)
-        .filter(
+    m = db.execute(
+        select(CircleMembership).where(
             CircleMembership.circle_id == circle_id,
             CircleMembership.user_id == user_id,
         )
-        .first()
-    )
+    ).scalar_one_or_none()
     if not m:
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
@@ -51,14 +52,12 @@ def _enrich_note(note: DayNote, db: Session) -> DayNoteOut:
     Attach the author's circle pseudonym to a *DayNoteOut* response
     object.
     """
-    membership = (
-        db.query(CircleMembership)
-        .filter(
+    membership = db.execute(
+        select(CircleMembership).where(
             CircleMembership.circle_id == note.circle_id,
             CircleMembership.user_id == note.user_id,
         )
-        .first()
-    )
+    ).scalar_one_or_none()
     pseudonym = membership.pseudonym if membership else None
     out = DayNoteOut.model_validate(note)
     out.pseudonym = pseudonym
@@ -73,7 +72,7 @@ def list_notes(
     local_date: date,
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_active_user),
-):
+) -> list[DayNoteOut]:
     """
     Return all notes for *local_date* in *circle_id*, ordered by
     creation time.
@@ -81,13 +80,15 @@ def list_notes(
     _get_circle_or_404(db, circle_id)
     _require_membership(db, circle_id, current_user.id)
 
-    notes = (
-        db.query(DayNote)
-        .filter(
-            DayNote.circle_id == circle_id, DayNote.local_date == local_date
-        )
-        .order_by(DayNote.created_at)
-        .all()
+    notes = list(
+        db.execute(
+            select(DayNote)
+            .where(
+                DayNote.circle_id == circle_id,
+                DayNote.local_date == local_date,
+            )
+            .order_by(DayNote.created_at)
+        ).scalars().all()
     )
     return [_enrich_note(n, db) for n in notes]
 
@@ -103,7 +104,7 @@ def add_note(
     note_in: DayNoteCreate,
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_active_user),
-):
+) -> DayNoteOut:
     """
     Append a plain-text note to *local_date* in *circle_id*. Any
     member may add notes.

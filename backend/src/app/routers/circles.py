@@ -3,6 +3,7 @@
 import uuid
 
 from fastapi import APIRouter, Depends, HTTPException, status
+from sqlalchemy import select
 from sqlalchemy.orm import Session
 
 from app.dependencies import get_current_active_user, get_db
@@ -19,14 +20,12 @@ def _get_membership(
     db: Session, circle_id: uuid.UUID, user_id: uuid.UUID
 ) -> CircleMembership | None:
     """Return the CircleMembership for *user_id* in *circle_id*, or None."""
-    return (
-        db.query(CircleMembership)
-        .filter(
+    return db.execute(
+        select(CircleMembership).where(
             CircleMembership.circle_id == circle_id,
             CircleMembership.user_id == user_id,
         )
-        .first()
-    )
+    ).scalar_one_or_none()
 
 
 def _require_membership(
@@ -66,16 +65,19 @@ def _require_owner(membership: CircleMembership) -> None:
 def list_circles(
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_active_user),
-):
+) -> list[Circle]:
     """Return all circles that the authenticated user belongs to."""
-    memberships = (
-        db.query(CircleMembership)
-        .filter(CircleMembership.user_id == current_user.id)
-        .all()
-    )
+    memberships = db.execute(
+        select(CircleMembership).where(
+            CircleMembership.user_id == current_user.id
+        )
+    ).scalars().all()
     circle_ids = [m.circle_id for m in memberships]
-    circles = db.query(Circle).filter(Circle.id.in_(circle_ids)).all()
-    return circles
+    return list(
+        db.execute(
+            select(Circle).where(Circle.id.in_(circle_ids))
+        ).scalars().all()
+    )
 
 
 @router.post(
@@ -85,7 +87,7 @@ def create_circle(
     circle_in: CircleCreate,
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_active_user),
-):
+) -> Circle:
     """Create a new circle and automatically join the creator as owner."""
     circle = Circle(
         **circle_in.model_dump(),
@@ -111,9 +113,11 @@ def get_circle(
     circle_id: uuid.UUID,
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_active_user),
-):
+) -> Circle:
     """Return a single circle by ID. The caller must be a member."""
-    circle = db.query(Circle).filter(Circle.id == circle_id).first()
+    circle = db.execute(
+        select(Circle).where(Circle.id == circle_id)
+    ).scalar_one_or_none()
     if not circle:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND, detail="Circle not found"
@@ -128,9 +132,11 @@ def update_circle(
     circle_in: CircleUpdate,
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_active_user),
-):
+) -> Circle:
     """Update circle settings. Requires owner or admin role."""
-    circle = db.query(Circle).filter(Circle.id == circle_id).first()
+    circle = db.execute(
+        select(Circle).where(Circle.id == circle_id)
+    ).scalar_one_or_none()
     if not circle:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND, detail="Circle not found"
@@ -152,9 +158,11 @@ def delete_circle(
     circle_id: uuid.UUID,
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_active_user),
-):
+) -> None:
     """Permanently delete a circle. Requires owner role."""
-    circle = db.query(Circle).filter(Circle.id == circle_id).first()
+    circle = db.execute(
+        select(Circle).where(Circle.id == circle_id)
+    ).scalar_one_or_none()
     if not circle:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND, detail="Circle not found"
@@ -170,12 +178,14 @@ def regenerate_invite(
     circle_id: uuid.UUID,
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_active_user),
-):
+) -> Circle:
     """
     Generate a new invite token for *circle_id*, invalidating the
     previous one. Requires owner or admin role.
     """
-    circle = db.query(Circle).filter(Circle.id == circle_id).first()
+    circle = db.execute(
+        select(Circle).where(Circle.id == circle_id)
+    ).scalar_one_or_none()
     if not circle:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND, detail="Circle not found"
@@ -192,14 +202,14 @@ def regenerate_invite(
 def preview_circle_by_invite(
     invite_token: uuid.UUID,
     db: Session = Depends(get_db),
-):
+) -> Circle:
     """
     Return public circle details for a valid *invite_token* without
     requiring authentication.
     """
-    circle = (
-        db.query(Circle).filter(Circle.invite_token == invite_token).first()
-    )
+    circle = db.execute(
+        select(Circle).where(Circle.invite_token == invite_token)
+    ).scalar_one_or_none()
     if not circle:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND, detail="Invalid invite token"
@@ -216,13 +226,11 @@ def join_circle(
     join_in: InviteJoin,
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_active_user),
-):
+) -> CircleMembership:
     """Join a circle using an invite token and choose a per-circle pseudonym."""
-    circle = (
-        db.query(Circle)
-        .filter(Circle.invite_token == join_in.invite_token)
-        .first()
-    )
+    circle = db.execute(
+        select(Circle).where(Circle.invite_token == join_in.invite_token)
+    ).scalar_one_or_none()
     if not circle:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND, detail="Invalid invite token"
@@ -235,14 +243,12 @@ def join_circle(
         )
 
     # Check pseudonym uniqueness within the circle
-    pseudonym_taken = (
-        db.query(CircleMembership)
-        .filter(
+    pseudonym_taken = db.execute(
+        select(CircleMembership).where(
             CircleMembership.circle_id == circle.id,
             CircleMembership.pseudonym == join_in.pseudonym,
         )
-        .first()
-    )
+    ).scalar_one_or_none()
     if pseudonym_taken:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,

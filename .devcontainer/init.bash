@@ -62,11 +62,11 @@ cd "${REPO_ROOT}"
 if [[ ! -f "${REPO_ROOT}/backend/.env" ]]; then
     echo "==> Creating backend/.env ..."
     cat > "${REPO_ROOT}/backend/.env" <<EOF
-DATABASE_URL=postgresql://meepletime:changeme@db:5432/meepletime
-OIDC_AUTHORITY=${REALM_URL}
-OIDC_AUDIENCE=meepletime-backend
-OIDC_ISSUER=${REALM_URL}
-FRONTEND_URL=http://localhost:5173
+MEEPLETIME_DATABASE_URL=postgresql://meepletime:changeme@db:5432/meepletime
+MEEPLETIME_OIDC_AUTHORITY=${REALM_URL}
+MEEPLETIME_OIDC_AUDIENCE=meepletime-backend
+MEEPLETIME_OIDC_ISSUER=${REALM_URL}
+MEEPLETIME_FRONTEND_URL=http://localhost:5173
 EOF
     echo "    Edit backend/.env to set real secrets."
 fi

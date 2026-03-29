@@ -4,6 +4,7 @@ import uuid
 from datetime import date
 
 from fastapi import APIRouter, Depends, HTTPException, status
+from sqlalchemy import select
 from sqlalchemy.orm import Session
 
 from app.dependencies import get_current_active_user, get_db
@@ -18,7 +19,9 @@ router = APIRouter(tags=["day_overrides"])
 
 def _get_circle_or_404(db: Session, circle_id: uuid.UUID) -> Circle:
     """Return the circle or raise HTTP 404 if it does not exist."""
-    circle = db.query(Circle).filter(Circle.id == circle_id).first()
+    circle = db.execute(
+        select(Circle).where(Circle.id == circle_id)
+    ).scalar_one_or_none()
     if not circle:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND, detail="Circle not found"
@@ -30,14 +33,12 @@ def _require_membership(
     db: Session, circle_id: uuid.UUID, user_id: uuid.UUID
 ) -> CircleMembership:
     """Return the membership or raise HTTP 403 if the user is not a member."""
-    m = (
-        db.query(CircleMembership)
-        .filter(
+    m = db.execute(
+        select(CircleMembership).where(
             CircleMembership.circle_id == circle_id,
             CircleMembership.user_id == user_id,
         )
-        .first()
-    )
+    ).scalar_one_or_none()
     if not m:
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
@@ -55,21 +56,19 @@ def get_override(
     local_date: date,
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_active_user),
-):
+) -> DayOverride | None:
     """
     Return the day override for *local_date* in *circle_id*, or null
     if none exists.
     """
     _get_circle_or_404(db, circle_id)
     _require_membership(db, circle_id, current_user.id)
-    return (
-        db.query(DayOverride)
-        .filter(
+    return db.execute(
+        select(DayOverride).where(
             DayOverride.circle_id == circle_id,
             DayOverride.local_date == local_date,
         )
-        .first()
-    )
+    ).scalar_one_or_none()
 
 
 @router.put(
@@ -81,7 +80,7 @@ def upsert_override(
     override_in: DayOverrideCreate,
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_active_user),
-):
+) -> DayOverride:
     """
     Create or replace the day override for *local_date*. Requires
     owner or admin role.
@@ -94,14 +93,12 @@ def upsert_override(
             detail="Admin or owner required",
         )
 
-    existing = (
-        db.query(DayOverride)
-        .filter(
+    existing = db.execute(
+        select(DayOverride).where(
             DayOverride.circle_id == circle_id,
             DayOverride.local_date == local_date,
         )
-        .first()
-    )
+    ).scalar_one_or_none()
     if existing:
         for field, value in override_in.model_dump(exclude_unset=True).items():
             setattr(existing, field, value)
@@ -127,7 +124,7 @@ def delete_override(
     local_date: date,
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_active_user),
-):
+) -> None:
     """
     Delete the day override for *local_date* in *circle_id*. Requires
     owner or admin role.
@@ -140,14 +137,12 @@ def delete_override(
             detail="Admin or owner required",
         )
 
-    existing = (
-        db.query(DayOverride)
-        .filter(
+    existing = db.execute(
+        select(DayOverride).where(
             DayOverride.circle_id == circle_id,
             DayOverride.local_date == local_date,
         )
-        .first()
-    )
+    ).scalar_one_or_none()
     if existing:
         db.delete(existing)
         db.commit()

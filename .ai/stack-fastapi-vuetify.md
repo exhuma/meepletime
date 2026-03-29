@@ -92,6 +92,10 @@ operations. Business logic must not live in routers.
   class (typically `app/config.py`).
 - Every environment variable must appear as a named field on
   `Settings`. Never read `os.environ` or `os.getenv` directly.
+- All environment variables must be prefixed with the application
+  name to avoid collisions in shared environments. Set this with
+  `SettingsConfigDict(env_prefix="MYAPP_")`. For this project
+  the prefix is `MEEPLETIME_`.
 - `Settings` is instantiated once and injected via
   `Depends(get_settings)` or imported as a module-level singleton.
 
@@ -218,6 +222,9 @@ outside the factory function.
   (see `module-database-postgresql`).
 - Raw DDL strings (`CREATE TABLE`, `ALTER TABLE`) in Python code.
 - Hard-coded secrets, passwords, or connection strings.
+- Import statements inside function bodies. All imports must be at
+  module top level. If a circular import would result, restructure
+  the modules; do not use in-function imports as a workaround.
 
 ### Testing (pytest)
 
