@@ -88,7 +88,9 @@ def list_notes(
                 DayNote.local_date == local_date,
             )
             .order_by(DayNote.created_at)
-        ).scalars().all()
+        )
+        .scalars()
+        .all()
     )
     return [_enrich_note(n, db) for n in notes]
 

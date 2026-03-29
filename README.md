@@ -6,7 +6,7 @@ MeepleTime is a self-hosted, mobile-first meeting availability app for private g
 
 | Layer     | Technology                          |
 |-----------|-------------------------------------|
-| Backend   | Python 3.12, FastAPI, SQLAlchemy    |
+| Backend   | Python 3.14, FastAPI, SQLAlchemy    |
 | Database  | PostgreSQL 16                       |
 | Frontend  | Vue 3, Vuetify 3, Vite, Pinia       |
 | Container | Docker, Docker Compose              |

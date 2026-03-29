@@ -1,5 +1,5 @@
 # Stage 1 — build: install all dependencies with uv
-FROM python:3.12-slim AS build
+FROM python:3.14-slim AS build
 RUN pip install --no-cache-dir uv
 WORKDIR /app
 COPY pyproject.toml ./
@@ -8,7 +8,7 @@ RUN uv sync --no-dev
 COPY . .
 
 # Stage 2 — runtime: only built artefacts and runtime deps
-FROM python:3.12-slim
+FROM python:3.14-slim
 WORKDIR /app
 COPY --from=build /app/.venv .venv
 COPY --from=build /app/src/app ./app

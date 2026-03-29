@@ -67,16 +67,20 @@ def list_circles(
     current_user: User = Depends(get_current_active_user),
 ) -> list[Circle]:
     """Return all circles that the authenticated user belongs to."""
-    memberships = db.execute(
-        select(CircleMembership).where(
-            CircleMembership.user_id == current_user.id
+    memberships = (
+        db.execute(
+            select(CircleMembership).where(
+                CircleMembership.user_id == current_user.id
+            )
         )
-    ).scalars().all()
+        .scalars()
+        .all()
+    )
     circle_ids = [m.circle_id for m in memberships]
     return list(
-        db.execute(
-            select(Circle).where(Circle.id.in_(circle_ids))
-        ).scalars().all()
+        db.execute(select(Circle).where(Circle.id.in_(circle_ids)))
+        .scalars()
+        .all()
     )
 
 

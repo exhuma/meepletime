@@ -49,7 +49,7 @@ else
     echo "==> nvm not found; using preinstalled node/npm ..."
 fi
 cd "${REPO_ROOT}/frontend"
-npm ci
+npm install
 
 echo "==> Installing pre-commit hooks ..."
 # pre-commit is installed into the backend venv by uv (dev dep).

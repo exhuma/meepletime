@@ -6,7 +6,7 @@ instruction files it references are mandatory.
 
 Key points:
 
-- Load all `.ai/*.md` instruction files listed in `AGENTS.md`.
+- Load all MCP instruction kits listed in `AGENTS.md`.
 - Never contradict `contract.md`.
 - Authentication is OIDC via Keycloak (Option A). Do not suggest
   local password authentication patterns.

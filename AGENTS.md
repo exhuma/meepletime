@@ -1,7 +1,7 @@
 # AI Assistant Rules
 
 Before generating or modifying files, load **every** instruction
-file listed below in order. All rules in those files are
+kit listed below in order. All rules in those kits are
 non-negotiable unless `contract.md` explicitly overrides them.
 Correctness and security take priority over convenience.
 
@@ -12,11 +12,17 @@ Correctness and security take priority over convenience.
 Load these files at the start of every session that touches
 backend or frontend code:
 
-1. `.ai/stack-fastapi-vuetify.md` — core stack rules (always)
-2. `.ai/module-auth-oidc.md` — OIDC authentication (Keycloak,
-   Option A)
-3. `.ai/module-database-postgresql.md` — PostgreSQL / Alembic
-4. `.ai/module-docs-sphinx.md` — Sphinx documentation
+1. `stack-fastapi-vuetify` — core stack rules (always)
+2. `module-auth-oidc` — OIDC general rules (Keycloak, Option A)
+3. `module-auth-oidc-python` — backend token validation
+4. `module-auth-oidc-vue` — frontend OIDC flow (PKCE)
+5. `module-database-postgresql` — PostgreSQL / Alembic
+6. `module-code-style-python` — Python style and linting
+
+Optional (recommended):
+
+7. `module-dev-tooling-taskfile` — Taskfile conventions
+8. `module-docs-sphinx` — Sphinx documentation
 
 ---
 
@@ -29,7 +35,7 @@ Local password login: removed — do not re-introduce
 
 Two Keycloak clients are used: `meepletime-frontend` (public OIDC
 client for PKCE flow) and `meepletime-backend` (bearer-only resource
-server for audience claim propagation). See `module-auth-oidc.md`.
+server for audience claim propagation). See `module-auth-oidc`.
 
 ---
 

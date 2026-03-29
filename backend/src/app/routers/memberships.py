@@ -48,7 +48,9 @@ def list_members(
             select(CircleMembership).where(
                 CircleMembership.circle_id == circle_id
             )
-        ).scalars().all()
+        )
+        .scalars()
+        .all()
     )
 
 
@@ -157,7 +159,9 @@ def remove_member(
     # Prevent removing the sole owner
     if target.role == MemberRole.owner:
         owner_count = db.execute(
-            select(func.count()).select_from(CircleMembership).where(
+            select(func.count())
+            .select_from(CircleMembership)
+            .where(
                 CircleMembership.circle_id == circle_id,
                 CircleMembership.role == MemberRole.owner,
             )

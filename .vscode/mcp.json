@@ -1,0 +1,8 @@
+{
+  "servers": {
+    "exhuma-instructions": {
+      "type": "http",
+      "url": "https://instructions.albert.lu/kits/mcp"
+    }
+  }
+}
