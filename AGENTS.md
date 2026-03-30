@@ -26,6 +26,56 @@ Optional (recommended):
 
 ---
 
+## Task-scoped applicability
+
+The baseline list above remains mandatory whenever backend or
+frontend code is touched. Use the following as an additional
+selection rule so agents do not drift into loading only the most
+recently edited part of the stack.
+
+### Backend-only tasks
+
+Still load the full mandatory baseline, then also consider:
+
+- `module-fastapi` — backend architecture, dependency usage,
+  error handling, and endpoint composition
+- `module-api-design` — HTTP semantics, status codes, pagination,
+  and response consistency
+- `module-observability-healthz` — health probes and operational
+  readiness checks when the task is ops-facing
+
+### Frontend-only tasks
+
+Still load the full mandatory baseline, then also consider:
+
+- `module-vue-vuetify` — Vue 3 + Vuetify implementation rules
+- `module-api-design` — request/response expectations shared with
+  the backend
+- `module-release-metadata` — only when exposing build/version
+  metadata in the frontend
+
+### Cross-cutting or ops tasks
+
+Prefer adding these on top of the baseline when relevant:
+
+- `module-dev-tooling-taskfile` — local developer workflow and
+  task automation
+- `module-observability-healthz` — live/readiness checks and
+  operational probes
+- `module-library-preferences` — when choosing or replacing
+  dependencies
+
+### Avoiding false narrowing
+
+- Do not infer that frontend kits are no longer applicable merely
+  because the most recent changes were backend-only.
+- Do not infer that backend kits are optional merely because a task
+  touches only docs or tooling; they may still constrain behavior.
+- Use `contract.md` and this file as the primary source of truth
+  when kit selection and recent edit history disagree.
+
+---
+
 ## Authentication strategy
 
 Option: **A — Keycloak (self-hosted OIDC)**
