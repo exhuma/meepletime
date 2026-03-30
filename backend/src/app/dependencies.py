@@ -7,7 +7,7 @@ import uuid
 from datetime import date
 
 import jwt
-from fastapi import Depends, HTTPException, status
+from fastapi import Depends, HTTPException, Request, status
 from fastapi.security import (
     HTTPAuthorizationCredentials,
     HTTPBearer,
@@ -75,6 +75,7 @@ def _decode_oidc_token(
 
 
 def get_current_user(
+    request: Request,
     credentials: HTTPAuthorizationCredentials = Depends(bearer),
     settings: Settings = Depends(get_settings),
     db: Session = Depends(get_db),
@@ -87,6 +88,7 @@ def get_current_user(
     token is validated against the Keycloak JWKS endpoint.
 
     :param credentials: Authorization header bearer token.
+    :param request: Current HTTP request.
     :param settings: Application configuration.
     :param db: Database session.
     :returns: Local User record for the authenticated identity.
@@ -94,19 +96,39 @@ def get_current_user(
         has the wrong audience/issuer, or has a tampered signature.
     """
     token = credentials.credentials
+    request_path = request.url.path
+    client_host = request.client.host if request.client else "unknown"
+    validation_mode = (
+        "dev-shared-secret"
+        if settings.DEV_SHARED_SECRET is not None
+        else "oidc-jwks"
+    )
     try:
         if settings.DEV_SHARED_SECRET is not None:
             payload: dict = _decode_dev_token(token, settings)
         else:
             payload = _decode_oidc_token(token, settings)
     except jwt.ExpiredSignatureError:
-        LOG.debug("Token has expired")
+        LOG.warning(
+            "Expired token via %s for %s %s from %s",
+            validation_mode,
+            request.method,
+            request_path,
+            client_host,
+        )
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Token has expired",
         )
     except jwt.InvalidTokenError as exc:
-        LOG.debug("Invalid token: %s", exc)
+        LOG.warning(
+            "Token validation failed via %s for %s %s from %s: %s",
+            validation_mode,
+            request.method,
+            request_path,
+            client_host,
+            exc,
+        )
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Invalid token",
@@ -134,6 +156,11 @@ def get_current_user(
         user = User(email=email, display_name=display_name)
         db.add(user)
         db.flush()
+        LOG.info(
+            "Provisioned local user for %s via %s",
+            email,
+            provider,
+        )
 
     identity = AuthIdentity(
         user_id=user.id,

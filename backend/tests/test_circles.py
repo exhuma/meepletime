@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import logging
 import uuid
 
 from fastapi.testclient import TestClient
@@ -105,6 +106,26 @@ def test_unauthenticated_request_is_rejected(
     """Ensure GET /circles requires a bearer token (401/403)."""
     response = client.get("/circles")
     assert response.status_code in (401, 403)
+
+
+def test_invalid_token_emits_backend_warning(
+    client: TestClient,
+    caplog,
+) -> None:
+    """Ensure invalid bearer tokens produce a useful warning log."""
+    caplog.set_level(logging.WARNING, logger="app.dependencies")
+
+    response = client.get(
+        "/circles",
+        headers={"Authorization": "Bearer definitely-not-a-jwt"},
+    )
+
+    assert response.status_code == 401
+    assert "Invalid token" in response.text
+    assert any(
+        "Token validation failed via dev-shared-secret" in record.getMessage()
+        for record in caplog.records
+    )
 
 
 def test_regenerate_invite_is_rate_limited(

@@ -1,0 +1,36 @@
+version: 1
+disable_existing_loggers: false
+
+filters:
+  correlation_id:
+    (): app.logging_utils.CorrelationIdFilter
+
+formatters:
+  console:
+    (): app.logging_utils.build_prod_formatter
+
+handlers:
+  stderr:
+    class: logging.StreamHandler
+    level: INFO
+    formatter: console
+    filters: [correlation_id]
+    stream: ext://sys.stderr
+
+loggers:
+  uvicorn:
+    level: INFO
+    handlers: [stderr]
+    propagate: false
+  uvicorn.error:
+    level: INFO
+    handlers: [stderr]
+    propagate: false
+  uvicorn.access:
+    level: INFO
+    handlers: [stderr]
+    propagate: false
+
+root:
+  level: INFO
+  handlers: [stderr]
