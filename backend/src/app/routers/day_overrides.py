@@ -17,6 +17,7 @@ from app.models.day_override import DayOverride
 from app.models.membership import MemberRole
 from app.models.user import User
 from app.schemas.day_override import DayOverrideCreate, DayOverrideOut
+from app.utils import apply_partial_update
 
 router = APIRouter(tags=["day_overrides"])
 
@@ -74,8 +75,9 @@ def upsert_override(
         )
     ).scalar_one_or_none()
     if existing:
-        for field, value in override_in.model_dump(exclude_unset=True).items():
-            setattr(existing, field, value)
+        apply_partial_update(
+            existing, override_in.model_dump(exclude_unset=True)
+        )
         db.commit()
         db.refresh(existing)
         return existing

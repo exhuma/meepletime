@@ -58,7 +58,11 @@ def trigger_notification_eval(
         try:
             scheduler.remove_job(existing_job_id)
         except Exception:
-            pass
+            # The job may have already executed — this is expected.
+            logger.debug(
+                "Could not remove pending job %s (already ran?)",
+                existing_job_id,
+            )
 
     from datetime import timedelta
 

@@ -19,6 +19,7 @@ from app.models.membership import CircleMembership, MemberRole
 from app.models.user import User
 from app.schemas.circle import CircleCreate, CircleOut, CircleUpdate
 from app.schemas.membership import InviteJoin, MembershipOut
+from app.utils import apply_partial_update
 
 router = APIRouter(tags=["circles"])
 
@@ -29,18 +30,15 @@ def list_circles(
     current_user: User = Depends(get_current_active_user),
 ) -> list[Circle]:
     """Return all circles that the authenticated user belongs to."""
-    memberships = (
-        db.execute(
-            select(CircleMembership).where(
-                CircleMembership.user_id == current_user.id
-            )
-        )
-        .scalars()
-        .all()
-    )
-    circle_ids = [m.circle_id for m in memberships]
     return list(
-        db.execute(select(Circle).where(Circle.id.in_(circle_ids)))
+        db.execute(
+            select(Circle)
+            .join(
+                CircleMembership,
+                Circle.id == CircleMembership.circle_id,
+            )
+            .where(CircleMembership.user_id == current_user.id)
+        )
         .scalars()
         .all()
     )
@@ -99,8 +97,7 @@ def update_circle(
     require_admin_or_owner(membership)
 
     update_data = circle_in.model_dump(exclude_unset=True)
-    for field, value in update_data.items():
-        setattr(circle, field, value)
+    apply_partial_update(circle, update_data)
 
     db.commit()
     db.refresh(circle)

@@ -14,6 +14,7 @@ from app.dependencies import (
 from app.models.membership import CircleMembership, MemberRole
 from app.models.user import User
 from app.schemas.membership import MembershipOut, MembershipUpdate
+from app.utils import apply_partial_update
 
 router = APIRouter(tags=["memberships"])
 
@@ -96,8 +97,7 @@ def update_membership(
                 detail="Pseudonym already taken",
             )
 
-    for field, value in update_data.items():
-        setattr(target, field, value)
+    apply_partial_update(target, update_data)
 
     db.commit()
     db.refresh(target)

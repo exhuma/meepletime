@@ -26,3 +26,8 @@ tasks:
       Usage: task dev:token [-- --sub agent --email a@dev.local]
     dir: backend
     cmd: uv run python scripts/dev_token.py {{.CLI_ARGS}}
+
+  test:backend:
+    desc: Run the backend test suite
+    dir: backend
+    cmd: uv run pytest {{.CLI_ARGS}}

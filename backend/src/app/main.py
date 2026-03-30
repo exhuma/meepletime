@@ -2,13 +2,24 @@
 
 from __future__ import annotations
 
+import logging
 from collections.abc import AsyncGenerator
 from contextlib import asynccontextmanager
 
-from fastapi import FastAPI
+from fastapi import Depends, FastAPI
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import JSONResponse
+from sqlalchemy import text
+from sqlalchemy.orm import Session
 
 from app.config import get_settings
+from app.database import get_db
+from app.middleware import (
+    RequestLoggingMiddleware,
+    SecurityHeadersMiddleware,
+)
+
+LOG = logging.getLogger(__name__)
 
 
 def create_app() -> FastAPI:
@@ -47,12 +58,17 @@ def create_app() -> FastAPI:
         lifespan=lifespan,
     )
 
+    # Middleware is applied LIFO: last registered runs first on
+    # requests.  CORS must be outermost to catch preflight OPTIONS
+    # before auth; security headers and logging are inner layers.
+    app.add_middleware(SecurityHeadersMiddleware)
+    app.add_middleware(RequestLoggingMiddleware)
     app.add_middleware(
         CORSMiddleware,
         allow_origins=settings.CORS_ORIGINS,
         allow_credentials=True,
-        allow_methods=["*"],
-        allow_headers=["*"],
+        allow_methods=["DELETE", "GET", "PATCH", "POST", "PUT"],
+        allow_headers=["Authorization", "Content-Type"],
     )
 
     from app.routers import (
@@ -74,13 +90,27 @@ def create_app() -> FastAPI:
     app.include_router(day_notes.router)
 
     @app.get("/health")
-    def health_check() -> dict[str, str]:
+    def health_check(
+        db: Session = Depends(get_db),
+    ) -> JSONResponse:
         """
         Return service health status.
 
-        :returns: JSON object with ``status`` key.
+        Checks database connectivity. Returns HTTP 503 when any
+        dependency is unavailable.
+
+        :param db: Session used for the DB connectivity probe.
+        :returns: JSON response with ``status`` key.
         """
-        return {"status": "ok"}
+        try:
+            db.execute(text("SELECT 1"))
+        except Exception as exc:
+            LOG.error("Health check: database unavailable: %s", exc)
+            return JSONResponse(
+                status_code=503,
+                content={"status": "error", "detail": "database"},
+            )
+        return JSONResponse(content={"status": "ok"})
 
     return app
 
