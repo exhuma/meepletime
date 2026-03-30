@@ -123,7 +123,7 @@ def test_invalid_token_emits_backend_warning(
     assert response.status_code == 401
     assert "Invalid token" in response.text
     assert any(
-        "Token validation failed via dev-shared-secret" in record.getMessage()
+        "Token validation failed via unclassified" in record.getMessage()
         for record in caplog.records
     )
 

@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+import base64
+import json
 from datetime import UTC, datetime, timedelta
 from types import SimpleNamespace
 from typing import cast
@@ -11,7 +13,11 @@ import pytest
 from fastapi import HTTPException
 
 from app.config import Settings
-from app.dependencies import _decode_dev_token, validate_date_range
+from app.dependencies import (
+    _decode_dev_token,
+    _select_token_validation_mode,
+    validate_date_range,
+)
 
 
 def _settings() -> Settings:
@@ -46,6 +52,20 @@ def _sign(
 ) -> str:
     """Return an HS256 JWT for the provided payload."""
     return jwt.encode(payload, secret, algorithm="HS256")
+
+
+def _unsigned_token(algorithm: str) -> str:
+    """Return a JWT-shaped string with the requested alg header."""
+    header = (
+        base64.urlsafe_b64encode(
+            json.dumps({"alg": algorithm, "typ": "JWT"}).encode()
+        )
+        .decode()
+        .rstrip("=")
+    )
+    payload = base64.urlsafe_b64encode(b"{}")
+    signature = base64.urlsafe_b64encode(b"sig").decode().rstrip("=")
+    return f"{header}.{payload.decode().rstrip('=')}.{signature}"
 
 
 def test_decode_dev_token_valid_token() -> None:
@@ -89,10 +109,54 @@ def test_decode_dev_token_wrong_issuer() -> None:
 def test_decode_dev_token_tampered_signature() -> None:
     """Ensure tampered signature raises InvalidSignatureError."""
     token = _sign(_token_payload())
-    tampered = token[:-1] + ("a" if token[-1] != "a" else "b")
+    header, payload, signature = token.split(".")
+    tampered_signature = ("a" if signature[0] != "a" else "b") + signature[1:]
+    tampered = ".".join([header, payload, tampered_signature])
 
     with pytest.raises(jwt.InvalidSignatureError):
         _decode_dev_token(tampered, _settings())
+
+
+def test_select_validation_mode_prefers_dev_for_hs256() -> None:
+    """Ensure HS256 headers select the dev shared-secret path."""
+    token = _sign(_token_payload())
+
+    mode = _select_token_validation_mode(token, _settings())
+
+    assert mode == "dev-shared-secret"
+
+
+def test_select_validation_mode_prefers_oidc_for_rs256() -> None:
+    """Ensure RS256 headers select the OIDC JWKS validation path."""
+    token = _unsigned_token("RS256")
+
+    mode = _select_token_validation_mode(token, _settings())
+
+    assert mode == "oidc-jwks"
+
+
+def test_select_validation_mode_rejects_hs256_without_secret() -> None:
+    """Ensure HS256 tokens fail fast when dev-token support is off."""
+    token = _sign(_token_payload())
+    settings = cast(
+        Settings,
+        SimpleNamespace(
+            DEV_SHARED_SECRET=None,
+            OIDC_AUDIENCE="meepletime-backend",
+            OIDC_ISSUER="https://keycloak.example/realms/meepletime",
+        ),
+    )
+
+    with pytest.raises(jwt.InvalidTokenError):
+        _select_token_validation_mode(token, settings)
+
+
+def test_select_validation_mode_rejects_unknown_algorithm() -> None:
+    """Ensure unsupported JWT algorithms are rejected clearly."""
+    token = _unsigned_token("HS384")
+
+    with pytest.raises(jwt.InvalidTokenError):
+        _select_token_validation_mode(token, _settings())
 
 
 def test_validate_date_range_rejects_inverted_range() -> None:

@@ -27,6 +27,40 @@ bearer = HTTPBearer()
 LOG = logging.getLogger(__name__)
 
 
+def _select_token_validation_mode(
+    token: str,
+    settings: Settings,
+) -> str:
+    """
+    Return the validation strategy implied by the JWT header.
+
+    Local development may enable both Keycloak-issued RS256 tokens
+    and self-minted HS256 dev tokens at the same time. Selection is
+    based on the unverified ``alg`` header so browser logins do not
+    get routed through the dev-token validator.
+
+    :param token: Raw bearer token string.
+    :param settings: Application settings.
+    :returns: Either ``dev-shared-secret`` or ``oidc-jwks``.
+    :raises jwt.InvalidTokenError: When the token header is invalid
+        or the algorithm is unsupported for the current settings.
+    """
+    header = jwt.get_unverified_header(token)
+    algorithm = header.get("alg")
+
+    if algorithm == "HS256":
+        if settings.DEV_SHARED_SECRET is None:
+            raise jwt.InvalidTokenError(
+                "HS256 token received but DEV_SHARED_SECRET is unset"
+            )
+        return "dev-shared-secret"
+
+    if algorithm == "RS256":
+        return "oidc-jwks"
+
+    raise jwt.InvalidTokenError(f"Unsupported token algorithm: {algorithm!r}")
+
+
 def _decode_dev_token(
     token: str,
     settings: Settings,
@@ -98,13 +132,10 @@ def get_current_user(
     token = credentials.credentials
     request_path = request.url.path
     client_host = request.client.host if request.client else "unknown"
-    validation_mode = (
-        "dev-shared-secret"
-        if settings.DEV_SHARED_SECRET is not None
-        else "oidc-jwks"
-    )
+    validation_mode = "unclassified"
     try:
-        if settings.DEV_SHARED_SECRET is not None:
+        validation_mode = _select_token_validation_mode(token, settings)
+        if validation_mode == "dev-shared-secret":
             payload: dict = _decode_dev_token(token, settings)
         else:
             payload = _decode_oidc_token(token, settings)
