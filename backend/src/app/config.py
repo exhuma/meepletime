@@ -24,6 +24,10 @@ class Settings(BaseSettings):
         notification coalescing, in seconds.
     :param FRONTEND_URL: Allowed CORS origin for the Vue frontend.
     :param CORS_ORIGINS: Allowed CORS origins for API requests.
+    :param INVITE_REGEN_LIMIT: Max invite regeneration requests
+        allowed per window for a user+IP key.
+    :param INVITE_REGEN_WINDOW_SECONDS: Sliding-window size in
+        seconds for invite regeneration throttling.
     """
 
     DATABASE_URL: PostgresDsn
@@ -37,6 +41,8 @@ class Settings(BaseSettings):
         "http://localhost:5173",
         "http://localhost:3000",
     ]
+    INVITE_REGEN_LIMIT: int = 5
+    INVITE_REGEN_WINDOW_SECONDS: int = 60
 
     model_config = SettingsConfigDict(
         env_file=".env",

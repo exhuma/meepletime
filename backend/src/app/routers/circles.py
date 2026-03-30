@@ -2,10 +2,11 @@
 
 import uuid
 
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, Request, status
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
+from app.config import Settings, get_settings
 from app.dependencies import (
     get_circle_or_404,
     get_current_active_user,
@@ -17,11 +18,28 @@ from app.dependencies import (
 from app.models.circle import Circle
 from app.models.membership import CircleMembership, MemberRole
 from app.models.user import User
+from app.rate_limit import enforce_limit_or_429
 from app.schemas.circle import CircleCreate, CircleOut, CircleUpdate
 from app.schemas.membership import InviteJoin, MembershipOut
 from app.utils import apply_partial_update
 
 router = APIRouter(tags=["circles"])
+
+
+def limit_invite_regeneration(
+    request: Request,
+    current_user: User = Depends(get_current_active_user),
+    settings: Settings = Depends(get_settings),
+) -> None:
+    """Throttle invite regeneration attempts by user and client IP."""
+    client_host = request.client.host if request.client else "unknown"
+    key = f"invite:{current_user.id}:{client_host}"
+    enforce_limit_or_429(
+        key=key,
+        limit=settings.INVITE_REGEN_LIMIT,
+        window_seconds=settings.INVITE_REGEN_WINDOW_SECONDS,
+        scope="invite-regeneration",
+    )
 
 
 @router.get("/circles", response_model=list[CircleOut])
@@ -122,6 +140,7 @@ def delete_circle(
 def regenerate_invite(
     circle_id: uuid.UUID,
     db: Session = Depends(get_db),
+    _rate_limit: None = Depends(limit_invite_regeneration),
     current_user: User = Depends(get_current_active_user),
 ) -> Circle:
     """

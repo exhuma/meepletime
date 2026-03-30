@@ -105,3 +105,33 @@ def test_unauthenticated_request_is_rejected(
     """Ensure GET /circles requires a bearer token (401/403)."""
     response = client.get("/circles")
     assert response.status_code in (401, 403)
+
+
+def test_regenerate_invite_is_rate_limited(
+    client: TestClient,
+    auth_headers: dict[str, str],
+) -> None:
+    """Ensure invite regeneration returns 429 after configured limit."""
+    create_resp = client.post(
+        "/circles",
+        json={"name": "Rate Limited", "timezone": "UTC"},
+        headers=auth_headers,
+    )
+    circle_id = create_resp.json()["id"]
+
+    for _ in range(3):
+        ok_resp = client.post(
+            f"/circles/{circle_id}/invite",
+            headers=auth_headers,
+        )
+        assert ok_resp.status_code == 200
+
+    limited_resp = client.post(
+        f"/circles/{circle_id}/invite",
+        headers=auth_headers,
+    )
+    assert limited_resp.status_code == 429
+    assert limited_resp.headers["RateLimit-Limit"] == "3"
+    assert limited_resp.headers["RateLimit-Remaining"] == "0"
+    assert int(limited_resp.headers["RateLimit-Reset"]) >= 1
+    assert int(limited_resp.headers["Retry-After"]) >= 1
