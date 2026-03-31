@@ -54,7 +54,7 @@
         "[json]": {
           "editor.defaultFormatter": "esbenp.prettier-vscode"
         },
-        "prettier.configPath": "${workspaceFolder}/frontend/.prettierrc.json"
+        "prettier.configPath": "frontend/.prettierrc.json"
       }
     }
   }
