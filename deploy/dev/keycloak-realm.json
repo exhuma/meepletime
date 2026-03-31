@@ -3,6 +3,7 @@
   "realm": "meepletime",
   "enabled": true,
   "loginTheme": "meepletime",
+  "accountTheme": "meepletime",
   "sslRequired": "none",
   "registrationAllowed": false,
   "loginWithEmailAllowed": true,

@@ -1,0 +1,234 @@
+/* MeepleTime account console brand overrides.            */
+/* Targets the Keycloak v3 React account console          */
+/* (PatternFly 5) shipped in Keycloak 25+.                */
+/* brand-tokens.css is auto-generated — run: task brand:sync */
+
+@import url('brand-tokens.css');
+
+/* ── PatternFly 5 semantic tokens ────────────────────── */
+
+:root {
+  /* Backgrounds */
+  --pf-t--global--background--color--primary--default:
+    var(--mt-surface);
+  --pf-t--global--background--color--secondary--default:
+    var(--mt-surface-high);
+  --pf-t--global--background--color--floating--default:
+    var(--mt-surface-highest);
+
+  /* Text */
+  --pf-t--global--color--100: var(--mt-text);
+  --pf-t--global--color--200: var(--mt-text-muted);
+  --pf-t--global--color--300: var(--mt-text-muted);
+
+  /* Brand */
+  --pf-t--global--color--brand--default: var(--mt-primary);
+  --pf-t--global--color--brand--hover: var(--mt-primary-deep);
+  --pf-t--global--color--brand--clicked: var(--mt-primary-deep);
+
+  /* Borders */
+  --pf-t--global--border--color--default: var(--mt-outline);
+  --pf-t--global--border--color--secondary: var(--mt-outline);
+
+  /* Danger */
+  --pf-t--global--color--status--danger--default:
+    var(--mt-error);
+  --pf-t--global--color--status--danger--hover:
+    var(--mt-error-bg);
+
+  /* Typography */
+  --pf-t--global--font--family--body--default:
+    'Be Vietnam Pro', sans-serif;
+  --pf-t--global--font--family--heading--default:
+    'Noto Serif', serif;
+}
+
+/* ── PatternFly 5 component tokens (fallback) ─────────── */
+
+:root {
+  --pf-v5-global--BackgroundColor--100: var(--mt-surface);
+  --pf-v5-global--BackgroundColor--200: var(--mt-surface-high);
+  --pf-v5-global--BackgroundColor--300:
+    var(--mt-surface-highest);
+
+  --pf-v5-global--Color--100: var(--mt-text);
+  --pf-v5-global--Color--200: var(--mt-text-muted);
+  --pf-v5-global--Color--300: var(--mt-text-muted);
+
+  --pf-v5-global--primary-color--100: var(--mt-primary);
+  --pf-v5-global--primary-color--200: var(--mt-primary-deep);
+  --pf-v5-global--active-color--100: var(--mt-primary-deep);
+
+  --pf-v5-global--danger-color--100: var(--mt-error);
+  --pf-v5-global--danger-color--200: var(--mt-error-bg);
+
+  --pf-v5-global--BorderColor--100: var(--mt-outline);
+  --pf-v5-global--BorderColor--200: var(--mt-outline);
+
+  --pf-v5-global--FontFamily--sans-serif:
+    'Be Vietnam Pro', sans-serif;
+  --pf-v5-global--FontFamily--heading--sans-serif:
+    'Noto Serif', serif;
+}
+
+/* ── Base page ────────────────────────────────────────── */
+
+body,
+.pf-v5-c-page,
+#app {
+  background-color: var(--mt-surface) !important;
+  color: var(--mt-text) !important;
+  font-family: 'Be Vietnam Pro', sans-serif !important;
+}
+
+/* ── Masthead ─────────────────────────────────────────── */
+
+.pf-v5-c-masthead {
+  background: var(--mt-surface-high);
+  border-bottom: 1px solid var(--mt-outline);
+}
+
+.pf-v5-c-masthead__brand,
+.pf-v5-c-masthead__content {
+  color: var(--mt-text);
+}
+
+/* ── Sidebar / navigation ─────────────────────────────── */
+
+.pf-v5-c-page__sidebar,
+.pf-v5-c-nav {
+  background-color: var(--mt-surface-high);
+  border-right: 1px solid var(--mt-outline);
+}
+
+.pf-v5-c-nav__link {
+  color: var(--mt-text-muted);
+}
+
+.pf-v5-c-nav__link.pf-m-current,
+.pf-v5-c-nav__link:hover,
+.pf-v5-c-nav__link:focus {
+  color: var(--mt-text);
+  background-color: var(--mt-surface-highest);
+}
+
+.pf-v5-c-nav__link::before {
+  border-color: var(--mt-primary);
+}
+
+/* ── Cards / panels ───────────────────────────────────── */
+
+.pf-v5-c-card {
+  background-color: var(--mt-surface-high);
+  border: 1px solid
+    color-mix(in srgb, var(--mt-outline), transparent 25%);
+  color: var(--mt-text);
+}
+
+.pf-v5-c-card__title,
+.pf-v5-c-card__header {
+  color: var(--mt-text);
+  font-family: 'Noto Serif', serif;
+}
+
+/* ── Form controls ────────────────────────────────────── */
+
+.pf-v5-c-form-control {
+  background-color: var(--mt-surface-highest);
+  border-color: var(--mt-outline);
+  color: var(--mt-text);
+}
+
+.pf-v5-c-form-control:focus-within {
+  border-color: var(--mt-primary);
+  outline-color: var(--mt-primary);
+}
+
+.pf-v5-c-form__label-text {
+  color: var(--mt-primary);
+  font-size: 0.68rem;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  font-weight: 600;
+}
+
+/* ── Buttons ──────────────────────────────────────────── */
+
+.pf-v5-c-button.pf-m-primary {
+  background: linear-gradient(
+    145deg,
+    var(--mt-primary) 0%,
+    var(--mt-primary-deep) 100%
+  );
+  color: var(--mt-on-primary);
+  border-color: transparent;
+  font-weight: 700;
+  font-family: 'Be Vietnam Pro', sans-serif;
+}
+
+.pf-v5-c-button.pf-m-primary:hover {
+  filter: saturate(1.1) brightness(1.05);
+}
+
+.pf-v5-c-button.pf-m-secondary {
+  color: var(--mt-primary);
+  border-color: var(--mt-primary);
+}
+
+.pf-v5-c-button.pf-m-secondary:hover {
+  background-color: var(--mt-surface-highest);
+}
+
+.pf-v5-c-button.pf-m-link {
+  color: var(--mt-primary);
+}
+
+/* ── Alerts ───────────────────────────────────────────── */
+
+.pf-v5-c-alert.pf-m-danger {
+  background-color:
+    color-mix(in srgb, var(--mt-error-bg), transparent 60%);
+  border-color:
+    color-mix(in srgb, var(--mt-error), transparent 50%);
+  color: var(--mt-error);
+}
+
+/* ── Tabs ─────────────────────────────────────────────── */
+
+.pf-v5-c-tabs__link {
+  color: var(--mt-text-muted);
+}
+
+.pf-v5-c-tabs__link.pf-m-current,
+.pf-v5-c-tabs__link:hover {
+  color: var(--mt-text);
+}
+
+.pf-v5-c-tabs__link::before {
+  border-color: var(--mt-primary);
+}
+
+/* ── Dividers ─────────────────────────────────────────── */
+
+hr,
+.pf-v5-c-divider {
+  border-color: var(--mt-outline);
+  opacity: 0.5;
+}
+
+/* ── Page background gradient (subtle) ───────────────── */
+
+.pf-v5-c-page__main {
+  background:
+    radial-gradient(
+      ellipse at 78% 12%,
+      #3d2e2a 0%,
+      transparent 52%
+    ),
+    radial-gradient(
+      ellipse at 18% 88%,
+      #2a2320 0%,
+      transparent 48%
+    ),
+    var(--mt-surface);
+}

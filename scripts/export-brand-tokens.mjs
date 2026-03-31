@@ -34,6 +34,18 @@ const keycloakCssPath = path.join(
   'brand-tokens.css',
 )
 
+  const keycloakAccountCssPath = path.join(
+    rootDir,
+    'assets',
+    'keycloak',
+    'themes',
+    'meepletime',
+    'account',
+    'resources',
+    'css',
+    'brand-tokens.css',
+  )
+
 const fontImports = source.fonts.imports
   .map((url) => `@import url('${url}');`)
   .join('\n')
@@ -85,6 +97,7 @@ await Promise.all([
   writeOutput(frontendCssPath, frontendCss),
   writeOutput(keycloakCssPath, keycloakCss),
 ])
+  await writeOutput(keycloakAccountCssPath, keycloakCss)
 
 function header(kind) {
   return [
