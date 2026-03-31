@@ -303,6 +303,10 @@ body {
   filter: brightness(0.96);
 }
 
+.mt-submit-link {
+  text-decoration: none;
+}
+
 /* ── Social login ─────────────────────────────────────────── */
 
 .mt-divider {
