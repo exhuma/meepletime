@@ -1,0 +1,1 @@
+The attendee limits should be configurable per host. A host usually has limited space for seating. It might be a bit stretchable. Move the "soft_max_attendees" and "hard_max_attendees" from the circle-settings to the user-profile for that circle. The minimum-attendees still make sense on the cirlce.
