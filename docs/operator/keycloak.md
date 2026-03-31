@@ -27,6 +27,21 @@ MeepleTime uses Keycloak (self-hosted OIDC, Option A).
 For production, use `start` instead of `start-dev` and configure
 TLS termination in front of Keycloak.
 
+### Login theme source
+
+The custom login theme is versioned in this repository at:
+
+- `assets/keycloak/themes/meepletime`
+
+For local dev-container testing, `.devcontainer/docker-compose.yml`
+mounts this path into Keycloak as `/opt/keycloak/themes`.
+The dev command also disables Keycloak theme caching so CSS and
+template edits appear after a browser refresh.
+
+For production, mount `assets/keycloak/themes` (or a copied image
+layer containing it) to `/opt/keycloak/themes` in the Keycloak
+container and set the realm login theme to `meepletime`.
+
 ---
 
 ## Initial setup
@@ -151,6 +166,9 @@ verify that `email` and `profile` scopes are assigned.
 - [ ] Set `OIDC_AUTHORITY` / `VITE_OIDC_AUTHORITY` to the
       production Keycloak URL.
 - [ ] Back up the Keycloak database (or export the realm).
+- [ ] Mount `/opt/keycloak/themes` with the `meepletime` theme.
+- [ ] Verify **Realm settings → Themes → Login theme** is
+  `meepletime`.
 
 ---
 

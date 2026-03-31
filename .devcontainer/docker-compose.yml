@@ -71,7 +71,11 @@ services:
   # ----------------------------------------------------------------
   keycloak:
     image: quay.io/keycloak/keycloak:26.5
-    command: start-dev --import-realm
+    command: >-
+      start-dev --import-realm
+      --spi-theme-static-max-age=-1
+      --spi-theme-cache-themes=false
+      --spi-theme-cache-templates=false
     environment:
       KC_BOOTSTRAP_ADMIN_USERNAME: admin
       KC_BOOTSTRAP_ADMIN_PASSWORD: admin
@@ -82,7 +86,14 @@ services:
         http://keycloak.127.0.0.1.nip.io:8080
       KC_HEALTH_ENABLED: "true"
     volumes:
-      - ../deploy/dev/keycloak-realm.json:/opt/keycloak/data/import/meepletime-realm.json:ro
+      - type: bind
+        source: ../deploy/dev/keycloak-realm.json
+        target: /opt/keycloak/data/import/meepletime-realm.json
+        read_only: true
+      - type: bind
+        source: ../assets/keycloak/themes
+        target: /opt/keycloak/themes
+        read_only: true
     ports:
       - "8080:8080"
     healthcheck:

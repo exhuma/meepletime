@@ -2,6 +2,7 @@
   "id": "meepletime",
   "realm": "meepletime",
   "enabled": true,
+  "loginTheme": "meepletime",
   "sslRequired": "none",
   "registrationAllowed": false,
   "loginWithEmailAllowed": true,
