@@ -25,6 +25,11 @@
       ${extraHeadHtml?no_esc}
     </#if>
     <link
+      rel="icon"
+      type="image/svg+xml"
+      href="${url.resourcesPath}/img/favicon.svg"
+    >
+    <link
       rel="stylesheet"
       href="${url.resourcesPath}/css/login.css"
     >

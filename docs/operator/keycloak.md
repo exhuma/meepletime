@@ -27,9 +27,9 @@ MeepleTime uses Keycloak (self-hosted OIDC, Option A).
 For production, use `start` instead of `start-dev` and configure
 TLS termination in front of Keycloak.
 
-### Login theme source
+### Theme source
 
-The custom login theme is versioned in this repository at:
+The custom Keycloak theme is versioned in this repository at:
 
 - `assets/keycloak/themes/meepletime`
 
@@ -38,9 +38,15 @@ mounts this path into Keycloak as `/opt/keycloak/themes`.
 The dev command also disables Keycloak theme caching so CSS and
 template edits appear after a browser refresh.
 
+The login flow uses standalone FreeMarker templates under
+`login/`. The account console uses a custom `account/index.ftl`
+shell on top of `keycloak.v3`, so branding and page framing can
+be changed without forking the React application bundle.
+
 For production, mount `assets/keycloak/themes` (or a copied image
 layer containing it) to `/opt/keycloak/themes` in the Keycloak
-container and set the realm login theme to `meepletime`.
+container and set both the realm login theme and account theme to
+`meepletime`.
 
 ---
 
@@ -168,6 +174,8 @@ verify that `email` and `profile` scopes are assigned.
 - [ ] Back up the Keycloak database (or export the realm).
 - [ ] Mount `/opt/keycloak/themes` with the `meepletime` theme.
 - [ ] Verify **Realm settings → Themes → Login theme** is
+  `meepletime`.
+- [ ] Verify **Realm settings → Themes → Account theme** is
   `meepletime`.
 
 ---

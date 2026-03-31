@@ -18,9 +18,14 @@ That command regenerates:
 - `src/generated/brand-theme.ts` for Vuetify theme setup
 - `src/generated/brand-tokens.css` for shared frontend CSS tokens
 - `../assets/keycloak/themes/meepletime/login/resources/css/brand-tokens.css`
+- `public/favicon.svg` for the frontend app icon
+- `../assets/keycloak/themes/meepletime/login/resources/img/favicon.svg`
+	for Keycloak login pages
 
 Keep `login.ftl` handwritten. The shared source of truth is the token
-set, not the rendered markup.# Vue 3 + Vite
+set, not the rendered markup.
+
+# Vue 3 + Vite
 
 This template should help get you started developing with Vue 3 in Vite. The template uses Vue 3 `<script setup>` SFCs, check out the [script setup docs](https://v3.vuejs.org/api/sfc-script-setup.html#sfc-script-setup) to learn more.
 

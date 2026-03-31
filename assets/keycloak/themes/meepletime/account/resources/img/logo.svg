@@ -1,0 +1,18 @@
+<svg
+  xmlns="http://www.w3.org/2000/svg"
+  viewBox="0 0 500 500"
+  role="img"
+  aria-labelledby="title"
+>
+  <title>MeepleTime</title>
+  <path
+    fill="#df7152"
+    d="M250 97.5 185 162.5l-30 55-65 65 30 120 100-60 30 30 30-30
+       100 60 30-120-65-65-30-55z"
+  />
+  <circle fill="#1a1614" cx="250.89" cy="226.73" r="23.73" />
+  <path
+    fill="#1a1614"
+    d="M202.42 296.5h95.16v-22.58c-20-20-75-20-95.16 0z"
+  />
+</svg>

@@ -1,10 +1,11 @@
-import { mkdir, readFile, writeFile } from 'node:fs/promises'
+import { copyFile, mkdir, readFile, writeFile } from 'node:fs/promises'
 import path from 'node:path'
 import { fileURLToPath } from 'node:url'
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url))
 const rootDir = path.resolve(__dirname, '..')
 const sourcePath = path.join(rootDir, 'design', 'meepletime-brand.json')
+const faviconSourcePath = path.join(rootDir, 'design', 'meepletime-favicon.svg')
 
 const source = JSON.parse(await readFile(sourcePath, 'utf8'))
 
@@ -34,17 +35,36 @@ const keycloakCssPath = path.join(
   'brand-tokens.css',
 )
 
-  const keycloakAccountCssPath = path.join(
-    rootDir,
-    'assets',
-    'keycloak',
-    'themes',
-    'meepletime',
-    'account',
-    'resources',
-    'css',
-    'brand-tokens.css',
-  )
+const frontendFaviconPath = path.join(
+  rootDir,
+  'frontend',
+  'public',
+  'favicon.svg',
+)
+
+const keycloakFaviconPath = path.join(
+  rootDir,
+  'assets',
+  'keycloak',
+  'themes',
+  'meepletime',
+  'login',
+  'resources',
+  'img',
+  'favicon.svg',
+)
+
+const keycloakAccountCssPath = path.join(
+  rootDir,
+  'assets',
+  'keycloak',
+  'themes',
+  'meepletime',
+  'account',
+  'resources',
+  'css',
+  'brand-tokens.css',
+)
 
 const fontImports = source.fonts.imports
   .map((url) => `@import url('${url}');`)
@@ -96,8 +116,10 @@ await Promise.all([
   writeOutput(frontendThemePath, frontendTheme),
   writeOutput(frontendCssPath, frontendCss),
   writeOutput(keycloakCssPath, keycloakCss),
+  copyOutput(faviconSourcePath, frontendFaviconPath),
+  copyOutput(faviconSourcePath, keycloakFaviconPath),
 ])
-  await writeOutput(keycloakAccountCssPath, keycloakCss)
+await writeOutput(keycloakAccountCssPath, keycloakCss)
 
 function header(kind) {
   return [
@@ -153,4 +175,9 @@ function indent(value, spaces) {
 async function writeOutput(filePath, content) {
   await mkdir(path.dirname(filePath), { recursive: true })
   await writeFile(filePath, `${content.trim()}\n`, 'utf8')
+}
+
+async function copyOutput(sourceFilePath, targetFilePath) {
+  await mkdir(path.dirname(targetFilePath), { recursive: true })
+  await copyFile(sourceFilePath, targetFilePath)
 }
