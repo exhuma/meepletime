@@ -1,0 +1,24 @@
+/* Auto-generated CSS file. */
+/* Source: design/meepletime-brand.json */
+/* Run: npm run brand:sync */
+@import url('https://fonts.googleapis.com/css2?family=Noto+Serif:wght@400;700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@400;500;600;700&display=swap');
+
+:root {
+  --mt-surface: #161311;
+  --mt-surface-high: #2e2927;
+  --mt-surface-highest: #393431;
+  --mt-text: #eae1dd;
+  --mt-text-muted: #ddc0b9;
+  --mt-outline: #56423d;
+  --mt-primary: #ffb5a1;
+  --mt-primary-deep: #df7152;
+  --mt-on-primary: #601400;
+  --mt-shadow: rgba(0, 0, 0, 0.35);
+  --mt-error: #ffb4ab;
+  --mt-error-bg: #93000a;
+  --mt-card-radius: 1.25rem;
+  --mt-field-radius: 0.65rem;
+  --mt-button-radius: 0.7rem;
+  --mt-glass-blur: 18px;
+}

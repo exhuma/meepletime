@@ -1,26 +1,4 @@
-@import url(
-  'https://fonts.googleapis.com/css2?family=Noto+Serif&display=swap'
-);
-@import url(
-  'https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro&display=swap'
-);
-
-/* ── Design tokens ────────────────────────────────────────── */
-
-:root {
-  --mt-surface: #161311;
-  --mt-surface-high: #2e2927;
-  --mt-surface-highest: #393431;
-  --mt-text: #eae1dd;
-  --mt-text-muted: #ddc0b9;
-  --mt-outline: #56423d;
-  --mt-primary: #ffb5a1;
-  --mt-primary-deep: #df7152;
-  --mt-on-primary: #601400;
-  --mt-shadow: rgba(0, 0, 0, 0.35);
-  --mt-error: #ffb4ab;
-  --mt-error-bg: #93000a;
-}
+@import url('brand-tokens.css');
 
 *,
 *::before,
@@ -92,13 +70,13 @@ body {
   width: 100%;
   position: relative;
   overflow: hidden;
-  border-radius: 1.25rem;
+  border-radius: var(--mt-card-radius);
   border: 1px solid
     color-mix(in srgb, var(--mt-outline), transparent 30%);
   background:
     color-mix(in srgb, var(--mt-surface-high), transparent 18%);
-  backdrop-filter: blur(18px);
-  -webkit-backdrop-filter: blur(18px);
+  backdrop-filter: blur(var(--mt-glass-blur));
+  -webkit-backdrop-filter: blur(var(--mt-glass-blur));
   box-shadow:
     0 28px 56px rgba(0, 0, 0, 0.5),
     inset 0 0 0 0.5px rgba(255, 181, 161, 0.06);
@@ -236,7 +214,7 @@ body {
   width: 100%;
   border: 1px solid
     color-mix(in srgb, var(--mt-outline), transparent 30%);
-  border-radius: 0.65rem;
+  border-radius: var(--mt-field-radius);
   background:
     color-mix(in srgb, var(--mt-surface-highest), transparent 14%);
   color: var(--mt-text);
@@ -294,7 +272,7 @@ body {
   margin-top: 0.4rem;
   width: 100%;
   border: none;
-  border-radius: 0.7rem;
+  border-radius: var(--mt-button-radius);
   background: linear-gradient(
     145deg,
     var(--mt-primary) 0%,
@@ -364,7 +342,7 @@ body {
   display: flex;
   justify-content: center;
   align-items: center;
-  border-radius: 0.65rem;
+  border-radius: var(--mt-field-radius);
   border: 1px solid
     color-mix(in srgb, var(--mt-outline), transparent 45%);
   background:

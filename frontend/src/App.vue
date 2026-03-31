@@ -1,6 +1,6 @@
 <template>
   <v-app>
-    <v-app-bar color="primary" elevation="2">
+    <v-app-bar class="mt-app-bar">
       <v-app-bar-title>
         <span class="font-weight-bold">MeepleTime</span>
       </v-app-bar-title>
