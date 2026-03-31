@@ -31,10 +31,13 @@ services:
     extra_hosts:
       - "keycloak.127.0.0.1.nip.io:host-gateway"
     environment:
-      MEEPLETIME_DATABASE_URL: postgresql://meepletime:changeme@db:5432/meepletime
-      MEEPLETIME_OIDC_AUTHORITY: http://keycloak.127.0.0.1.nip.io:8080/realms/meepletime
+      MEEPLETIME_DATABASE_URL: >-
+        postgresql://meepletime:changeme@db:5432/meepletime
+      MEEPLETIME_OIDC_AUTHORITY: >-
+        http://keycloak.127.0.0.1.nip.io:8080/realms/meepletime
       MEEPLETIME_OIDC_AUDIENCE: meepletime-backend
-      MEEPLETIME_OIDC_ISSUER: http://keycloak.127.0.0.1.nip.io:8080/realms/meepletime
+      MEEPLETIME_OIDC_ISSUER: >-
+        http://keycloak.127.0.0.1.nip.io:8080/realms/meepletime
       MEEPLETIME_DEV_SHARED_SECRET: changeme
     depends_on:
       db:
@@ -89,7 +92,9 @@ services:
         - -c
         - >-
           exec 3<>/dev/tcp/localhost/8080 &&
-          printf 'GET /realms/meepletime HTTP/1.0\r\nHost: localhost\r\n\r\n' >&3 &&
+          printf
+          'GET /realms/meepletime HTTP/1.0\r\nHost: localhost\r\n\r\n'
+          >&3 &&
           grep -q '"realm":"meepletime"' <&3
       interval: 10s
       timeout: 5s
