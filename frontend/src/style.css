@@ -1,4 +1,4 @@
-@import './generated/brand-tokens.css';
+@import './brand-tokens.css';
 
 html {
   background: rgb(var(--v-theme-background));
@@ -32,18 +32,16 @@ body {
 }
 
 .v-application__wrap {
-  background:
-    linear-gradient(
-      180deg,
-      rgba(var(--v-theme-surface), 0.92) 0%,
-      rgba(var(--v-theme-background), 0.98) 100%
-    );
+  background: linear-gradient(
+    180deg,
+    rgba(var(--v-theme-surface), 0.92) 0%,
+    rgba(var(--v-theme-background), 0.98) 100%
+  );
 }
 
 .v-app-bar {
   border-bottom: 1px solid rgba(var(--v-theme-outline), 0.22);
-  background:
-    rgba(var(--v-theme-surface), 0.78) !important;
+  background: rgba(var(--v-theme-surface), 0.78) !important;
   backdrop-filter: blur(var(--mt-glass-blur));
 }
 
@@ -56,10 +54,7 @@ body {
   position: fixed;
   inset: 0;
   background-image:
-    linear-gradient(
-      rgba(var(--v-theme-primary), 0.05) 1px,
-      transparent 1px
-    ),
+    linear-gradient(rgba(var(--v-theme-primary), 0.05) 1px, transparent 1px),
     linear-gradient(
       90deg,
       rgba(var(--v-theme-primary), 0.05) 1px,
@@ -78,8 +73,7 @@ body {
 .v-card,
 .v-list {
   border: 1px solid rgba(var(--v-theme-outline), 0.24);
-  background:
-    rgba(var(--v-theme-surface-container-high), 0.84) !important;
+  background: rgba(var(--v-theme-surface-container-high), 0.84) !important;
   backdrop-filter: blur(var(--mt-glass-blur));
 }
 

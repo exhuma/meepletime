@@ -7,12 +7,12 @@ identity provider for MeepleTime.
 
 MeepleTime uses Keycloak (self-hosted OIDC, Option A).
 
-- The Vue frontend is a **public OIDC client**.  It performs the
+- The Vue frontend is a **public OIDC client**. It performs the
   authorization-code + PKCE flow and holds tokens in the browser.
   There is no in-app login form.
-- The FastAPI backend is a **stateless resource server**.  It
+- The FastAPI backend is a **stateless resource server**. It
   validates bearer tokens on every request using Keycloak's JWKS
-  endpoint.  It never participates in the OIDC flow.
+  endpoint. It never participates in the OIDC flow.
 - `client_secret` must never appear in frontend code or build
   artefacts.
 
@@ -98,7 +98,7 @@ docker compose ps keycloak
 ### 4. Verify discovery document
 
 The FastAPI backend resolves the JWKS URI from the OIDC
-discovery document.  Verify it is accessible:
+discovery document. Verify it is accessible:
 
 ```bash
 curl -s \
@@ -114,19 +114,19 @@ You should see a JSON object containing `jwks_uri`.
 
 Set these in `.env` (or the deployment secret manager):
 
-| Variable | Example value | Description |
-|---|---|---|
-| `OIDC_AUTHORITY` | `http://keycloak:8080/realms/meepletime` | Keycloak realm URL. Used by the backend. |
-| `OIDC_AUDIENCE` | `meepletime-frontend` | Expected `aud` claim. Must match the Client ID. |
-| `OIDC_ISSUER` | `http://keycloak:8080/realms/meepletime` | Expected `iss` claim. Usually same as authority. |
-| `VITE_OIDC_AUTHORITY` | `http://localhost:8080/realms/meepletime` | Frontend authority (browser-reachable URL). |
-| `VITE_OIDC_CLIENT_ID` | `meepletime-frontend` | Public client ID. |
-| `VITE_OIDC_REDIRECT_URI` | `http://localhost:5173/auth/callback` | Callback URI registered in Keycloak. |
-| `VITE_OIDC_POST_LOGOUT_URI` | `http://localhost:5173/` | Post-logout redirect URI. |
+| Variable                    | Example value                             | Description                                      |
+| --------------------------- | ----------------------------------------- | ------------------------------------------------ |
+| `OIDC_AUTHORITY`            | `http://keycloak:8080/realms/meepletime`  | Keycloak realm URL. Used by the backend.         |
+| `OIDC_AUDIENCE`             | `meepletime-frontend`                     | Expected `aud` claim. Must match the Client ID.  |
+| `OIDC_ISSUER`               | `http://keycloak:8080/realms/meepletime`  | Expected `iss` claim. Usually same as authority. |
+| `VITE_OIDC_AUTHORITY`       | `http://localhost:8080/realms/meepletime` | Frontend authority (browser-reachable URL).      |
+| `VITE_OIDC_CLIENT_ID`       | `meepletime-frontend`                     | Public client ID.                                |
+| `VITE_OIDC_REDIRECT_URI`    | `http://localhost:5173/auth/callback`     | Callback URI registered in Keycloak.             |
+| `VITE_OIDC_POST_LOGOUT_URI` | `http://localhost:5173/`                  | Post-logout redirect URI.                        |
 
 > **Note**: `OIDC_AUTHORITY` and `VITE_OIDC_AUTHORITY` may differ
 > in a Docker environment where the backend uses the internal
-> hostname (`keycloak`) and the browser uses `localhost`.  Both
+> hostname (`keycloak`) and the browser uses `localhost`. Both
 > must resolve to the same Keycloak realm.
 
 ---
@@ -149,14 +149,14 @@ in **Realm settings → Login → User registration**.
 
 The backend reads the following claims from the access token:
 
-| Claim | Required | Use |
-|---|---|---|
-| `sub` | Yes | OIDC subject — unique identity key. |
-| `email` | Yes | Used to find or create the local user. |
-| `name` | No | Stored as `display_name` on the user. |
+| Claim   | Required | Use                                    |
+| ------- | -------- | -------------------------------------- |
+| `sub`   | Yes      | OIDC subject — unique identity key.    |
+| `email` | Yes      | Used to find or create the local user. |
+| `name`  | No       | Stored as `display_name` on the user.  |
 
-Ensure these claims are included in the access token.  By
-default Keycloak includes `sub`.  To add `email` and `name`,
+Ensure these claims are included in the access token. By
+default Keycloak includes `sub`. To add `email` and `name`,
 go to **Clients → meepletime-frontend → Client scopes** and
 verify that `email` and `profile` scopes are assigned.
 
@@ -174,9 +174,9 @@ verify that `email` and `profile` scopes are assigned.
 - [ ] Back up the Keycloak database (or export the realm).
 - [ ] Mount `/opt/keycloak/themes` with the `meepletime` theme.
 - [ ] Verify **Realm settings → Themes → Login theme** is
-  `meepletime`.
+      `meepletime`.
 - [ ] Verify **Realm settings → Themes → Account theme** is
-  `meepletime`.
+      `meepletime`.
 
 ---
 

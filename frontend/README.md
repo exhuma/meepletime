@@ -1,29 +1,19 @@
 # Frontend
 
-The frontend visual system is derived from the Keycloak login theme.
+The frontend visual system is maintained independently from the
+Keycloak theme.
 
 ## Brand tokens
 
-Brand colors, fonts, and shared shape tokens live in
-`../design/meepletime-brand.json`.
+Brand colors, fonts, and shape tokens for the frontend are maintained
+inside this app.
 
-Run the token exporter after updating that file:
-
-```bash
-npm run brand:sync
-```
-
-That command regenerates:
-
-- `src/generated/brand-theme.ts` for Vuetify theme setup
-- `src/generated/brand-tokens.css` for shared frontend CSS tokens
-- `../assets/keycloak/themes/meepletime/login/resources/css/brand-tokens.css`
+- `src/brand-theme.ts` for Vuetify theme setup
+- `src/brand-tokens.css` for frontend CSS tokens
 - `public/favicon.svg` for the frontend app icon
-- `../assets/keycloak/themes/meepletime/login/resources/img/favicon.svg`
-	for Keycloak login pages
 
-Keep `login.ftl` handwritten. The shared source of truth is the token
-set, not the rendered markup.
+Keycloak login and account theme assets are edited directly under
+`../assets/keycloak/themes/meepletime`.
 
 # Vue 3 + Vite
 

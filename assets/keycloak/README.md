@@ -7,6 +7,14 @@ Current theme:
 
 - `themes/meepletime`
 
+## Theme maintenance
+
+The Keycloak theme is maintained independently from the Vue
+frontend theme pipeline.
+
+- Edit login/account templates and CSS directly under
+  `themes/meepletime`.
+
 ## Local dev-container usage
 
 The dev-container Keycloak service mounts this folder in

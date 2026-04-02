@@ -8,13 +8,6 @@ tasks:
     dir: backend
     cmd: uv run alembic upgrade head
 
-  brand:sync:
-    desc: >-
-      Export design/meepletime-brand.json into generated CSS
-      and TypeScript token files consumed by both the frontend
-      and the Keycloak login theme
-    cmd: node scripts/export-brand-tokens.mjs
-
   backend:
     desc: Start the FastAPI dev server with hot-reload
     dir: backend
@@ -24,17 +17,13 @@ tasks:
       --log-config logging.dev.yaml
 
   frontend:
-    desc: Start the Vite dev server (re-syncs brand tokens first)
+    desc: Start the Vite dev server
     dir: frontend
-    deps: [brand:sync]
     cmd: npm run dev -- --host 0.0.0.0
 
   build:frontend:
-    desc: >-
-      Production build of the frontend
-      (re-syncs brand tokens first)
+    desc: Production build of the frontend
     dir: frontend
-    deps: [brand:sync]
     cmd: npm run build
 
   dev:token:

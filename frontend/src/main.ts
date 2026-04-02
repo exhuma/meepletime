@@ -8,7 +8,7 @@ import router from './router'
 import App from './App.vue'
 import { setUnauthorizedHandler, setTokenProvider } from './api'
 import { userManager } from './auth/oidc'
-import { meepleTimeThemeOptions } from './generated/brand-theme'
+import { meepleTimeThemeOptions } from './brand-theme'
 
 setTokenProvider({
   getToken: () => {

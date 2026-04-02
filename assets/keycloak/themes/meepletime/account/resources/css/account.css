@@ -1,7 +1,7 @@
 /* MeepleTime account console brand overrides.            */
 /* Targets the Keycloak v3 React account console          */
 /* (PatternFly 5) shipped in Keycloak 25+.                */
-/* brand-tokens.css is auto-generated — run: task brand:sync */
+/* brand-tokens.css is maintained manually in this theme. */
 
 @import url('brand-tokens.css');
 
