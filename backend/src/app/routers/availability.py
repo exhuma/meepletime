@@ -28,7 +28,14 @@ from app.models.availability import (
 from app.models.circle import Circle
 from app.models.membership import CircleMembership, MemberRole
 from app.models.user import User
-from app.schemas.availability import AvailabilityOut, AvailabilitySet
+from app.schemas.availability import (
+    AvailabilityOut,
+    AvailabilitySet,
+)
+from app.schemas.jobs import (
+    AvailabilityJobRequest,
+    AvailabilityJobResponse,
+)
 from app.services.notifications import trigger_notification_eval
 
 logger = logging.getLogger(__name__)
@@ -217,3 +224,92 @@ def delete_availability(
             local_date,
             exc_info=True,
         )
+
+
+@router.post(
+    "/circles/{circle_id}/availability/jobs",
+    response_model=AvailabilityJobResponse,
+)
+def cycle_availability(
+    circle_id: uuid.UUID,
+    job: AvailabilityJobRequest,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_active_user),
+) -> AvailabilityJobResponse:
+    """
+    Cycle the current user's availability state for a date.
+
+    Implements the state cycle: empty -> attending -> hosting ->
+    empty.  The "empty" state is represented by the absence of a
+    database record.
+
+    :param circle_id: Target circle.
+    :param job: Job request containing action and arguments.
+    :param db: Database session.
+    :param current_user: Authenticated user.
+    :returns: Job response with the new availability record or
+              None if cycled to empty.
+    :raises HTTPException: 400 if action is not "cycle" or if
+                           date is invalid.
+    :raises HTTPException: 403 if user lacks permission.
+    :raises HTTPException: 404 if circle not found.
+    """
+    if job.action != "cycle":
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=f"Unknown action: {job.action}",
+        )
+
+    local_date = job.arguments.local_date
+    circle = get_circle_or_404(db, circle_id)
+    membership = get_membership_or_403(db, circle_id, current_user.id)
+    _validate_date(local_date, circle, membership)
+
+    existing = db.execute(
+        select(DayAvailability).where(
+            DayAvailability.circle_id == circle_id,
+            DayAvailability.user_id == current_user.id,
+            DayAvailability.local_date == local_date,
+        )
+    ).scalar_one_or_none()
+
+    result: DayAvailability | None
+
+    if existing is None:
+        # empty -> attending
+        record = DayAvailability(
+            circle_id=circle_id,
+            user_id=current_user.id,
+            local_date=local_date,
+            state=DBAvailabilityState.attending,
+        )
+        db.add(record)
+        db.commit()
+        db.refresh(record)
+        result = record
+    elif existing.state == DBAvailabilityState.attending:
+        # attending -> hosting
+        existing.state = DBAvailabilityState.hosting
+        db.commit()
+        db.refresh(existing)
+        result = existing
+    else:
+        # hosting -> empty
+        db.delete(existing)
+        db.commit()
+        result = None
+
+    try:
+        trigger_notification_eval(circle_id, local_date, SessionLocal)
+    except Exception:
+        logger.warning(
+            "Notification eval failed for circle=%s date=%s",
+            circle_id,
+            local_date,
+            exc_info=True,
+        )
+
+    availability_out = (
+        AvailabilityOut.model_validate(result) if result else None
+    )
+    return AvailabilityJobResponse(availability=availability_out)

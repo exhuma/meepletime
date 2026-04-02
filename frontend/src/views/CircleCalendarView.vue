@@ -252,20 +252,11 @@ async function handleDayClick(date: string): Promise<void> {
 async function cycleAvailability(date: string): Promise<void> {
   const userId = auth.userId.value
   if (!userId) return
-  const entries = circlesState.calendar.value[date] ?? []
-  const mine = entries.find((a) => a.user_id === userId)
-  const current = mine?.state ?? 'empty'
   try {
-    if (current === 'empty') {
-      await circlesState.setAvailability(circleId, date, 'attending')
-    } else if (current === 'attending') {
-      await circlesState.setAvailability(circleId, date, 'hosting')
-    } else {
-      await circlesState.deleteAvailability(circleId, date, userId)
-    }
+    await circlesState.cycleAvailability(circleId, date, userId)
     await circlesState.fetchViability(circleId, date, date)
   } catch (e) {
-    console.error('Availability toggle error', e)
+    console.error('Availability cycle error', e)
   }
 }
 

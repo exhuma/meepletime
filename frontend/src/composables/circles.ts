@@ -90,6 +90,43 @@ export function useCircles() {
     }
   }
 
+  /**
+   * Cycle the current user's availability state for date.
+   *
+   * Implements: empty -> attending -> hosting -> empty.
+   */
+  async function cycleAvailability(
+    circleId: string,
+    date: string,
+    userId: string,
+  ): Promise<void> {
+    const response = await api.post<{ availability: Availability | null }>(
+      `/circles/${circleId}/availability/jobs`,
+      {
+        action: 'cycle',
+        arguments: { local_date: date },
+      },
+    )
+    if (response.availability) {
+      const entries = [...(calendar.value[date] ?? [])]
+      const idx = entries.findIndex((a) => a.user_id === userId)
+      if (idx >= 0) {
+        entries[idx] = response.availability
+      } else {
+        entries.push(response.availability)
+      }
+      calendar.value = { ...calendar.value, [date]: entries }
+    } else {
+      // Cycled to empty state
+      calendar.value = {
+        ...calendar.value,
+        [date]: (calendar.value[date] ?? []).filter(
+          (a) => a.user_id !== userId,
+        ),
+      }
+    }
+  }
+
   /** Fetch viability for circleId in [startDate, endDate] and merge into viability state. */
   async function fetchViability(
     circleId: string,
@@ -160,6 +197,7 @@ export function useCircles() {
     fetchCalendar,
     setAvailability,
     deleteAvailability,
+    cycleAvailability,
     fetchViability,
     fetchNotes,
     addNote,
