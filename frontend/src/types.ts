@@ -63,3 +63,21 @@ export interface Note {
   created_at: string
   pseudonym?: string | null
 }
+
+export interface HostDayConstraint {
+  id: string
+  circle_id: string
+  user_id: string
+  local_date: string
+  override_minimum_attendees: number | null
+  override_soft_max_attendees: number | null
+  override_hard_max_attendees: number | null
+  created_at: string
+  updated_at: string
+}
+
+export interface HostDayConstraintSet {
+  override_minimum_attendees: number | null
+  override_soft_max_attendees: number | null
+  override_hard_max_attendees: number | null
+}

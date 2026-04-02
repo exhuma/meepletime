@@ -1,7 +1,15 @@
 import { ref, readonly } from 'vue'
 import type { DeepReadonly, Ref } from 'vue'
-import api from '../api'
-import type { Availability, Circle, DayViability, Member, Note } from '../types'
+import api, { ApiError } from '../api'
+import type {
+  Availability,
+  Circle,
+  DayViability,
+  HostDayConstraint,
+  HostDayConstraintSet,
+  Member,
+  Note,
+} from '../types'
 
 // Module-level singleton state
 const circles = ref<Circle[]>([])
@@ -180,6 +188,47 @@ export function useCircles() {
     return updated
   }
 
+  /**
+   * Fetch the current user's host constraint for circleId on date.
+   * Returns null when no constraint has been set yet.
+   */
+  async function fetchMyConstraint(
+    circleId: string,
+    date: string,
+  ): Promise<HostDayConstraint | null> {
+    try {
+      return await api.get<HostDayConstraint>(
+        `/circles/${circleId}/host-constraints/me/${date}`,
+      )
+    } catch (err) {
+      if (err instanceof ApiError && err.status === 404) return null
+      throw err
+    }
+  }
+
+  /**
+   * Create or replace the current user's host constraint
+   * for circleId on date.
+   */
+  async function setMyConstraint(
+    circleId: string,
+    date: string,
+    data: HostDayConstraintSet,
+  ): Promise<HostDayConstraint> {
+    return api.put<HostDayConstraint>(
+      `/circles/${circleId}/host-constraints/me/${date}`,
+      data,
+    )
+  }
+
+  /** Delete the current user's host constraint for circleId on date. */
+  async function deleteMyConstraint(
+    circleId: string,
+    date: string,
+  ): Promise<void> {
+    await api.delete(`/circles/${circleId}/host-constraints/me/${date}`)
+  }
+
   return {
     circles: readonly(circles) as DeepReadonly<Ref<Circle[]>>,
     currentCircle: readonly(currentCircle) as DeepReadonly<Ref<Circle | null>>,
@@ -203,5 +252,8 @@ export function useCircles() {
     addNote,
     joinCircle,
     regenerateInvite,
+    fetchMyConstraint,
+    setMyConstraint,
+    deleteMyConstraint,
   }
 }

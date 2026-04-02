@@ -7,15 +7,27 @@
       <v-app-bar-title class="text-truncate">
         {{ circlesState.currentCircle.value?.name || 'Loading...' }}
       </v-app-bar-title>
-      <v-switch
-        v-model="viableOnly"
-        label="Viable only"
-        color="primary"
-        hide-details
+      <v-btn
+        icon
+        :color="viableOnly ? 'primary' : undefined"
+        title="Viable days only"
+        @click="viableOnly = !viableOnly"
+      >
+        <v-icon>mdi-filter-variant</v-icon>
+      </v-btn>
+      <v-btn-toggle
+        v-model="calendarMode"
+        mandatory
         density="compact"
-        class="mr-2"
-        style="max-width: 140px"
-      />
+        class="mx-1"
+      >
+        <v-btn value="availability" icon title="Availability mode">
+          <v-icon>mdi-calendar-check</v-icon>
+        </v-btn>
+        <v-btn value="select" icon title="Select mode">
+          <v-icon>mdi-cursor-default-click</v-icon>
+        </v-btn>
+      </v-btn-toggle>
       <v-btn
         icon
         :title="'Invite / QR Code'"
@@ -69,13 +81,14 @@
           :class="{
             'calendar-cell--today': day.date === todayStr,
             'calendar-cell--past': day.date < todayStr,
-            'calendar-cell--future': day.date >= todayStr,
+            'calendar-cell--future':
+              day.date >= todayStr || calendarMode === 'select',
             'calendar-cell--viable':
               day.viability?.is_viable && !day.viability.is_soft_max_exceeded,
             'calendar-cell--over-soft-max': day.viability?.is_soft_max_exceeded,
             'calendar-cell--hidden': viableOnly && !day.viability?.is_viable,
           }"
-          @click="day.date >= todayStr ? handleDayClick(day.date) : undefined"
+          @click="handleDayClick(day.date)"
         >
           <div class="calendar-cell__date">{{ day.dayOfMonth }}</div>
           <div
@@ -111,7 +124,11 @@
       </div>
 
       <p class="text-caption text-medium-emphasis text-center mt-1">
-        Tap a future date to toggle your availability
+        {{
+          calendarMode === 'availability'
+            ? 'Tap a future date to cycle your availability'
+            : 'Tap a date for options'
+        }}
       </p>
     </v-container>
 
@@ -122,6 +139,23 @@
       :circle="circlesState.currentCircle.value"
       :is-admin="isAdminOrOwner"
       @regenerated="onInviteRegenerated"
+    />
+
+    <DayContextSheet
+      v-model="contextSheetOpen"
+      :date="selectedDay ?? ''"
+      :is-past="(selectedDay ?? '') < todayStr"
+      :can-host="canHostDefault"
+      @view-details="goToDetail"
+      @edit-constraints="openConstraintEditor"
+    />
+
+    <ConstraintEditorDialog
+      v-if="circlesState.currentCircle.value"
+      v-model="constraintDialogOpen"
+      :circle-id="circleId"
+      :date="selectedDay ?? ''"
+      :circle="circlesState.currentCircle.value"
     />
   </div>
 </template>
@@ -139,6 +173,8 @@ import {
 import { useCircles } from '../composables/circles'
 import { useAuth } from '../composables/auth'
 import InviteDialog from '../components/InviteDialog.vue'
+import DayContextSheet from '../components/DayContextSheet.vue'
+import ConstraintEditorDialog from '../components/ConstraintEditorDialog.vue'
 import type { DayViability } from '../types'
 
 const route = useRoute()
@@ -150,6 +186,10 @@ const circleId = route.params.id as string
 const viableOnly = ref(false)
 const loading = ref(false)
 const inviteDialog = ref(false)
+const calendarMode = ref<'availability' | 'select'>('availability')
+const selectedDay = ref<string | null>(null)
+const contextSheetOpen = ref(false)
+const constraintDialogOpen = ref(false)
 
 const today = new Date()
 const todayStr = format(today, 'yyyy-MM-dd')
@@ -237,12 +277,28 @@ const isAdminOrOwner = computed<boolean>(() => {
   return member?.role === 'owner' || member?.role === 'admin'
 })
 
+/** True if the current user is a default host in this circle. */
+const canHostDefault = computed<boolean>(() => {
+  const userId = auth.userId.value
+  if (!userId) return false
+  const member = circlesState.members.value.find((m) => m.user_id === userId)
+  return member?.can_host_default ?? false
+})
+
 /**
- * Handle a day cell click: cycle the user's availability for that day.
+ * Handle a day cell click.
+ *
+ * Availability mode: cycle the user's presence for a future day.
+ * Select mode: open the context sheet for any day (past = read-only).
  */
 async function handleDayClick(date: string): Promise<void> {
-  if (date < todayStr) return
-  await cycleAvailability(date)
+  if (calendarMode.value === 'availability') {
+    if (date < todayStr) return
+    await cycleAvailability(date)
+  } else {
+    selectedDay.value = date
+    contextSheetOpen.value = true
+  }
 }
 
 /**
@@ -258,6 +314,19 @@ async function cycleAvailability(date: string): Promise<void> {
   } catch (e) {
     console.error('Availability cycle error', e)
   }
+}
+
+/** Navigate to the day detail view and close the context sheet. */
+function goToDetail(): void {
+  contextSheetOpen.value = false
+  if (!selectedDay.value) return
+  router.push(`/circles/${circleId}/day/${selectedDay.value}`)
+}
+
+/** Close the context sheet and open the constraint editor. */
+function openConstraintEditor(): void {
+  contextSheetOpen.value = false
+  constraintDialogOpen.value = true
 }
 
 /** Refresh circle data after invite token regeneration. */
