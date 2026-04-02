@@ -1,7 +1,7 @@
 export interface User {
   id: string
   email: string
-  is_active: boolean
+  display_name: string | null
   created_at: string
 }
 
