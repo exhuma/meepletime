@@ -145,7 +145,7 @@
       v-model="contextSheetOpen"
       :date="selectedDay ?? ''"
       :is-past="(selectedDay ?? '') < todayStr"
-      :can-host="canHostDefault"
+      :presence-state="selectedDayState"
       @view-details="goToDetail"
       @edit-constraints="openConstraintEditor"
     />
@@ -277,12 +277,13 @@ const isAdminOrOwner = computed<boolean>(() => {
   return member?.role === 'owner' || member?.role === 'admin'
 })
 
-/** True if the current user is a default host in this circle. */
-const canHostDefault = computed<boolean>(() => {
+/** The current user's presence state for the selected day. */
+const selectedDayState = computed<'attending' | 'hosting' | null>(() => {
+  if (!selectedDay.value) return null
   const userId = auth.userId.value
-  if (!userId) return false
-  const member = circlesState.members.value.find((m) => m.user_id === userId)
-  return member?.can_host_default ?? false
+  if (!userId) return null
+  const entries = circlesState.calendar.value[selectedDay.value] ?? []
+  return entries.find((a) => a.user_id === userId)?.state ?? null
 })
 
 /**

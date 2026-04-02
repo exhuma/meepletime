@@ -12,7 +12,7 @@
           @click="onViewDetails"
         />
         <v-list-item
-          v-if="canHost && !isPast"
+          v-if="presenceState === 'hosting' && !isPast"
           prepend-icon="mdi-tune"
           title="Edit my constraints for this day"
           @click="onEditConstraints"
@@ -37,11 +37,8 @@ const props = defineProps<{
   date: string
   /** True when the selected day is in the past. */
   isPast: boolean
-  /**
-   * True when the current user is a default host in the circle
-   * and may manage their own host-day constraints.
-   */
-  canHost: boolean
+  /** The current user's presence state for the selected day. */
+  presenceState: 'attending' | 'hosting' | null
 }>()
 
 const emit = defineEmits<{
