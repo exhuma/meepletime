@@ -1,10 +1,11 @@
-"""ORM model for per-day circle overrides."""
+"""ORM model for per-host per-day capacity constraints."""
+
+from __future__ import annotations
 
 import uuid
 from datetime import UTC, date, datetime
 
 from sqlalchemy import (
-    Boolean,
     Date,
     DateTime,
     ForeignKey,
@@ -17,11 +18,26 @@ from sqlalchemy.orm import Mapped, mapped_column, relationship
 from app.database import Base
 
 
-class DayOverride(Base):
-    __tablename__ = "day_overrides"
+class HostDayConstraint(Base):
+    """
+    Situational capacity constraints set by a hosting member for a
+    specific date.
+
+    Represents conditions that may differ from circle defaults on a
+    given day — for example, reduced space due to renovations. Keyed
+    by ``(circle_id, user_id, local_date)``; at most one constraint
+    row per member per day per circle.
+
+    Absence of a row means the circle defaults apply for that member.
+    """
+
+    __tablename__ = "host_day_constraints"
     __table_args__ = (
         UniqueConstraint(
-            "circle_id", "local_date", name="uq_override_circle_date"
+            "circle_id",
+            "user_id",
+            "local_date",
+            name="uq_host_constraint_circle_user_date",
         ),
     )
 
@@ -34,10 +50,13 @@ class DayOverride(Base):
         nullable=False,
         index=True,
     )
-    local_date: Mapped[date] = mapped_column(Date, nullable=False, index=True)
-    override_host_needed: Mapped[bool | None] = mapped_column(
-        Boolean, nullable=True
+    user_id: Mapped[uuid.UUID] = mapped_column(
+        UUID(as_uuid=True),
+        ForeignKey("users.id", ondelete="CASCADE"),
+        nullable=False,
+        index=True,
     )
+    local_date: Mapped[date] = mapped_column(Date, nullable=False, index=True)
     override_minimum_attendees: Mapped[int | None] = mapped_column(
         Integer, nullable=True
     )
@@ -59,6 +78,9 @@ class DayOverride(Base):
         nullable=False,
     )
 
-    circle: Mapped["Circle"] = relationship(
-        "Circle", back_populates="day_overrides"
+    circle: Mapped[Circle] = relationship(
+        "Circle", back_populates="host_day_constraints"
+    )
+    user: Mapped[User] = relationship(
+        "User", back_populates="host_day_constraints"
     )

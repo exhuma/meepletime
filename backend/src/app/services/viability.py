@@ -1,75 +1,145 @@
 """Viability computation service."""
 
+from __future__ import annotations
+
 from datetime import date
 
+from sqlalchemy import select
 from sqlalchemy.orm import Session
 
 from app.models.availability import AvailabilityState, DayAvailability
 from app.models.circle import Circle
-from app.models.day_override import DayOverride
+from app.models.host_day_constraint import HostDayConstraint
 from app.schemas.availability import AvailabilityOut
 from app.schemas.viability import DayViability
+
+
+def _merge_min(a: int | None, b: int | None) -> int | None:
+    """
+    Most restrictive merge for minimum thresholds (take max).
+    """
+    if a is None:
+        return b
+    if b is None:
+        return a
+    return max(a, b)
+
+
+def _merge_max(a: int | None, b: int | None) -> int | None:
+    """
+    Most restrictive merge for maximum thresholds (take min).
+    """
+    if a is None:
+        return b
+    if b is None:
+        return a
+    return min(a, b)
 
 
 def compute_viability(
     circle: Circle, local_date: date, db: Session
 ) -> DayViability:
-    """Compute the derived viability for *local_date* in *circle*.
-
-    Resolves effective settings by merging circle defaults with any
-    day override, then evaluates attendee/hosting counts against the
-    viability rules from the contract.
     """
-    availabilities = (
-        db.query(DayAvailability)
-        .filter(
-            DayAvailability.circle_id == circle.id,
-            DayAvailability.local_date == local_date,
+    Compute the derived viability for *local_date* in *circle*.
+
+    Two evaluation paths:
+
+    * **No hosting members** — circle defaults are applied directly.
+      If ``host_needed`` is true the day is non-viable.
+    * **Hosting members present** — each hosting member's effective
+      constraints are evaluated (circle defaults merged with any
+      personal ``HostDayConstraint``, taking the most restrictive
+      value per field).  The day is viable when at least one hosting
+      member's effective constraints are satisfied by the current
+      attendee count (any-host logic).
+
+    ``viable_host_count`` reports how many hosting members can
+    accommodate the current attendance; ``has_multiple_viable_hosts``
+    fires when this count exceeds one so the frontend can signal
+    that members should agree out-of-band on who hosts.
+
+    :param circle: The circle whose viability is being evaluated.
+    :param local_date: The date to evaluate in the circle timezone.
+    :param db: Database session.
+    :returns: Computed ``DayViability`` for the given circle-day.
+    """
+    availabilities = list(
+        db.execute(
+            select(DayAvailability).where(
+                DayAvailability.circle_id == circle.id,
+                DayAvailability.local_date == local_date,
+            )
         )
+        .scalars()
         .all()
     )
 
-    override = (
-        db.query(DayOverride)
-        .filter(
-            DayOverride.circle_id == circle.id,
-            DayOverride.local_date == local_date,
-        )
-        .first()
-    )
-
-    # Resolve effective settings: override wins when not None
-    host_required = circle.host_needed
-    min_attendees = circle.minimum_attendees
-    soft_max = circle.soft_max_attendees
-    hard_max = circle.hard_max_attendees
-
-    if override is not None:
-        if override.override_host_needed is not None:
-            host_required = override.override_host_needed
-        if override.override_minimum_attendees is not None:
-            min_attendees = override.override_minimum_attendees
-        if override.override_soft_max_attendees is not None:
-            soft_max = override.override_soft_max_attendees
-        if override.override_hard_max_attendees is not None:
-            hard_max = override.override_hard_max_attendees
-
     attendee_count = len(availabilities)
-    hosting_count = sum(
-        1 for a in availabilities if a.state == AvailabilityState.hosting
-    )
+    hosting_avails = [
+        a for a in availabilities if a.state == AvailabilityState.hosting
+    ]
+    hosting_count = len(hosting_avails)
 
-    # Viability rules
-    is_viable = attendee_count > 0
-    if is_viable and min_attendees is not None:
-        is_viable = attendee_count >= min_attendees
-    if is_viable and host_required:
-        is_viable = hosting_count >= 1
-    if is_viable and hard_max is not None:
-        is_viable = attendee_count <= hard_max
+    is_viable: bool
+    viable_host_count: int
+    is_soft_max_exceeded: bool
 
-    is_soft_max_exceeded = soft_max is not None and attendee_count > soft_max
-    has_multiple_hosts_warning = hosting_count > 1
+    if attendee_count == 0:
+        is_viable = False
+        viable_host_count = 0
+        is_soft_max_exceeded = False
+
+    elif not hosting_avails:
+        # No hosts present — evaluate circle defaults directly.
+        is_viable = not circle.host_needed
+        if is_viable and circle.minimum_attendees is not None:
+            is_viable = attendee_count >= circle.minimum_attendees
+        if is_viable and circle.hard_max_attendees is not None:
+            is_viable = attendee_count <= circle.hard_max_attendees
+        viable_host_count = 0
+        is_soft_max_exceeded = (
+            circle.soft_max_attendees is not None
+            and attendee_count > circle.soft_max_attendees
+        )
+
+    else:
+        # Hosting members present — per-host any-viable evaluation.
+        viable_host_count = 0
+        is_soft_max_exceeded = False
+
+        for avail in hosting_avails:
+            constraint = db.execute(
+                select(HostDayConstraint).where(
+                    HostDayConstraint.circle_id == circle.id,
+                    HostDayConstraint.user_id == avail.user_id,
+                    HostDayConstraint.local_date == local_date,
+                )
+            ).scalar_one_or_none()
+            eff_min = _merge_min(
+                circle.minimum_attendees,
+                constraint.override_minimum_attendees if constraint else None,
+            )
+            eff_hard_max = _merge_max(
+                circle.hard_max_attendees,
+                constraint.override_hard_max_attendees if constraint else None,
+            )
+            eff_soft_max = _merge_max(
+                circle.soft_max_attendees,
+                constraint.override_soft_max_attendees if constraint else None,
+            )
+
+            host_viable = True
+            if eff_min is not None and attendee_count < eff_min:
+                host_viable = False
+            if eff_hard_max is not None and attendee_count > eff_hard_max:
+                host_viable = False
+
+            if host_viable:
+                viable_host_count += 1
+                if eff_soft_max is not None and attendee_count > eff_soft_max:
+                    is_soft_max_exceeded = True
+
+        is_viable = viable_host_count >= 1
 
     avail_out = [AvailabilityOut.model_validate(a) for a in availabilities]
 
@@ -80,6 +150,7 @@ def compute_viability(
         hosting_count=hosting_count,
         is_viable=is_viable,
         is_soft_max_exceeded=is_soft_max_exceeded,
-        has_multiple_hosts_warning=has_multiple_hosts_warning,
+        has_multiple_viable_hosts=viable_host_count > 1,
+        viable_host_count=viable_host_count,
         availabilities=avail_out,
     )

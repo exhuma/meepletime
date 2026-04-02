@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import logging
 import uuid
-from datetime import date, datetime, timedelta
+from datetime import date, datetime
 
 import pytz
 from fastapi import APIRouter, Depends, HTTPException, Query, status
@@ -55,19 +55,10 @@ def _validate_date(
     membership: CircleMembership,
 ) -> None:
     """
-    Raise HTTP 400/403 if *local_date* is invalid.
-
-    Past dates are read-only for regular members.
-    Dates beyond the 3-month horizon are rejected for all.
+    Raise HTTP 403 if *local_date* is a past date and the caller
+    is a regular member. Past dates are read-only for non-admins.
     """
     today = _local_today(circle.timezone)
-    horizon = today + timedelta(days=90)
-
-    if local_date > horizon:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Date is beyond the 3-month planning horizon",
-        )
     if local_date < today and membership.role not in (
         MemberRole.owner,
         MemberRole.admin,

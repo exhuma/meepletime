@@ -15,7 +15,8 @@ class DayViability(BaseModel):
     hosting_count: int
     is_viable: bool
     is_soft_max_exceeded: bool
-    has_multiple_hosts_warning: bool
+    has_multiple_viable_hosts: bool
+    viable_host_count: int
     availabilities: list[AvailabilityOut]
 
 

@@ -179,26 +179,6 @@ def test_cycle_past_date_as_owner_succeeds(
     assert data["availability"]["state"] == "attending"
 
 
-def test_cycle_beyond_horizon_returns_400(
-    client: TestClient,
-    auth_headers: dict[str, str],
-) -> None:
-    """
-    Ensure cycling a date beyond 3-month horizon returns 400.
-    """
-    circle_id = _create_circle(client, auth_headers)
-    far_future = (date.today() + timedelta(days=100)).isoformat()
-
-    response = client.post(
-        f"/circles/{circle_id}/availability/jobs",
-        json={"action": "cycle", "arguments": {"local_date": far_future}},
-        headers=auth_headers,
-    )
-
-    assert response.status_code == 400
-    assert "3-month planning horizon" in response.json()["detail"]
-
-
 def test_cycle_non_member_returns_403(
     client: TestClient,
     auth_headers: dict[str, str],

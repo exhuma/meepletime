@@ -110,14 +110,13 @@ Optional lightweight note or comment thread attached to one circle-day.
 - Tap-to-cycle availability interaction
 - Circle timezone
 - Circle-level defaults
-- Optional per-day overrides
+- Optional per-host day constraints
 - Derived viability markers
 - “Display only viable days” toggle
 - Day detail view
 - Optional day notes/comments
 - Notifications on meaningful derived transitions
 - Past day archive behavior
-- Three-month forward planning window
 
 ## Excluded
 
@@ -160,7 +159,7 @@ tap-cycle flow.
 Users can browse:
 - past archived days
 - today
-- future days up to 3 months ahead
+- any future days
 
 The default landing view should emphasize current and near-future days.
 
@@ -230,32 +229,43 @@ Rules:
 - Do not persist rows for `empty`.
 - Deleting an availability row is equivalent to setting the state to `empty`.
 - `local_date` is interpreted in the circle timezone.
-- Future dates beyond the 3-month horizon must be rejected by validation.
 - Past dates should be treated as read-only for normal users in v1.
 
-## 9. Day overrides model
+## 9. Host day constraints model
 
-Day overrides are needed because circles may have traditions that sometimes
-change for one specific day.
+Host day constraints capture situational capacity limits for a specific
+hosting member on a specific date — for example, reduced space due to
+renovations, or a reduced comfortable maximum number of guests.  They
+are personal to the hosting member and supplemental to circle defaults.
 
-Persist a lightweight per-day overrides record keyed by `(circle_id, local_date)`.
+Persist one row per `(circle_id, user_id, local_date)` when constraints
+are set.
 
-Allowed override fields in v1:
-- override_host_needed: nullable boolean
+Allowed constraint fields in v1:
 - override_minimum_attendees: nullable integer
 - override_soft_max_attendees: nullable integer
 - override_hard_max_attendees: nullable integer
-- note or metadata pointer if needed
+
+Note: `host_needed` is a circle-level policy and is not overridable
+per-host.  There is no `override_host_needed` field.
+
+Merge rule: when a member's constraint and the circle default both
+provide a value for the same field, the more restrictive value applies:
+- minimum threshold → take the maximum of the two values
+- maximum threshold → take the minimum of the two values
 
 Rules:
-- Overrides are optional.
-- Absence of an override means circle defaults apply.
-- Overrides must not create a phantom meetup by themselves.
-- A day only counts as an emergent meetup candidate if at least one member has non-empty availability on that day.
-- Day note creation alone must not create a meetup candidate.
+- Constraints are optional.
+- Absence of a row means circle defaults apply for that member's hosting
+  eligibility calculation.
+- A day only counts as an emergent meetup candidate if at least one
+  member has non-empty availability on that day.
+- Constraint records alone must not create a meetup candidate.
 
 Permissions:
-- Only circle owner or admin may edit day overrides in v1.
+- Any circle member may create, update, or delete their own constraints.
+- Circle owner or admin may manage any member's constraints (for cases
+  where a host is unavailable to update their own record).
 
 ## 10. Day notes/comments
 
@@ -284,29 +294,38 @@ For a given circle-day, compute:
 
 - attendee_count = number of members with state in {attending, hosting}
 - hosting_count = number of members with state = hosting
-- host_required = resolved value from day override or circle default
-- min_attendees = resolved value from day override or circle default
-- soft_max = resolved value from day override or circle default
-- hard_max = resolved value from day override or circle default
 
-### 11.1 Viability decision
+### 11.1 Evaluation paths
 
-A day is `viable` if all of the following are true:
+**No hosting members present**
 
-- at least one non-empty availability exists
-- if `min_attendees` is set, `attendee_count >= min_attendees`
-- if `host_required` is true, `hosting_count >= 1`
-- if `hard_max` is set, `attendee_count <= hard_max`
+Evaluate the day against circle defaults directly:
+- if `circle.host_needed` is true, the day is non-viable
+- if `circle.minimum_attendees` is set,
+  `attendee_count >= minimum_attendees` must hold
+- if `circle.hard_max_attendees` is set,
+  `attendee_count <= hard_max_attendees` must hold
+
+**Hosting members present**
+
+For each hosting member, resolve their effective constraints by merging
+`circle` defaults with their personal `host_day_constraint` record (if
+any), taking the more restrictive value per field (see section 9).
+A hosting member is a *viable host* for the day if:
+- `attendee_count >= effective_minimum_attendees` (if set)
+- `attendee_count <= effective_hard_max_attendees` (if set)
+
+The day is viable when `viable_host_count >= 1` (any-host logic).
 
 ### 11.2 Warning markers
 
-A day is still viable but should show a warning marker if:
-- `soft_max` is set and `attendee_count > soft_max`
+A day is still viable but should show a soft-max warning if any viable
+host has their effective soft_max exceeded by the current attendee count.
 
-A day may also show a subtle informational marker if:
-- more than one hosting-capable member has marked `hosting` and no explicit host is designated
-
-There is no explicit host designation workflow in v1. This marker is purely informative.
+When `viable_host_count > 1`, the frontend should display an
+informational marker indicating that multiple hosts are available and
+members should agree out-of-band on who hosts.  There is no explicit
+host designation workflow in v1.
 
 ### 11.3 Empty days
 A day with zero non-empty availabilities is not a meetup candidate and is not viable.
@@ -368,7 +387,7 @@ May:
 - edit circle settings
 - manage invites
 - manage membership roles
-- edit day overrides
+- manage any member's host day constraints
 
 ### Member
 May:
@@ -377,6 +396,7 @@ May:
 - choose own pseudonym within the circle
 - view circle calendar and day details
 - add day notes/comments subject to final policy
+- manage own host day constraints
 
 No user may edit another member’s availability in v1.
 
@@ -418,7 +438,7 @@ A practical initial relational model is:
 - circle_memberships
 - circle_invites
 - day_availabilities
-- day_overrides
+- host_day_constraints
 - day_notes or day_comments
 - notification_events
 - notification_deliveries

@@ -59,8 +59,8 @@ class Circle(Base):
     availabilities: Mapped[list["DayAvailability"]] = relationship(
         "DayAvailability", back_populates="circle"
     )
-    day_overrides: Mapped[list["DayOverride"]] = relationship(
-        "DayOverride", back_populates="circle"
+    host_day_constraints: Mapped[list["HostDayConstraint"]] = relationship(
+        "HostDayConstraint", back_populates="circle"
     )
     day_notes: Mapped[list["DayNote"]] = relationship(
         "DayNote", back_populates="circle"

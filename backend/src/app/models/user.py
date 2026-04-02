@@ -61,6 +61,10 @@ class User(Base):
         "DayNote",
         back_populates="user",
     )
+    host_day_constraints: Mapped[list[HostDayConstraint]] = relationship(
+        "HostDayConstraint",
+        back_populates="user",
+    )
     auth_identities: Mapped[list[AuthIdentity]] = relationship(
         "AuthIdentity",
         back_populates="user",

@@ -76,7 +76,7 @@ def create_app() -> FastAPI:
         availability,
         circles,
         day_notes,
-        day_overrides,
+        host_day_constraints,
         memberships,
         viability,
     )
@@ -86,7 +86,7 @@ def create_app() -> FastAPI:
     app.include_router(memberships.router)
     app.include_router(availability.router)
     app.include_router(viability.router)
-    app.include_router(day_overrides.router)
+    app.include_router(host_day_constraints.router)
     app.include_router(day_notes.router)
 
     @app.get("/health")
