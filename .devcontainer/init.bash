@@ -27,11 +27,11 @@ echo "==> Installing Task (taskfile.dev) ..."
 # subsequent steps in this script and for the dev shell.
 export PATH="${HOME}/.local/bin:${PATH}"
 mkdir -p "${HOME}/.local/bin"
-sh -c "$(curl --location https://taskfile.dev/install.sh)" \
+[ ! -f ${HOME}/.local/bin/task ] && sh -c "$(curl --location https://taskfile.dev/install.sh)" \
     -- -d -b "${HOME}/.local/bin"
 
 echo "==> Installing backend dependencies (uv sync) ..."
-pip install --quiet uv
+command -v uv > /dev/null || curl -LsSf https://astral.sh/uv/install.sh | sh
 cd "${REPO_ROOT}/backend"
 uv sync
 

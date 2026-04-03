@@ -5,10 +5,12 @@
   "loginTheme": "meepletime",
   "accountTheme": "meepletime",
   "sslRequired": "none",
+  "displayName": "MeepleTime",
   "registrationAllowed": false,
   "loginWithEmailAllowed": true,
   "duplicateEmailsAllowed": false,
   "resetPasswordAllowed": false,
+  "accessTokenLifespan": 3600,
   "editUsernameAllowed": false,
   "bruteForceProtected": true,
   "roles": {
