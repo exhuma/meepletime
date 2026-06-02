@@ -1,8 +1,7 @@
 # https://taskfile.dev
-version: "3"
+version: '3'
 
 tasks:
-
   migrate:
     desc: Run database migrations
     dir: backend
@@ -38,3 +37,14 @@ tasks:
     desc: Run the backend test suite
     dir: backend
     cmd: uv run pytest {{.CLI_ARGS}}
+
+  db-shell:
+    desc: Open a database shell
+    dir: backend
+    preconditions:
+      - sh: which psql
+        msg: 'psql is not installed or not in PATH. Please install PostgreSQL
+          client tools.'
+      - sh: test -n "${MEEPLETIME_DATABASE_URL}"
+        msg: 'MEEPLETIME_DATABASE_URL environment variable is not set.'
+    cmd: psql ${MEEPLETIME_DATABASE_URL}
