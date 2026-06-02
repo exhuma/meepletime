@@ -32,7 +32,7 @@
             rows="2"
             class="mb-3"
           />
-          <v-select
+          <v-autocomplete
             v-model="form.timezone"
             label="Timezone"
             :items="timezones"
@@ -125,27 +125,12 @@ const circles = useCircles()
 const loading = ref(false)
 const error = ref('')
 
-const timezones = [
-  'America/New_York',
-  'America/Chicago',
-  'America/Denver',
-  'America/Los_Angeles',
-  'America/Toronto',
-  'Europe/London',
-  'Europe/Paris',
-  'Europe/Berlin',
-  'Europe/Amsterdam',
-  'Asia/Tokyo',
-  'Asia/Singapore',
-  'Australia/Sydney',
-  'Pacific/Auckland',
-  'UTC',
-]
+const timezones = Intl.supportedValuesOf('timeZone')
 
 const form = reactive({
   name: '',
   description: '',
-  timezone: 'UTC',
+  timezone: Intl.DateTimeFormat().resolvedOptions().timeZone,
   host_needed: false,
   minimum_attendees: null as number | null,
   soft_max_attendees: null as number | null,
