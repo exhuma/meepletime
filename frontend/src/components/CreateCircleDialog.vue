@@ -36,14 +36,17 @@
             v-model="form.timezone"
             label="Timezone"
             :items="timezones"
+            hint="The time-zone the events in this circle will be scheduled in."
+            persistent-hint
             variant="outlined"
             class="mb-3"
           />
           <v-checkbox
             v-model="form.host_needed"
-            label="Host required for viable day"
+            label="This circle requires a host"
+            hint="At least one member must host to make events viable."
+            persistent-hint
             color="primary"
-            hide-details
             class="mb-3"
           />
           <v-row>
@@ -54,6 +57,8 @@
                 type="number"
                 variant="outlined"
                 min="1"
+                hint="The number of participants needed to make a session viable."
+                persistent-hint
                 clearable
               />
             </v-col>
@@ -64,6 +69,8 @@
                 type="number"
                 variant="outlined"
                 min="1"
+                hint="The number of participants at which a sessions feels crowded"
+                persistent-hint
                 clearable
               />
             </v-col>
@@ -74,6 +81,8 @@
                 type="number"
                 variant="outlined"
                 min="1"
+                hint="The maximum number of participants a session can support."
+                persistent-hint
                 clearable
               />
             </v-col>
