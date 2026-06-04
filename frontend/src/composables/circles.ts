@@ -62,7 +62,7 @@ export function useCircles() {
       if (!dict[key]) dict[key] = []
       dict[key].push(item)
     }
-    calendar.value = { ...calendar.value, ...dict }
+    calendar.value = dict
   }
 
   /** Set the current user's availability for date to state, updating calendar state. */

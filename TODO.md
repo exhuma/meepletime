@@ -18,6 +18,3 @@
 - We should also allow overriding the time-zone in host-day-overrides. For
   example for hiking groups that may not have every event in the same location
   (and thus timezone). We could also auto-detect time-zone based on location
-- CRITICAL: The calender is not updating the DOM when navigating to other
-  circles. It keeps the information of the first loaded circle. The calendar
-  view loops over values from a nested dict which probably breaks reactivity.
