@@ -3,6 +3,10 @@
     "exhuma-instructions": {
       "type": "http",
       "url": "https://instructions.albert.lu/kits/mcp"
+    },
+    "github": {
+      "type": "http",
+      "url": "https://api.githubcopilot.com/mcp/"
     }
   }
 }
