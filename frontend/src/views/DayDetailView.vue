@@ -1,10 +1,7 @@
 <template>
   <div>
+    <!-- TODO - viability status indicator should be added to the app-bar
     <v-app-bar elevation="1" color="surface">
-      <v-btn icon @click="router.back()">
-        <v-icon>mdi-arrow-left</v-icon>
-      </v-btn>
-      <v-app-bar-title>{{ formattedDate }}</v-app-bar-title>
       <v-chip
         v-if="viability"
         :color="viability.is_viable ? 'primary' : 'error'"
@@ -14,15 +11,8 @@
         {{ viability.is_viable ? 'Viable' : 'Not Viable' }}
       </v-chip>
     </v-app-bar>
-
+    -->
     <v-container class="pa-4" style="max-width: 600px">
-      <v-progress-linear
-        v-if="loading"
-        indeterminate
-        color="primary"
-        class="mb-4"
-      />
-
       <div class="mb-6">
         <h3 class="text-subtitle-1 font-weight-bold mb-2">Attendees</h3>
         <v-list
@@ -103,19 +93,19 @@
 
 <script setup lang="ts">
 import { ref, computed, onMounted } from 'vue'
-import { useRoute, useRouter } from 'vue-router'
+import { useRoute } from 'vue-router'
 import { format, parseISO } from 'date-fns'
 import { useCircles } from '../composables/circles'
 import type { Note } from '../types'
+import { useAppBar, useAppBarContext } from '../composables/appBar'
 
 const route = useRoute()
-const router = useRouter()
+const { startJob, endJob } = useAppBar()
 const circlesState = useCircles()
 
 const circleId = route.params.id as string
 const date = route.params.date as string
 
-const loading = ref(false)
 const submitting = ref(false)
 const notes = ref<Note[]>([])
 const newNote = ref('')
@@ -130,6 +120,8 @@ const formattedDate = computed<string>(() => {
 
 const attendees = computed(() => circlesState.calendar.value[date] ?? [])
 const viability = computed(() => circlesState.viability.value[date] ?? null)
+
+useAppBarContext(formattedDate.value, [])
 
 /** Cross-reference attendees with the members list to resolve pseudonyms. */
 const enrichedAttendees = computed(() =>
@@ -171,7 +163,7 @@ async function submitNote(): Promise<void> {
 }
 
 onMounted(async () => {
-  loading.value = true
+  startJob('loading-day-detail-view')
   try {
     const [fetchedNotes] = await Promise.all([
       circlesState.fetchNotes(circleId, date),
@@ -184,7 +176,7 @@ onMounted(async () => {
   } catch (e) {
     console.error('Load error', e)
   } finally {
-    loading.value = false
+    endJob('loading-day-detail-view')
   }
 })
 </script>

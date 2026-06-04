@@ -2,18 +2,11 @@
   <v-container class="fill-height pa-4" fluid>
     <v-row justify="center" align="center">
       <v-col cols="12" sm="8" md="5" lg="4">
-        <v-progress-circular
-          v-if="loading"
-          indeterminate
-          color="primary"
-          class="d-block mx-auto my-8"
-        />
-
-        <v-alert v-if="error && !loading" type="error" class="mb-4">{{
+        <v-alert v-if="error && !isBusy" type="error" class="mb-4">{{
           error
         }}</v-alert>
 
-        <v-card v-if="!loading && circleInfo" class="pa-4" elevation="4">
+        <v-card v-if="!isBusy && circleInfo" class="pa-4" elevation="4">
           <v-card-title class="text-h6 mb-1">Join Circle</v-card-title>
           <v-card-subtitle class="mb-4">{{ circleInfo.name }}</v-card-subtitle>
           <v-card-text>
@@ -60,26 +53,28 @@ import { useRoute, useRouter } from 'vue-router'
 import { useCircles } from '../composables/circles'
 import api, { ApiError } from '../api'
 import type { Circle } from '../types'
+import { useAppBar } from '../composables/appBar'
 
 const route = useRoute()
 const router = useRouter()
 const circles = useCircles()
 
 const token = route.params.token as string
-const loading = ref(true)
 const joining = ref(false)
 const error = ref('')
 const circleInfo = ref<Circle | null>(null)
 const pseudonym = ref('')
 const canHostDefault = ref(false)
+const { startJob, endJob, isBusy } = useAppBar()
 
 onMounted(async () => {
+  startJob('loading-join-view')
   try {
     circleInfo.value = await api.get<Circle>(`/circles/join/${token}`)
   } catch {
     error.value = 'Invalid or expired invite token.'
   } finally {
-    loading.value = false
+    endJob('loading-join-view')
   }
 })
 

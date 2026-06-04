@@ -13,15 +13,8 @@
       </v-btn>
     </div>
 
-    <v-progress-circular
-      v-if="loading"
-      indeterminate
-      color="primary"
-      class="d-block mx-auto my-8"
-    />
-
     <v-alert
-      v-if="!loading && circlesState.circles.value.length === 0"
+      v-if="!isBusy && circlesState.circles.value.length === 0"
       type="info"
       class="mb-4"
     >
@@ -29,7 +22,7 @@
     </v-alert>
 
     <v-list
-      v-if="!loading && circlesState.circles.value.length > 0"
+      v-if="!isBusy && circlesState.circles.value.length > 0"
       lines="two"
       class="mb-4"
     >
@@ -98,21 +91,22 @@ import { ref, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { useCircles } from '../composables/circles'
 import CreateCircleDialog from '../components/CreateCircleDialog.vue'
+import { useAppBar } from '../composables/appBar'
 
 const circlesState = useCircles()
 const router = useRouter()
 
-const loading = ref(false)
 const createDialog = ref(false)
 const joinDialog = ref(false)
 const joinToken = ref('')
+const { startJob, endJob, isBusy } = useAppBar()
 
 onMounted(async () => {
-  loading.value = true
+  startJob('loading-circles-view')
   try {
     await circlesState.fetchCircles()
   } finally {
-    loading.value = false
+    endJob('loading-circles-view')
   }
 })
 

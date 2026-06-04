@@ -1,50 +1,7 @@
 <template>
   <div>
-    <v-app-bar elevation="1" color="surface">
-      <v-btn icon @click="router.back()">
-        <v-icon>mdi-arrow-left</v-icon>
-      </v-btn>
-      <v-app-bar-title class="text-truncate">
-        {{ circlesState.currentCircle.value?.name || 'Loading...' }}
-      </v-app-bar-title>
-      <v-btn
-        icon
-        :color="viableOnly ? 'primary' : undefined"
-        title="Viable days only"
-        @click="viableOnly = !viableOnly"
-      >
-        <v-icon>mdi-filter-variant</v-icon>
-      </v-btn>
-      <v-btn-toggle
-        v-model="calendarMode"
-        mandatory
-        density="compact"
-        class="mx-1"
-      >
-        <v-btn value="availability" icon title="Availability mode">
-          <v-icon>mdi-calendar-check</v-icon>
-        </v-btn>
-        <v-btn value="select" icon title="Select mode">
-          <v-icon>mdi-cursor-default-click</v-icon>
-        </v-btn>
-      </v-btn-toggle>
-      <v-btn
-        icon
-        :title="'Invite / QR Code'"
-        @click="inviteDialog = true"
-        class="mr-1"
-      >
-        <v-icon>mdi-qrcode</v-icon>
-      </v-btn>
-    </v-app-bar>
-
     <v-container class="pa-2" style="max-width: 700px">
-      <v-progress-linear
-        v-if="loading"
-        indeterminate
-        color="primary"
-        class="mb-2"
-      />
+      {{ circlesState.currentCircle.value?.name || 'Loading...' }}
 
       <!-- Month navigation -->
       <div class="d-flex align-center px-2 py-2">
@@ -176,15 +133,36 @@ import InviteDialog from '../components/InviteDialog.vue'
 import DayContextSheet from '../components/DayContextSheet.vue'
 import ConstraintEditorDialog from '../components/ConstraintEditorDialog.vue'
 import type { DayViability } from '../types'
+import { useAppBar, useAppBarContext } from '../composables/appBar'
+
+useAppBarContext('Circle Calendar', [
+  {
+    icon: 'mdi-qrcode',
+    label: 'Invite / QR Code',
+    action: () => (inviteDialog.value = true),
+  },
+  {
+    icon: 'mdi-cursor-default-click',
+    label: 'Select mode',
+    action: () =>
+      (calendarMode.value =
+        calendarMode.value === 'select' ? 'availability' : 'select'),
+  },
+  {
+    icon: 'mdi-filter-variant',
+    label: 'Viable days only',
+    action: () => (viableOnly.value = !viableOnly.value),
+  },
+])
 
 const route = useRoute()
 const router = useRouter()
 const circlesState = useCircles()
 const auth = useAuth()
+const { startJob, endJob } = useAppBar()
 
 const circleId = route.params.id as string
 const viableOnly = ref(false)
-const loading = ref(false)
 const inviteDialog = ref(false)
 const calendarMode = ref<'availability' | 'select'>('availability')
 const selectedDay = ref<string | null>(null)
@@ -336,7 +314,7 @@ function onInviteRegenerated(): void {
 }
 
 onMounted(async () => {
-  loading.value = true
+  startJob('load-circles')
   try {
     const start = format(currentMonthStart.value, 'yyyy-MM-dd')
     const end = format(addMonths(currentMonthStart.value, 3), 'yyyy-MM-dd')
@@ -347,7 +325,7 @@ onMounted(async () => {
       circlesState.fetchViability(circleId, start, end),
     ])
   } finally {
-    loading.value = false
+    endJob('load-circles')
   }
 })
 </script>
