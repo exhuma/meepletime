@@ -1,10 +1,6 @@
 <template>
   <div>
     <v-container class="pa-3" style="max-width: 720px">
-      <h1 class="cal-title">
-        {{ circlesState.currentCircle.value?.name || 'Loading…' }}
-      </h1>
-
       <!-- Month navigation -->
       <div class="cal-nav">
         <MtButton
@@ -280,9 +276,8 @@ onMounted(async () => {
   try {
     const start = formatDate(currentMonthStart.value)
     const end = formatDate(addMonths(currentMonthStart.value, 3))
+    // Circle + members are fetched by the parent CircleView shell.
     await Promise.all([
-      circlesState.fetchCircle(circleId),
-      circlesState.fetchMembers(circleId),
       circlesState.fetchCalendar(circleId, start, end),
       circlesState.fetchViability(circleId, start, end),
     ])
@@ -293,14 +288,6 @@ onMounted(async () => {
 </script>
 
 <style scoped>
-.cal-title {
-  font-family: var(--v-font-family-display, sans-serif);
-  font-size: 1.5rem;
-  font-weight: 600;
-  line-height: 1.1;
-  margin-bottom: 0.5rem;
-}
-
 .cal-nav {
   display: flex;
   align-items: center;

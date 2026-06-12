@@ -1,11 +1,12 @@
 /**
  * OIDC UserManager configuration for Keycloak Option A.
  *
- * Reads Keycloak coordinates from Vite environment variables.
- * VITE_OIDC_AUTHORITY and VITE_OIDC_CLIENT_ID must be set in
- * .env or .env.local.
+ * Keycloak coordinates come from `../config`, which resolves them at
+ * runtime (`window.__MT_CONFIG__`) with a Vite `VITE_*` build-time
+ * fallback for local development.
  */
 import { UserManager, WebStorageStateStore } from 'oidc-client-ts'
+import { oidcAuthority, oidcClientId } from '../config'
 
 /**
  * Singleton UserManager used across the entire application.
@@ -14,8 +15,8 @@ import { UserManager, WebStorageStateStore } from 'oidc-client-ts'
  * within the same tab but is not shared across tabs.
  */
 export const userManager = new UserManager({
-  authority: import.meta.env.VITE_OIDC_AUTHORITY as string,
-  client_id: import.meta.env.VITE_OIDC_CLIENT_ID as string,
+  authority: oidcAuthority,
+  client_id: oidcClientId,
   // Derived at runtime so the callback origin always matches
   // the origin where signinRedirect() was called, keeping
   // sessionStorage accessible throughout the PKCE flow.

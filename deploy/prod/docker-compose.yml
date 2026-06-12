@@ -1,0 +1,51 @@
+# Production deployment for MeepleTime.
+#
+# Runs ONLY the two application images published to GHCR. Keycloak and
+# PostgreSQL are expected to be provided externally (the OPS team runs a
+# vanilla PostgreSQL; Keycloak is reachable at a public URL). See
+# docs/operator/deployment.md for the full runbook.
+#
+# Copy .env.example to .env and fill in the values, then run:
+#   docker compose -f deploy/prod/docker-compose.yml up -d
+services:
+  backend:
+    image: ${BACKEND_IMAGE:-ghcr.io/OWNER/REPO/backend:latest}
+    restart: unless-stopped
+    environment:
+      # Backend settings use the MEEPLETIME_ env prefix (see
+      # app/config.py). These are the names the app actually reads.
+      MEEPLETIME_DATABASE_URL: ${MEEPLETIME_DATABASE_URL}
+      MEEPLETIME_OIDC_AUTHORITY: ${MEEPLETIME_OIDC_AUTHORITY}
+      MEEPLETIME_OIDC_ISSUER: ${MEEPLETIME_OIDC_ISSUER}
+      MEEPLETIME_OIDC_AUDIENCE: ${MEEPLETIME_OIDC_AUDIENCE:-meepletime-backend}
+      # JSON array of allowed CORS origins, e.g.
+      # ["https://meeple.example.com"].
+      MEEPLETIME_CORS_ORIGINS: ${MEEPLETIME_CORS_ORIGINS}
+    ports:
+      - "${BACKEND_PORT:-8000}:8000"
+    healthcheck:
+      test: ["CMD-SHELL", "curl -sf http://localhost:8000/health > /dev/null"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+
+  frontend:
+    image: ${FRONTEND_IMAGE:-ghcr.io/OWNER/REPO/frontend:latest}
+    restart: unless-stopped
+    environment:
+      # Browser-facing config, injected into /config.js at startup.
+      MT_OIDC_AUTHORITY: ${MT_OIDC_AUTHORITY}
+      MT_OIDC_CLIENT_ID: ${MT_OIDC_CLIENT_ID:-meepletime-frontend}
+      # Public base URL of the backend API (the browser calls it
+      # directly; ensure it is in MEEPLETIME_CORS_ORIGINS above).
+      MT_API_BASE_URL: ${MT_API_BASE_URL}
+    ports:
+      - "${FRONTEND_PORT:-80}:80"
+    depends_on:
+      backend:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD-SHELL", "curl -sf http://localhost/ > /dev/null"]
+      interval: 10s
+      timeout: 5s
+      retries: 10

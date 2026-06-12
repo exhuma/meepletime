@@ -28,11 +28,23 @@ const routes: RouteRecordRaw[] = [
     meta: { requiresAuth: true },
   },
   {
+    // Tabbed circle shell: calendar and list share a header strip.
     path: '/circles/:id',
-    component: () => import('../views/CircleCalendarView.vue'),
+    component: () => import('../views/CircleView.vue'),
     meta: { requiresAuth: true },
+    children: [
+      {
+        path: '',
+        component: () => import('../views/CircleCalendarView.vue'),
+      },
+      {
+        path: 'list',
+        component: () => import('../views/CircleListView.vue'),
+      },
+    ],
   },
   {
+    // Day detail is full-screen, outside the tabbed shell.
     path: '/circles/:id/day/:date',
     component: () => import('../views/DayDetailView.vue'),
     meta: { requiresAuth: true },

@@ -5,6 +5,13 @@
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>frontend</title>
+    <!--
+      Runtime configuration, generated from container env vars by the
+      Docker entrypoint. Absent in local dev (Vite VITE_* is used as a
+      fallback). Loaded before the app bundle so it is available at
+      import time. The file is optional: a 404 in dev is harmless.
+    -->
+    <script src="/config.js"></script>
   </head>
   <body>
     <div id="app"></div>

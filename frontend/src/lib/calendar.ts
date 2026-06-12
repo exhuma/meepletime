@@ -40,6 +40,42 @@ export function canGoToPrevMonth(monthStart: Date, today: Date): boolean {
   return addMonths(monthStart, -1) >= startOfMonth(today)
 }
 
+/** One upcoming meetup-candidate day for the list view. */
+export interface UpcomingDay {
+  date: string
+  viability: DayViability
+}
+
+/**
+ * Select upcoming meetup-candidate days for the list view.
+ *
+ * Includes only days on or after `fromDate` that have at least one
+ * attendee. When `viableOnly` is true, non-viable days are dropped too.
+ * Days are returned in chronological order. `fromDate` and the
+ * viability keys are `yyyy-MM-dd`, so lexical comparison is also
+ * chronological.
+ *
+ * @param viability - Viability keyed by `yyyy-MM-dd`.
+ * @param fromDate - Earliest day to include (inclusive), `yyyy-MM-dd`.
+ * @param viableOnly - When true, drop days that are not viable.
+ * @returns Chronologically sorted upcoming days.
+ */
+export function buildUpcomingDays(
+  viability: Readonly<Record<string, DayViability>>,
+  fromDate: string,
+  viableOnly: boolean,
+): UpcomingDay[] {
+  const rows: UpcomingDay[] = []
+  for (const [date, day] of Object.entries(viability)) {
+    if (date < fromDate) continue
+    if (day.attendee_count < 1) continue
+    if (viableOnly && !day.is_viable) continue
+    rows.push({ date, viability: day })
+  }
+  rows.sort((a, b) => a.date.localeCompare(b.date))
+  return rows
+}
+
 /** Build the day cells for monthStart, merging in the user's state. */
 export function buildMonthDays(
   monthStart: Date,

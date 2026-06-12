@@ -8,3 +8,4 @@ for self-hosting MeepleTime.
    :maxdepth: 2
 
    keycloak
+   deployment

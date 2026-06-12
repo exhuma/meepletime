@@ -6,13 +6,12 @@
  * obtained (local auth today, oidc-client-ts tomorrow).
  */
 import { getToken } from './token'
+import { apiBaseUrl } from '../config'
 
 export { setTokenProvider } from './token'
 export type { TokenProvider } from './token'
 
-const BASE =
-  (import.meta.env.VITE_API_BASE_URL as string | undefined) ??
-  'http://localhost:8000'
+const BASE = apiBaseUrl
 
 let _onUnauthorized: (() => void) | null = null
 let _onAuthorized: (() => void) | null = null

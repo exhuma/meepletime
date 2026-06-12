@@ -1,9 +1,9 @@
-- [ ] [mvp] Add a github workflow that builds two docker images. One for the
+- [x] [mvp] Add a github workflow that builds two docker images. One for the
       backend, one for the front-end. We assume that keycloak is available
       externally and that the database is provided by the OPS team as a vanilla
       postgresql container. Add a minimal section to the operations manual
       explaining how to bring the stack up.
-- [ ] [mvp] Aside from the calendar view, we also need a simple list-view of
+- [x] [mvp] Aside from the calendar view, we also need a simple list-view of
       upcoming vialble days. This list-view could also have the same toggle to
       include/exclude non-viable days. To avoid showing all dates, the list view
       should only list days with at least one attendee.
@@ -16,7 +16,7 @@
       delivers a message — `delivered_at` is always NULL. A delivery mechanism
       (e.g. email, push, WebSocket) needs to be chosen and wired in.
       Technical details are open.
-- [ ] [mvp] We need more documentation. One for onboarding new users and one for
+- [x] [mvp] We need more documentation. One for onboarding new users and one for
       less frequently used features for returning users. At the moment it is not
       clear that...
   - ... Hosts can override constraints (soft-max, hard-max, timezone) per hosted

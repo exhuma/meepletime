@@ -8,5 +8,10 @@ RUN npm run build
 FROM nginx:alpine
 COPY --from=build /app/dist /usr/share/nginx/html
 COPY nginx.conf /etc/nginx/conf.d/default.conf
+# Runtime config: the entrypoint hook renders /config.js from MT_*
+# env vars at container start (see docker-entrypoint.d/40-mt-config.sh).
+COPY config.template.js /etc/mt/config.template.js
+COPY docker-entrypoint.d/40-mt-config.sh /docker-entrypoint.d/40-mt-config.sh
+RUN chmod +x /docker-entrypoint.d/40-mt-config.sh
 EXPOSE 80
 CMD ["nginx", "-g", "daemon off;"]
