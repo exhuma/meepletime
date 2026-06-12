@@ -1,75 +1,85 @@
 <template>
-  <v-dialog
+  <MtDialog
     :model-value="modelValue"
+    :max-width="480"
     @update:model-value="$emit('update:modelValue', $event)"
-    max-width="480"
   >
-    <v-card>
-      <v-card-title class="d-flex align-center">
-        <v-icon class="mr-2">mdi-qrcode</v-icon>
+    <template #title>
+      <span class="d-flex align-center">
+        <v-icon class="mr-2" color="primary">mdi-qrcode</v-icon>
         Invite to {{ circle.name }}
-      </v-card-title>
-      <v-divider />
-      <v-card-text class="pt-4">
-        <p class="text-caption text-medium-emphasis text-center mb-1">
-          Enter this PIN to join:
-        </p>
-        <div class="mb-4">
-          <InvitePinDisplay :pin="circle.invite_token" />
-        </div>
+      </span>
+    </template>
 
-        <p class="text-body-2 mb-1 font-weight-medium">Or scan / share:</p>
-        <div class="d-flex align-center mb-4">
-          <v-text-field
-            :model-value="inviteUrl"
-            readonly
-            variant="outlined"
-            density="compact"
-            hide-details
-            class="flex-grow-1 mr-2"
-          />
-          <v-btn icon variant="text" @click="copyLink" :title="'Copy link'">
-            <v-icon>{{ copied ? 'mdi-check' : 'mdi-content-copy' }}</v-icon>
-          </v-btn>
-        </div>
+    <p class="text-caption text-medium-emphasis text-center mb-1">
+      Enter this PIN to join:
+    </p>
+    <div class="mb-4">
+      <InvitePinDisplay :pin="circle.invite_token" />
+    </div>
 
-        <div class="d-flex justify-center mb-4">
-          <img
-            v-if="qrDataUrl"
-            :src="qrDataUrl"
-            alt="QR Code for invite link"
-            width="200"
-            height="200"
-          />
-          <v-progress-circular v-else indeterminate color="primary" />
-        </div>
+    <p class="text-body-2 mb-1 font-weight-medium">Or scan / share:</p>
+    <div class="d-flex align-center mb-4">
+      <v-text-field
+        :model-value="inviteUrl"
+        readonly
+        variant="outlined"
+        density="compact"
+        hide-details
+        class="flex-grow-1 mr-2"
+      />
+      <MtButton
+        variant="icon"
+        tone="primary"
+        :icon="copied ? 'mdi-check' : 'mdi-content-copy'"
+        title="Copy link"
+        @click="copyLink"
+      />
+    </div>
 
-        <v-alert
-          v-if="regenerateError"
-          type="error"
-          class="mb-3"
-          closable
-          @click:close="regenerateError = ''"
-        >
-          {{ regenerateError }}
-        </v-alert>
-      </v-card-text>
-      <v-divider />
-      <v-card-actions class="pa-3">
-        <v-btn
-          v-if="isAdmin"
-          color="tertiary"
-          variant="tonal"
-          :loading="regenerating"
-          @click="regenerate"
-        >
-          <v-icon start>mdi-refresh</v-icon>Regenerate PIN
-        </v-btn>
-        <v-spacer />
-        <v-btn @click="$emit('update:modelValue', false)">Close</v-btn>
-      </v-card-actions>
-    </v-card>
-  </v-dialog>
+    <div class="d-flex justify-center mb-4">
+      <img
+        v-if="qrDataUrl"
+        :src="qrDataUrl"
+        alt="QR Code for invite link"
+        width="200"
+        height="200"
+        class="invite-qr"
+      />
+      <v-progress-circular v-else indeterminate color="primary" />
+    </div>
+
+    <v-alert
+      v-if="regenerateError"
+      type="error"
+      class="mb-1"
+      closable
+      @click:close="regenerateError = ''"
+    >
+      {{ regenerateError }}
+    </v-alert>
+
+    <template #actions>
+      <MtButton
+        v-if="isAdmin"
+        variant="soft"
+        tone="primary"
+        icon="mdi-refresh"
+        :loading="regenerating"
+        @click="regenerate"
+      >
+        Regenerate PIN
+      </MtButton>
+      <v-spacer />
+      <MtButton
+        variant="ghost"
+        tone="primary"
+        @click="$emit('update:modelValue', false)"
+      >
+        Close
+      </MtButton>
+    </template>
+  </MtDialog>
 </template>
 
 <script setup lang="ts">
@@ -77,6 +87,7 @@ import { ref, computed, watch } from 'vue'
 import QRCode from 'qrcode'
 import { useCircles } from '../composables/circles'
 import InvitePinDisplay from './InvitePinDisplay.vue'
+import { MtDialog, MtButton } from '../ui'
 import type { Circle } from '../types'
 
 const props = defineProps<{
@@ -146,3 +157,10 @@ watch(
   { immediate: true },
 )
 </script>
+
+<style scoped>
+/* The QR image already carries its own white quiet zone; just round it. */
+.invite-qr {
+  border-radius: var(--mt-field-radius);
+}
+</style>

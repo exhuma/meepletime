@@ -21,7 +21,9 @@
 
       <v-card-actions class="pb-4 px-4">
         <v-spacer />
-        <v-btn variant="text" @click="close">Close</v-btn>
+        <MtButton variant="ghost" tone="primary" @click="close">
+          Close
+        </MtButton>
       </v-card-actions>
     </v-card>
   </v-bottom-sheet>
@@ -30,6 +32,7 @@
 <script setup lang="ts">
 import { computed } from 'vue'
 import { safeFormat } from '../lib/datetime'
+import { MtButton } from '../ui'
 
 const props = defineProps<{
   modelValue: boolean

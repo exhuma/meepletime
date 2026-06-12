@@ -7,21 +7,22 @@
     >
       {{ pin }}
     </div>
-    <v-btn
-      variant="tonal"
-      color="primary"
+    <MtButton
+      variant="soft"
+      tone="primary"
       size="small"
-      class="mt-2"
+      class="mt-3"
+      :icon="copied ? 'mdi-check' : 'mdi-content-copy'"
       @click="copy"
     >
-      <v-icon start>{{ copied ? 'mdi-check' : 'mdi-content-copy' }}</v-icon>
       {{ copied ? 'Copied' : 'Copy PIN' }}
-    </v-btn>
+    </MtButton>
   </div>
 </template>
 
 <script setup lang="ts">
 import { ref } from 'vue'
+import { MtButton } from '../ui'
 
 const props = defineProps<{ pin: string }>()
 
@@ -43,13 +44,17 @@ async function copy(): Promise<void> {
 
 <style scoped>
 .invite-pin__code {
-  font-size: 2.25rem;
+  font-family: var(--v-font-family-display, sans-serif);
+  font-size: 2.1rem;
   font-weight: 700;
   /* Trailing letter-spacing is offset by padding-left to keep the
      code visually centered. */
-  letter-spacing: 0.3em;
-  padding-left: 0.3em;
+  letter-spacing: 0.32em;
+  padding: 0.5rem 0.7rem 0.5rem 1rem;
   color: rgb(var(--v-theme-primary));
+  background: rgba(var(--v-theme-primary), 0.1);
+  border: 2px dashed rgba(var(--v-theme-primary), 0.5);
+  border-radius: var(--mt-field-radius);
   line-height: 1.2;
 }
 </style>

@@ -1,117 +1,117 @@
 <template>
-  <v-dialog
+  <MtDialog
     :model-value="modelValue"
+    title="Create a Circle"
+    :max-width="500"
     @update:model-value="$emit('update:modelValue', $event)"
-    max-width="500"
   >
-    <v-card>
-      <v-card-title class="text-h6 pa-4">Create a Circle</v-card-title>
-      <v-divider />
-      <v-card-text class="pt-4">
-        <v-alert
-          v-if="error"
-          type="error"
-          class="mb-4"
-          closable
-          @click:close="error = ''"
-        >
-          {{ error }}
-        </v-alert>
-        <v-form @submit.prevent="handleCreate">
+    <v-alert
+      v-if="error"
+      type="error"
+      class="mb-4"
+      closable
+      @click:close="error = ''"
+    >
+      {{ error }}
+    </v-alert>
+    <v-form @submit.prevent="handleCreate">
+      <v-text-field
+        v-model="form.name"
+        label="Circle Name"
+        variant="outlined"
+        required
+        class="mb-3"
+      />
+      <v-textarea
+        v-model="form.description"
+        label="Description (optional)"
+        variant="outlined"
+        rows="2"
+        class="mb-3"
+      />
+      <v-autocomplete
+        v-model="form.timezone"
+        label="Timezone"
+        :items="timezones"
+        hint="The time-zone the events in this circle will be scheduled in."
+        persistent-hint
+        variant="outlined"
+        class="mb-3"
+      />
+      <v-checkbox
+        v-model="form.host_needed"
+        label="This circle requires a host"
+        hint="At least one member must host to make events viable."
+        persistent-hint
+        color="primary"
+        class="mb-3"
+      />
+      <v-row>
+        <v-col cols="12" sm="4">
           <v-text-field
-            v-model="form.name"
-            label="Circle Name"
+            v-model.number="form.minimum_attendees"
+            label="Min attendees"
+            type="number"
             variant="outlined"
-            required
-            class="mb-3"
-          />
-          <v-textarea
-            v-model="form.description"
-            label="Description (optional)"
-            variant="outlined"
-            rows="2"
-            class="mb-3"
-          />
-          <v-autocomplete
-            v-model="form.timezone"
-            label="Timezone"
-            :items="timezones"
-            hint="The time-zone the events in this circle will be scheduled in."
+            min="1"
+            hint="The number of participants needed to make a session viable."
             persistent-hint
+            clearable
+          />
+        </v-col>
+        <v-col cols="12" sm="4">
+          <v-text-field
+            v-model.number="form.soft_max_attendees"
+            label="Soft max"
+            type="number"
             variant="outlined"
-            class="mb-3"
-          />
-          <v-checkbox
-            v-model="form.host_needed"
-            label="This circle requires a host"
-            hint="At least one member must host to make events viable."
+            min="1"
+            hint="The number of participants at which a sessions feels crowded"
             persistent-hint
-            color="primary"
-            class="mb-3"
+            clearable
           />
-          <v-row>
-            <v-col cols="12" sm="4">
-              <v-text-field
-                v-model.number="form.minimum_attendees"
-                label="Min attendees"
-                type="number"
-                variant="outlined"
-                min="1"
-                hint="The number of participants needed to make a session viable."
-                persistent-hint
-                clearable
-              />
-            </v-col>
-            <v-col cols="12" sm="4">
-              <v-text-field
-                v-model.number="form.soft_max_attendees"
-                label="Soft max"
-                type="number"
-                variant="outlined"
-                min="1"
-                hint="The number of participants at which a sessions feels crowded"
-                persistent-hint
-                clearable
-              />
-            </v-col>
-            <v-col cols="12" sm="4">
-              <v-text-field
-                v-model.number="form.hard_max_attendees"
-                label="Hard max"
-                type="number"
-                variant="outlined"
-                min="1"
-                hint="The maximum number of participants a session can support."
-                persistent-hint
-                clearable
-              />
-            </v-col>
-          </v-row>
-        </v-form>
-      </v-card-text>
-      <v-divider />
-      <v-card-actions class="pa-4">
-        <v-spacer />
-        <v-btn variant="text" @click="$emit('update:modelValue', false)"
-          >Cancel</v-btn
-        >
-        <v-btn
-          color="primary"
-          @click="handleCreate"
-          :loading="loading"
-          :disabled="!form.name.trim()"
-        >
-          Create
-        </v-btn>
-      </v-card-actions>
-    </v-card>
-  </v-dialog>
+        </v-col>
+        <v-col cols="12" sm="4">
+          <v-text-field
+            v-model.number="form.hard_max_attendees"
+            label="Hard max"
+            type="number"
+            variant="outlined"
+            min="1"
+            hint="The maximum number of participants a session can support."
+            persistent-hint
+            clearable
+          />
+        </v-col>
+      </v-row>
+    </v-form>
+
+    <template #actions>
+      <v-spacer />
+      <MtButton
+        variant="ghost"
+        tone="primary"
+        @click="$emit('update:modelValue', false)"
+      >
+        Cancel
+      </MtButton>
+      <MtButton
+        tone="primary"
+        :loading="loading"
+        :disabled="!form.name.trim()"
+        @click="handleCreate"
+      >
+        Create
+      </MtButton>
+    </template>
+  </MtDialog>
 </template>
 
 <script setup lang="ts">
 import { ref, reactive } from 'vue'
 import { useCircles } from '../composables/circles'
 import { ApiError } from '../api'
+import { MtDialog, MtButton } from '../ui'
 
 defineProps<{
   modelValue: boolean

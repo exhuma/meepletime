@@ -70,23 +70,21 @@
 
     <CreateCircleDialog v-model="createDialog" @created="onCircleCreated" />
 
-    <v-dialog v-model="joinDialog" max-width="400">
-      <MtCard class="pa-5">
-        <h2 class="text-h6 mb-1">Join a Circle</h2>
-        <p class="text-body-2 text-medium-emphasis mb-4">
-          Enter the invite PIN a host shared with you.
-        </p>
-        <MtPinField v-model="joinToken" @valid="joinValid = $event" />
-        <div class="mt-dialog__actions">
-          <MtButton variant="ghost" tone="primary" @click="joinDialog = false">
-            Cancel
-          </MtButton>
-          <MtButton tone="primary" :disabled="!joinValid" @click="goToJoin">
-            Join
-          </MtButton>
-        </div>
-      </MtCard>
-    </v-dialog>
+    <MtDialog v-model="joinDialog" title="Join a Circle" :max-width="400">
+      <p class="text-body-2 text-medium-emphasis mb-4">
+        Enter the invite PIN a host shared with you.
+      </p>
+      <MtPinField v-model="joinToken" @valid="joinValid = $event" />
+      <template #actions>
+        <v-spacer />
+        <MtButton variant="ghost" tone="primary" @click="joinDialog = false">
+          Cancel
+        </MtButton>
+        <MtButton tone="primary" :disabled="!joinValid" @click="goToJoin">
+          Join
+        </MtButton>
+      </template>
+    </MtDialog>
   </v-container>
 </template>
 
@@ -96,7 +94,7 @@ import { useRouter } from 'vue-router'
 import { useCircles } from '../composables/circles'
 import CreateCircleDialog from '../components/CreateCircleDialog.vue'
 import { useAppBar } from '../composables/appBar'
-import { MtButton, MtCard, MtPinField } from '../ui'
+import { MtButton, MtCard, MtDialog, MtPinField } from '../ui'
 import MtMeeple from '../ui/MtMeeple.vue'
 
 const circlesState = useCircles()
@@ -219,12 +217,5 @@ function goToJoin(): void {
 .mt-tile__chev {
   flex: 0 0 auto;
   opacity: 0.5;
-}
-
-.mt-dialog__actions {
-  display: flex;
-  justify-content: flex-end;
-  gap: 0.5rem;
-  margin-top: 1.25rem;
 }
 </style>
