@@ -7,11 +7,12 @@
     :size="size"
     :loading="loading"
     :rounded="variant === 'icon' ? 'circle' : 'lg'"
-    :icon="variant === 'icon' ? icon || true : undefined"
+    :icon="variant === 'icon' ? true : undefined"
     :prepend-icon="variant !== 'icon' ? icon : undefined"
     v-bind="$attrs"
   >
-    <slot />
+    <v-icon v-if="variant === 'icon'">{{ icon }}</v-icon>
+    <slot v-else />
   </v-btn>
 </template>
 

@@ -1,19 +1,26 @@
 <template>
   <v-container class="fill-height" fluid>
     <v-row justify="center" align="center">
-      <v-col cols="12" sm="6" class="text-center">
+      <v-col cols="12" sm="6" md="4" class="text-center">
+        <div class="login-meeple text-primary"><MtMeeple /></div>
+        <h1 class="login-title">MeepleTime</h1>
         <template v-if="!authError">
-          <v-progress-circular indeterminate color="primary" size="48" />
+          <v-progress-circular
+            indeterminate
+            color="primary"
+            size="40"
+            class="mt-5"
+          />
           <p class="mt-4 text-medium-emphasis">Redirecting to sign in…</p>
         </template>
         <template v-else>
-          <v-alert type="error" class="mb-4 text-left">
+          <v-alert type="error" class="my-4 text-left">
             Sign-in could not be completed. The server rejected the session —
             this usually happens after the identity provider was restarted.
           </v-alert>
-          <v-btn color="primary" size="large" @click="retrySignIn">
+          <MtButton tone="primary" size="large" @click="retrySignIn">
             Sign in again
-          </v-btn>
+          </MtButton>
         </template>
       </v-col>
     </v-row>
@@ -26,6 +33,8 @@ import { useRoute, useRouter } from 'vue-router'
 import { useAuth } from '../composables/auth'
 import { userManager } from '../auth/oidc'
 import { clearReauthGuard, hasAuthError } from '../auth/reauthGuard'
+import { MtButton } from '../ui'
+import MtMeeple from '../ui/MtMeeple.vue'
 
 const auth = useAuth()
 const route = useRoute()
@@ -59,3 +68,18 @@ async function retrySignIn(): Promise<void> {
   await auth.login(returnTo)
 }
 </script>
+
+<style scoped>
+.login-meeple {
+  width: 84px;
+  height: 84px;
+  margin: 0 auto 0.75rem;
+}
+
+.login-title {
+  font-family: var(--v-font-family-display, sans-serif);
+  font-size: 2rem;
+  font-weight: 600;
+  line-height: 1;
+}
+</style>

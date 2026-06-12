@@ -15,27 +15,22 @@
     <v-container class="pa-4" style="max-width: 600px">
       <div class="mb-6">
         <h3 class="text-subtitle-1 font-weight-bold mb-2">Attendees</h3>
-        <v-list
-          v-if="enrichedAttendees.length > 0"
-          lines="one"
-          class="rounded-lg"
-          elevation="1"
-        >
-          <v-list-item v-for="a in enrichedAttendees" :key="a.user_id">
-            <template #prepend>
-              <v-icon
-                :color="a.state === 'hosting' ? 'primary' : 'secondary'"
-                class="mr-2"
-              >
-                {{ a.state === 'hosting' ? 'mdi-home' : 'mdi-calendar-check' }}
-              </v-icon>
-            </template>
-            <v-list-item-title>{{ a.pseudonym }}</v-list-item-title>
-            <v-list-item-subtitle class="text-capitalize">{{
-              a.state
-            }}</v-list-item-subtitle>
-          </v-list-item>
-        </v-list>
+        <MtCard v-if="enrichedAttendees.length > 0">
+          <v-list lines="one">
+            <v-list-item v-for="a in enrichedAttendees" :key="a.user_id">
+              <template #prepend>
+                <v-icon v-if="a.state === 'hosting'" color="host" class="mr-3"
+                  >mdi-home-variant</v-icon
+                >
+                <span v-else class="dd-meeple"><MtMeeple /></span>
+              </template>
+              <v-list-item-title>{{ a.pseudonym }}</v-list-item-title>
+              <v-list-item-subtitle class="text-capitalize">{{
+                a.state
+              }}</v-list-item-subtitle>
+            </v-list-item>
+          </v-list>
+        </MtCard>
         <v-alert v-else type="info" density="compact"
           >No attendees yet.</v-alert
         >
@@ -76,15 +71,16 @@
             hide-details
             class="mb-2"
           />
-          <v-btn
+          <MtButton
             type="submit"
-            color="primary"
+            tone="primary"
+            icon="mdi-message-plus-outline"
             :loading="submitting"
             :disabled="!newNote.trim()"
             block
           >
             Add Note
-          </v-btn>
+          </MtButton>
         </v-form>
       </div>
     </v-container>
@@ -97,6 +93,8 @@ import { useRoute } from 'vue-router'
 import { useCircles } from '../composables/circles'
 import { enrichAttendees } from '../lib/members'
 import { safeFormat } from '../lib/datetime'
+import { MtCard, MtButton } from '../ui'
+import MtMeeple from '../ui/MtMeeple.vue'
 import type { Note } from '../types'
 import { useAppBar, useAppBarContext } from '../composables/appBar'
 
@@ -162,3 +160,14 @@ onMounted(async () => {
   }
 })
 </script>
+
+<style scoped>
+/* Attendee meeple glyph, sized to sit beside the host icon. */
+.dd-meeple {
+  display: inline-block;
+  width: 22px;
+  height: 22px;
+  margin-right: 12px;
+  color: rgb(var(--v-theme-attend));
+}
+</style>

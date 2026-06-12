@@ -6,42 +6,50 @@
           error
         }}</v-alert>
 
-        <v-card v-if="!isBusy && circleInfo" class="pa-4" elevation="4">
-          <v-card-title class="text-h6 mb-1">Join Circle</v-card-title>
-          <v-card-subtitle class="mb-4">{{ circleInfo.name }}</v-card-subtitle>
-          <v-card-text>
-            <p v-if="circleInfo.description" class="text-body-2 mb-4">
-              {{ circleInfo.description }}
-            </p>
-            <v-form @submit.prevent="handleJoin">
-              <v-text-field
-                v-model="pseudonym"
-                label="Your display name"
-                prepend-inner-icon="mdi-account"
-                variant="outlined"
-                required
-                class="mb-3"
-              />
-              <v-checkbox
-                v-model="canHostDefault"
-                label="I can host"
-                color="primary"
-                hide-details
-                class="mb-4"
-              />
-              <v-btn
-                type="submit"
-                color="primary"
-                size="large"
-                block
-                :loading="joining"
-                :disabled="!pseudonym.trim()"
-              >
-                Join Circle
-              </v-btn>
-            </v-form>
-          </v-card-text>
-        </v-card>
+        <MtCard v-if="!isBusy && circleInfo" tone="primary" class="pa-5">
+          <div class="join-head">
+            <div class="join-meeple text-primary"><MtMeeple /></div>
+            <div>
+              <div class="text-caption text-medium-emphasis">
+                You're invited to
+              </div>
+              <h1 class="join-title">{{ circleInfo.name }}</h1>
+            </div>
+          </div>
+          <p
+            v-if="circleInfo.description"
+            class="text-body-2 text-medium-emphasis my-4"
+          >
+            {{ circleInfo.description }}
+          </p>
+          <v-form class="mt-4" @submit.prevent="handleJoin">
+            <v-text-field
+              v-model="pseudonym"
+              label="Your display name"
+              prepend-inner-icon="mdi-account"
+              variant="outlined"
+              required
+              class="mb-3"
+            />
+            <v-checkbox
+              v-model="canHostDefault"
+              label="I can host"
+              color="primary"
+              hide-details
+              class="mb-4"
+            />
+            <MtButton
+              type="submit"
+              tone="primary"
+              size="large"
+              block
+              :loading="joining"
+              :disabled="!pseudonym.trim()"
+            >
+              Join Circle
+            </MtButton>
+          </v-form>
+        </MtCard>
       </v-col>
     </v-row>
   </v-container>
@@ -55,6 +63,8 @@ import api, { ApiError } from '../api'
 import type { Circle } from '../types'
 import { useAppBar } from '../composables/appBar'
 import { normalizePin } from '../lib/invite'
+import { MtCard, MtButton } from '../ui'
+import MtMeeple from '../ui/MtMeeple.vue'
 
 const route = useRoute()
 const router = useRouter()
@@ -99,3 +109,24 @@ async function handleJoin(): Promise<void> {
   }
 }
 </script>
+
+<style scoped>
+.join-head {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+}
+
+.join-meeple {
+  flex: 0 0 auto;
+  width: 56px;
+  height: 56px;
+}
+
+.join-title {
+  font-family: var(--v-font-family-display, sans-serif);
+  font-size: 1.5rem;
+  font-weight: 600;
+  line-height: 1.1;
+}
+</style>
