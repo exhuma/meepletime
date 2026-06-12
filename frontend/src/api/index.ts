@@ -15,6 +15,7 @@ const BASE =
   'http://localhost:8000'
 
 let _onUnauthorized: (() => void) | null = null
+let _onAuthorized: (() => void) | null = null
 
 /**
  * Register a callback invoked when the API returns HTTP 401.
@@ -24,6 +25,16 @@ let _onUnauthorized: (() => void) | null = null
  */
 export function setUnauthorizedHandler(handler: () => void): void {
   _onUnauthorized = handler
+}
+
+/**
+ * Register a callback invoked after any successful (2xx) response.
+ *
+ * Used to reset the re-authentication loop breaker once the current
+ * token is proven to work.
+ */
+export function setAuthorizedHandler(handler: () => void): void {
+  _onAuthorized = handler
 }
 
 /** Thrown for any non-2xx API response. */
@@ -73,6 +84,8 @@ async function request<T>(
 
   if (res.status === 401) {
     _onUnauthorized?.()
+  } else if (res.ok) {
+    _onAuthorized?.()
   }
 
   if (!res.ok) {

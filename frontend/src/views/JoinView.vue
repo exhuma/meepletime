@@ -54,12 +54,13 @@ import { useCircles } from '../composables/circles'
 import api, { ApiError } from '../api'
 import type { Circle } from '../types'
 import { useAppBar } from '../composables/appBar'
+import { normalizePin } from '../utils/invite'
 
 const route = useRoute()
 const router = useRouter()
 const circles = useCircles()
 
-const token = route.params.token as string
+const token = normalizePin(route.params.token as string)
 const joining = ref(false)
 const error = ref('')
 const circleInfo = ref<Circle | null>(null)
@@ -72,7 +73,7 @@ onMounted(async () => {
   try {
     circleInfo.value = await api.get<Circle>(`/circles/join/${token}`)
   } catch {
-    error.value = 'Invalid or expired invite token.'
+    error.value = 'Invalid or expired invite PIN.'
   } finally {
     endJob('loading-join-view')
   }

@@ -22,8 +22,10 @@ class Circle(Base):
     timezone: Mapped[str] = mapped_column(
         String(64), nullable=False, default="UTC"
     )
-    invite_token: Mapped[uuid.UUID] = mapped_column(
-        UUID(as_uuid=True), unique=True, nullable=False, default=uuid.uuid4
+    # Unambiguous 6-char base32 invite PIN; assigned explicitly by the
+    # router via the invite service (not a column default).
+    invite_token: Mapped[str] = mapped_column(
+        String(6), unique=True, nullable=False
     )
     host_needed: Mapped[bool] = mapped_column(
         Boolean, nullable=False, default=False

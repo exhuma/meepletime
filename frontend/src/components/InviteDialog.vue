@@ -11,7 +11,14 @@
       </v-card-title>
       <v-divider />
       <v-card-text class="pt-4">
-        <p class="text-body-2 mb-1 font-weight-medium">Invite link:</p>
+        <p class="text-caption text-medium-emphasis text-center mb-1">
+          Enter this PIN to join:
+        </p>
+        <div class="mb-4">
+          <InvitePinDisplay :pin="circle.invite_token" />
+        </div>
+
+        <p class="text-body-2 mb-1 font-weight-medium">Or scan / share:</p>
         <div class="d-flex align-center mb-4">
           <v-text-field
             :model-value="inviteUrl"
@@ -37,10 +44,6 @@
           <v-progress-circular v-else indeterminate color="primary" />
         </div>
 
-        <p class="text-caption text-medium-emphasis text-center mb-2">
-          Scan or share the link. Token: <code>{{ circle.invite_token }}</code>
-        </p>
-
         <v-alert
           v-if="regenerateError"
           type="error"
@@ -60,7 +63,7 @@
           :loading="regenerating"
           @click="regenerate"
         >
-          <v-icon start>mdi-refresh</v-icon>Regenerate Token
+          <v-icon start>mdi-refresh</v-icon>Regenerate PIN
         </v-btn>
         <v-spacer />
         <v-btn @click="$emit('update:modelValue', false)">Close</v-btn>
@@ -73,6 +76,7 @@
 import { ref, computed, watch } from 'vue'
 import QRCode from 'qrcode'
 import { useCircles } from '../composables/circles'
+import InvitePinDisplay from './InvitePinDisplay.vue'
 import type { Circle } from '../types'
 
 const props = defineProps<{

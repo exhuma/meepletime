@@ -6,8 +6,18 @@ import * as components from 'vuetify/components'
 import * as directives from 'vuetify/directives'
 import router from './router'
 import App from './App.vue'
-import { setUnauthorizedHandler, setTokenProvider } from './api'
+import {
+  setAuthorizedHandler,
+  setUnauthorizedHandler,
+  setTokenProvider,
+} from './api'
 import { userManager } from './auth/oidc'
+import {
+  clearReauthGuard,
+  markReauthAttempt,
+  recentlyReauthed,
+  setAuthError,
+} from './auth/reauthGuard'
 import { meepleTimeThemeOptions } from './brand-theme'
 
 setTokenProvider({
@@ -33,21 +43,42 @@ setTokenProvider({
   },
 })
 
+let _reauthInFlight = false
+
 setUnauthorizedHandler(async () => {
-  // Only call signinRedirect when there is genuinely no active
-  // local session. If the user already has a (possibly
-  // misconfigured) token, fall back to /login instead of
-  // immediately re-triggering Keycloak — which would SSO-login
-  // them right back and cause an infinite redirect loop.
-  const user = await userManager.getUser()
-  if (user && !user.expired) {
-    await router.replace('/')
-  } else {
+  // A 401 means the API rejected the stored access token. This happens
+  // when the token expired, or when Keycloak's signing keys rotated
+  // after a restart so a still-clock-valid token no longer verifies.
+  // The token will never be accepted again, so discard it and sign in
+  // again — the Keycloak SSO session mints a fresh, valid token without
+  // prompting. Coalesce simultaneous 401s so we redirect only once.
+  if (_reauthInFlight) return
+  _reauthInFlight = true
+  try {
+    await userManager.removeUser().catch(() => {})
+
+    if (recentlyReauthed()) {
+      // We re-authenticated moments ago and the *fresh* token was also
+      // rejected. That is a real backend misconfiguration, not a stale
+      // token — stop redirecting and let LoginView offer a manual retry
+      // instead of looping forever.
+      setAuthError()
+      await router.replace('/login')
+      return
+    }
+
+    markReauthAttempt()
     await userManager.signinRedirect({
       state: router.currentRoute.value.fullPath,
     })
+  } finally {
+    _reauthInFlight = false
   }
 })
+
+// A successful authenticated call proves the current token works, so
+// reset the re-authentication loop breaker.
+setAuthorizedHandler(() => clearReauthGuard())
 
 const vuetify = createVuetify({
   components,

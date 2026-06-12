@@ -37,7 +37,7 @@ class CircleOut(BaseModel):
     description: str | None
     image_ref: str | None
     timezone: str
-    invite_token: uuid.UUID
+    invite_token: str
     host_needed: bool
     minimum_attendees: int | None
     soft_max_attendees: int | None

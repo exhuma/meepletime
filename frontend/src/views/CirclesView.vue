@@ -18,7 +18,7 @@
       type="info"
       class="mb-4"
     >
-      You're not in any circles yet. Create one or join with an invite token!
+      You're not in any circles yet. Create one or join with an invite PIN!
     </v-alert>
 
     <v-list
@@ -68,16 +68,25 @@
         <v-card-title>Join a Circle</v-card-title>
         <v-card-text>
           <v-text-field
-            v-model="joinToken"
-            label="Invite Token"
+            :model-value="joinToken"
+            @update:model-value="joinToken = normalizePin($event)"
+            label="Invite PIN"
+            placeholder="ABC234"
             prepend-inner-icon="mdi-key"
             variant="outlined"
+            :maxlength="INVITE_LENGTH"
+            hint="6 characters, e.g. ABC234"
+            persistent-hint
+            class="invite-pin-field"
           />
         </v-card-text>
         <v-card-actions>
           <v-spacer />
           <v-btn variant="text" @click="joinDialog = false">Cancel</v-btn>
-          <v-btn color="primary" @click="goToJoin" :disabled="!joinToken"
+          <v-btn
+            color="primary"
+            @click="goToJoin"
+            :disabled="!isValidPin(joinToken)"
             >Join</v-btn
           >
         </v-card-actions>
@@ -92,6 +101,7 @@ import { useRouter } from 'vue-router'
 import { useCircles } from '../composables/circles'
 import CreateCircleDialog from '../components/CreateCircleDialog.vue'
 import { useAppBar } from '../composables/appBar'
+import { normalizePin, isValidPin, INVITE_LENGTH } from '../utils/invite'
 
 const circlesState = useCircles()
 const router = useRouter()
@@ -115,11 +125,19 @@ function onCircleCreated(): void {
   createDialog.value = false
 }
 
-/** Navigate to the join page for the entered invite token. */
+/** Navigate to the join page for the entered invite PIN. */
 function goToJoin(): void {
-  if (joinToken.value) {
+  if (isValidPin(joinToken.value)) {
     joinDialog.value = false
     router.push(`/join/${joinToken.value}`)
   }
 }
 </script>
+
+<style scoped>
+.invite-pin-field :deep(input) {
+  text-transform: uppercase;
+  letter-spacing: 0.25em;
+  font-weight: 600;
+}
+</style>

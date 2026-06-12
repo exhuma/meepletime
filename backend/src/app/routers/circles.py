@@ -4,6 +4,7 @@ import uuid
 
 from fastapi import APIRouter, Depends, HTTPException, Request, status
 from sqlalchemy import select
+from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 
 from app.config import Settings, get_settings
@@ -21,6 +22,7 @@ from app.models.user import User
 from app.rate_limit import enforce_limit_or_429
 from app.schemas.circle import CircleCreate, CircleOut, CircleUpdate
 from app.schemas.membership import InviteJoin, MembershipOut
+from app.services.invite import generate_unique_pin, normalize_pin
 from app.utils import apply_partial_update
 
 router = APIRouter(tags=["circles"])
@@ -71,21 +73,29 @@ def create_circle(
     current_user: User = Depends(get_current_active_user),
 ) -> Circle:
     """Create a new circle and automatically join the creator as owner."""
-    circle = Circle(
-        **circle_in.model_dump(),
-        created_by_user_id=current_user.id,
-    )
-    db.add(circle)
-    db.flush()
+    for attempt in range(2):
+        circle = Circle(
+            **circle_in.model_dump(),
+            created_by_user_id=current_user.id,
+            invite_token=generate_unique_pin(db),
+        )
+        db.add(circle)
+        db.flush()
 
-    membership = CircleMembership(
-        circle_id=circle.id,
-        user_id=current_user.id,
-        pseudonym=current_user.email.split("@")[0],
-        role=MemberRole.owner,
-    )
-    db.add(membership)
-    db.commit()
+        membership = CircleMembership(
+            circle_id=circle.id,
+            user_id=current_user.id,
+            pseudonym=current_user.email.split("@")[0],
+            role=MemberRole.owner,
+        )
+        db.add(membership)
+        try:
+            db.commit()
+            break
+        except IntegrityError:
+            db.rollback()
+            if attempt == 1:
+                raise
     db.refresh(circle)
     return circle
 
@@ -150,15 +160,22 @@ def regenerate_invite(
     circle = get_circle_or_404(db, circle_id)
     membership = get_membership_or_403(db, circle_id, current_user.id)
     require_admin_or_owner(membership)
-    circle.invite_token = uuid.uuid4()
-    db.commit()
+    for attempt in range(2):
+        circle.invite_token = generate_unique_pin(db)
+        try:
+            db.commit()
+            break
+        except IntegrityError:
+            db.rollback()
+            if attempt == 1:
+                raise
     db.refresh(circle)
     return circle
 
 
 @router.get("/circles/join/{invite_token}", response_model=CircleOut)
 def preview_circle_by_invite(
-    invite_token: uuid.UUID,
+    invite_token: str,
     db: Session = Depends(get_db),
 ) -> Circle:
     """
@@ -166,11 +183,11 @@ def preview_circle_by_invite(
     requiring authentication.
     """
     circle = db.execute(
-        select(Circle).where(Circle.invite_token == invite_token)
+        select(Circle).where(Circle.invite_token == normalize_pin(invite_token))
     ).scalar_one_or_none()
     if not circle:
         raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND, detail="Invalid invite token"
+            status_code=status.HTTP_404_NOT_FOUND, detail="Invalid invite PIN"
         )
     return circle
 
@@ -191,7 +208,7 @@ def join_circle(
     ).scalar_one_or_none()
     if not circle:
         raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND, detail="Invalid invite token"
+            status_code=status.HTTP_404_NOT_FOUND, detail="Invalid invite PIN"
         )
 
     existing = db.execute(

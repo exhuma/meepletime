@@ -27,65 +27,49 @@
         <div
           v-for="n in firstDayOffset"
           :key="`blank-${n}`"
-          class="calendar-cell calendar-cell--blank"
+          class="calendar-blank"
         ></div>
 
         <!-- Day cells -->
-        <div
+        <CalendarDayCell
           v-for="day in daysInMonth"
           :key="day.date"
-          class="calendar-cell"
-          :class="{
-            'calendar-cell--today': day.date === todayStr,
-            'calendar-cell--past': day.date < todayStr,
-            'calendar-cell--future':
-              day.date >= todayStr || calendarMode === 'select',
-            'calendar-cell--viable':
-              day.viability?.is_viable && !day.viability.is_soft_max_exceeded,
-            'calendar-cell--over-soft-max': day.viability?.is_soft_max_exceeded,
-            'calendar-cell--hidden': viableOnly && !day.viability?.is_viable,
-          }"
-          @click="handleDayClick(day.date)"
-        >
-          <div class="calendar-cell__date">{{ day.dayOfMonth }}</div>
-          <div
-            v-if="day.myState"
-            class="calendar-cell__chip"
-            :class="`chip--${day.myState}`"
-          >
-            {{ day.myState === 'hosting' ? '🏠' : '✓' }}
-          </div>
-          <div
-            v-if="day.viability && day.viability.attendee_count > 0"
-            class="calendar-cell__count"
-          >
-            {{ day.viability.attendee_count }}
-          </div>
-        </div>
+          :date="day.date"
+          :day-of-month="day.dayOfMonth"
+          :my-state="day.myState"
+          :viability="day.viability"
+          :is-today="day.date === todayStr"
+          :is-past="day.date < todayStr"
+          :dimmed="viableOnly && !day.viability?.is_viable"
+          @activate="onActivate"
+          @context="onContext"
+        />
       </div>
 
       <!-- Legend -->
       <div class="d-flex flex-wrap gap-2 px-2 py-3">
-        <v-chip size="x-small" color="secondary" variant="tonal"
-          >✓ Attending</v-chip
-        >
-        <v-chip size="x-small" color="primary" variant="tonal"
-          >🏠 Hosting</v-chip
-        >
+        <v-chip size="x-small" color="secondary" variant="tonal">
+          <v-icon start size="12">mdi-check</v-icon>Attending
+        </v-chip>
+        <v-chip size="x-small" color="primary" variant="tonal">
+          <v-icon start size="12">mdi-home</v-icon>Hosting
+        </v-chip>
         <v-chip size="x-small" color="primary" variant="flat"
           >Viable day</v-chip
         >
         <v-chip size="x-small" color="tertiary" variant="tonal"
           >Over soft max</v-chip
         >
+        <v-chip size="x-small" color="tertiary" variant="text">
+          <v-icon start size="10">mdi-circle</v-icon>Multiple hosts
+        </v-chip>
       </div>
 
-      <p class="text-caption text-medium-emphasis text-center mt-1">
-        {{
-          calendarMode === 'availability'
-            ? 'Tap a future date to cycle your availability'
-            : 'Tap a date for options'
-        }}
+      <p
+        class="text-caption text-medium-emphasis text-center mt-1 d-flex align-center justify-center"
+      >
+        <v-icon size="14" class="mr-1">mdi-gesture-tap-hold</v-icon>
+        Tap a day to set availability · long-press or right-click for options
       </p>
     </v-container>
 
@@ -132,6 +116,7 @@ import { useAuth } from '../composables/auth'
 import InviteDialog from '../components/InviteDialog.vue'
 import DayContextSheet from '../components/DayContextSheet.vue'
 import ConstraintEditorDialog from '../components/ConstraintEditorDialog.vue'
+import CalendarDayCell from '../components/CalendarDayCell.vue'
 import type { DayViability } from '../types'
 import { useAppBar, useAppBarContext } from '../composables/appBar'
 
@@ -140,13 +125,6 @@ useAppBarContext('Circle Calendar', [
     icon: 'mdi-qrcode',
     label: 'Invite / QR Code',
     action: () => (inviteDialog.value = true),
-  },
-  {
-    icon: 'mdi-cursor-default-click',
-    label: 'Select mode',
-    action: () =>
-      (calendarMode.value =
-        calendarMode.value === 'select' ? 'availability' : 'select'),
   },
   {
     icon: 'mdi-filter-variant',
@@ -164,7 +142,6 @@ const { startJob, endJob } = useAppBar()
 const circleId = route.params.id as string
 const viableOnly = ref(false)
 const inviteDialog = ref(false)
-const calendarMode = ref<'availability' | 'select'>('availability')
 const selectedDay = ref<string | null>(null)
 const contextSheetOpen = ref(false)
 const constraintDialogOpen = ref(false)
@@ -265,19 +242,21 @@ const selectedDayState = computed<'attending' | 'hosting' | null>(() => {
 })
 
 /**
- * Handle a day cell click.
- *
- * Availability mode: cycle the user's presence for a future day.
- * Select mode: open the context sheet for any day (past = read-only).
+ * Primary tap: cycle the user's presence for a future day. Past days
+ * are read-only, so taps on them are ignored (use the context menu).
  */
-async function handleDayClick(date: string): Promise<void> {
-  if (calendarMode.value === 'availability') {
-    if (date < todayStr) return
-    await cycleAvailability(date)
-  } else {
-    selectedDay.value = date
-    contextSheetOpen.value = true
-  }
+async function onActivate(date: string): Promise<void> {
+  if (date < todayStr) return
+  await cycleAvailability(date)
+}
+
+/**
+ * Long-press / right-click: open the day context sheet for any day
+ * (past days open in read-only form).
+ */
+function onContext(date: string): void {
+  selectedDay.value = date
+  contextSheetOpen.value = true
 }
 
 /**
@@ -337,7 +316,7 @@ onMounted(async () => {
   gap: 2px;
   background: rgb(var(--v-theme-outline-variant));
   border: 1px solid rgb(var(--v-theme-outline-variant));
-  border-radius: 8px;
+  border-radius: 12px;
   overflow: hidden;
 }
 
@@ -350,81 +329,7 @@ onMounted(async () => {
   color: rgb(var(--v-theme-on-surface-variant));
 }
 
-.calendar-cell {
-  background: rgb(var(--v-theme-surface));
-  min-height: 72px;
-  padding: 4px;
-  display: flex;
-  flex-direction: column;
-  align-items: flex-start;
-  cursor: default;
-  position: relative;
-}
-
-.calendar-cell--blank {
+.calendar-blank {
   background: rgb(var(--v-theme-surface-container-lowest));
-  cursor: default;
-}
-
-.calendar-cell--past {
-  background: rgb(var(--v-theme-surface-container-lowest));
-  opacity: 0.5;
-}
-
-.calendar-cell--future {
-  cursor: pointer;
-}
-
-.calendar-cell--future:hover {
-  background: rgb(var(--v-theme-surface-container));
-}
-
-.calendar-cell--today {
-  outline: 2px solid rgb(var(--v-theme-primary));
-  outline-offset: -2px;
-}
-
-.calendar-cell--viable {
-  background: rgb(var(--v-theme-primary-container));
-}
-
-.calendar-cell--over-soft-max {
-  background: rgb(var(--v-theme-tertiary-container));
-}
-
-.calendar-cell--hidden {
-  visibility: hidden;
-}
-
-.calendar-cell__date {
-  font-size: 0.8rem;
-  font-weight: 500;
-  color: rgb(var(--v-theme-on-surface));
-  line-height: 1.2;
-}
-
-.calendar-cell__chip {
-  font-size: 0.9rem;
-  margin-top: 2px;
-}
-
-.chip--attending {
-  color: rgb(var(--v-theme-secondary));
-}
-
-.chip--hosting {
-  color: rgb(var(--v-theme-primary));
-}
-
-.calendar-cell__count {
-  position: absolute;
-  bottom: 4px;
-  right: 4px;
-  font-size: 0.7rem;
-  font-weight: 700;
-  color: rgb(var(--v-theme-on-surface-variant));
-  background: rgba(var(--v-theme-on-surface), 0.08);
-  border-radius: 4px;
-  padding: 1px 4px;
 }
 </style>
