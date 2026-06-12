@@ -1,19 +1,26 @@
 <template>
   <div>
-    <v-container class="pa-2" style="max-width: 700px">
-      {{ circlesState.currentCircle.value?.name || 'Loading...' }}
+    <v-container class="pa-3" style="max-width: 720px">
+      <h1 class="cal-title">
+        {{ circlesState.currentCircle.value?.name || 'Loading…' }}
+      </h1>
 
       <!-- Month navigation -->
-      <div class="d-flex align-center px-2 py-2">
-        <v-btn icon variant="text" :disabled="!canGoPrev" @click="prevMonth">
-          <v-icon>mdi-chevron-left</v-icon>
-        </v-btn>
-        <span class="flex-grow-1 text-center text-subtitle-1 font-weight-bold">
-          {{ monthLabel }}
-        </span>
-        <v-btn icon variant="text" @click="nextMonth">
-          <v-icon>mdi-chevron-right</v-icon>
-        </v-btn>
+      <div class="cal-nav">
+        <MtButton
+          variant="icon"
+          tone="primary"
+          icon="mdi-chevron-left"
+          :disabled="!canGoPrev"
+          @click="prevMonth"
+        />
+        <span class="cal-nav__label">{{ monthLabel }}</span>
+        <MtButton
+          variant="icon"
+          tone="primary"
+          icon="mdi-chevron-right"
+          @click="nextMonth"
+        />
       </div>
 
       <!-- Calendar grid -->
@@ -47,16 +54,14 @@
       </div>
 
       <!-- Legend -->
-      <div class="d-flex flex-wrap gap-2 px-2 py-3">
-        <v-chip size="x-small" color="secondary" variant="tonal">
-          <v-icon start size="12">mdi-check</v-icon>Attending
+      <div class="d-flex flex-wrap ga-2 px-2 py-3">
+        <v-chip size="x-small" color="attend" variant="tonal">
+          <span class="legend-meeple"><MtMeeple /></span>Attending
         </v-chip>
-        <v-chip size="x-small" color="primary" variant="tonal">
-          <v-icon start size="12">mdi-home</v-icon>Hosting
+        <v-chip size="x-small" color="host" variant="tonal">
+          <v-icon start size="12">mdi-home-variant</v-icon>Hosting
         </v-chip>
-        <v-chip size="x-small" color="primary" variant="flat"
-          >Viable day</v-chip
-        >
+        <v-chip size="x-small" color="viable" variant="flat">Viable day</v-chip>
         <v-chip size="x-small" color="tertiary" variant="tonal"
           >Over soft max</v-chip
         >
@@ -111,6 +116,8 @@ import InviteDialog from '../components/InviteDialog.vue'
 import DayContextSheet from '../components/DayContextSheet.vue'
 import ConstraintEditorDialog from '../components/ConstraintEditorDialog.vue'
 import CalendarDayCell from '../components/CalendarDayCell.vue'
+import { MtButton } from '../ui'
+import MtMeeple from '../ui/MtMeeple.vue'
 import {
   formatDate,
   monthLabel as monthLabelFor,
@@ -286,13 +293,43 @@ onMounted(async () => {
 </script>
 
 <style scoped>
+.cal-title {
+  font-family: var(--v-font-family-display, sans-serif);
+  font-size: 1.5rem;
+  font-weight: 600;
+  line-height: 1.1;
+  margin-bottom: 0.5rem;
+}
+
+.cal-nav {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.25rem 0 0.75rem;
+}
+
+.cal-nav__label {
+  flex: 1 1 auto;
+  text-align: center;
+  font-family: var(--v-font-family-display, sans-serif);
+  font-size: 1.05rem;
+  font-weight: 600;
+}
+
+.legend-meeple {
+  display: inline-block;
+  width: 12px;
+  height: 12px;
+  margin-right: 4px;
+}
+
 .calendar-grid {
   display: grid;
   grid-template-columns: repeat(7, 1fr);
-  gap: 2px;
+  gap: 3px;
   background: rgb(var(--v-theme-outline-variant));
   border: 1px solid rgb(var(--v-theme-outline-variant));
-  border-radius: 12px;
+  border-radius: 16px;
   overflow: hidden;
 }
 

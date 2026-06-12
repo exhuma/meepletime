@@ -28,13 +28,14 @@
     <span class="cell__date" :class="{ 'cell__date--today': isToday }">
       {{ dayOfMonth }}
     </span>
-    <span v-if="myState" class="cell__mine">
-      <v-icon
-        size="14"
-        :color="myState === 'hosting' ? 'primary' : 'secondary'"
-      >
-        {{ myState === 'hosting' ? 'mdi-home' : 'mdi-check' }}
-      </v-icon>
+    <span v-if="myState === 'hosting'" class="cell__mine">
+      <v-icon size="15" color="host">mdi-home-variant</v-icon>
+    </span>
+    <span
+      v-else-if="myState === 'attending'"
+      class="cell__mine cell__mine--meeple"
+    >
+      <MtMeeple />
     </span>
     <span v-if="vs.attendeeCount !== null" class="cell__count">
       {{ vs.attendeeCount }}
@@ -47,6 +48,7 @@ import { computed } from 'vue'
 import type { DayViability } from '../types'
 import { useLongPress } from '../composables/useLongPress'
 import { dayVisualState } from '../lib/viability'
+import MtMeeple from '../ui/MtMeeple.vue'
 
 const props = defineProps<{
   date: string
@@ -124,7 +126,7 @@ const ariaLabel = computed<string>(() => {
 }
 
 .cell--viable {
-  background: rgb(var(--v-theme-primary-container));
+  background: rgb(var(--v-theme-viable-container));
 }
 
 .cell--over-soft-max {
@@ -153,6 +155,12 @@ const ariaLabel = computed<string>(() => {
 
 .cell__mine {
   margin-top: 2px;
+}
+
+.cell__mine--meeple {
+  width: 15px;
+  height: 15px;
+  color: rgb(var(--v-theme-attend));
 }
 
 .cell__count {
