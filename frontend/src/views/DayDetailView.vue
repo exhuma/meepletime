@@ -56,7 +56,7 @@
                   note.pseudonym || 'User'
                 }}</span>
                 <span class="text-caption text-medium-emphasis">{{
-                  formatTime(note.created_at)
+                  safeFormat(note.created_at, 'MMM d, HH:mm')
                 }}</span>
               </div>
               <p class="text-body-2 mb-0">{{ note.content }}</p>
@@ -94,8 +94,9 @@
 <script setup lang="ts">
 import { ref, computed, onMounted } from 'vue'
 import { useRoute } from 'vue-router'
-import { format, parseISO } from 'date-fns'
 import { useCircles } from '../composables/circles'
+import { enrichAttendees } from '../lib/members'
+import { safeFormat } from '../lib/datetime'
 import type { Note } from '../types'
 import { useAppBar, useAppBarContext } from '../composables/appBar'
 
@@ -110,13 +111,9 @@ const submitting = ref(false)
 const notes = ref<Note[]>([])
 const newNote = ref('')
 
-const formattedDate = computed<string>(() => {
-  try {
-    return format(parseISO(date), 'EEEE, MMMM d, yyyy')
-  } catch {
-    return date
-  }
-})
+const formattedDate = computed<string>(() =>
+  safeFormat(date, 'EEEE, MMMM d, yyyy'),
+)
 
 const attendees = computed(() => circlesState.calendar.value[date] ?? [])
 const viability = computed(() => circlesState.viability.value[date] ?? null)
@@ -125,23 +122,8 @@ useAppBarContext(formattedDate.value, [])
 
 /** Cross-reference attendees with the members list to resolve pseudonyms. */
 const enrichedAttendees = computed(() =>
-  attendees.value.map((a) => {
-    const member = circlesState.members.value.find(
-      (m) => m.user_id === a.user_id,
-    )
-    return { ...a, pseudonym: member?.pseudonym ?? a.user_id }
-  }),
+  enrichAttendees(attendees.value, circlesState.members.value),
 )
-
-/** Format an ISO timestamp string to a short human-readable form. */
-function formatTime(ts: string): string {
-  if (!ts) return ''
-  try {
-    return format(new Date(ts), 'MMM d, HH:mm')
-  } catch {
-    return ts
-  }
-}
 
 /** Submit a new note for the current day. */
 async function submitNote(): Promise<void> {

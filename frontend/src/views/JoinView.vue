@@ -54,7 +54,7 @@ import { useCircles } from '../composables/circles'
 import api, { ApiError } from '../api'
 import type { Circle } from '../types'
 import { useAppBar } from '../composables/appBar'
-import { normalizePin } from '../utils/invite'
+import { normalizePin } from '../lib/invite'
 
 const route = useRoute()
 const router = useRouter()

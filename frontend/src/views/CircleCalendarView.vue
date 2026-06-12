@@ -104,20 +104,24 @@
 <script setup lang="ts">
 import { ref, computed, onMounted } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
-import {
-  format,
-  addMonths,
-  startOfMonth,
-  getDaysInMonth,
-  getDay,
-} from 'date-fns'
+import { addMonths, startOfMonth } from 'date-fns'
 import { useCircles } from '../composables/circles'
 import { useAuth } from '../composables/auth'
 import InviteDialog from '../components/InviteDialog.vue'
 import DayContextSheet from '../components/DayContextSheet.vue'
 import ConstraintEditorDialog from '../components/ConstraintEditorDialog.vue'
 import CalendarDayCell from '../components/CalendarDayCell.vue'
-import type { DayViability } from '../types'
+import {
+  formatDate,
+  monthLabel as monthLabelFor,
+  firstDayOffset as firstDayOffsetFor,
+  canGoToPrevMonth,
+  buildMonthDays,
+} from '../lib/calendar'
+import {
+  isAdminOrOwner as computeIsAdminOrOwner,
+  myState,
+} from '../lib/members'
 import { useAppBar, useAppBarContext } from '../composables/appBar'
 
 useAppBarContext('Circle Calendar', [
@@ -147,59 +151,36 @@ const contextSheetOpen = ref(false)
 const constraintDialogOpen = ref(false)
 
 const today = new Date()
-const todayStr = format(today, 'yyyy-MM-dd')
+const todayStr = formatDate(today)
 
 // Start at current month; do not allow navigating to past months
 const currentMonthStart = ref(startOfMonth(today))
 
 const monthLabel = computed<string>(() =>
-  format(currentMonthStart.value, 'MMMM yyyy'),
+  monthLabelFor(currentMonthStart.value),
 )
 
 const dayHeaders = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat']
 
 /** Offset of the first day (0 = Sunday). */
-const firstDayOffset = computed<number>(() => getDay(currentMonthStart.value))
-
-interface DayCell {
-  date: string
-  dayOfMonth: number
-  myState: 'attending' | 'hosting' | null
-  viability: DayViability | null
-}
+const firstDayOffset = computed<number>(() =>
+  firstDayOffsetFor(currentMonthStart.value),
+)
 
 /** Build the array of day cells for the current month. */
-const daysInMonth = computed<DayCell[]>(() => {
-  const count = getDaysInMonth(currentMonthStart.value)
-  const userId = auth.userId.value
-  const cells: DayCell[] = []
-  for (let d = 1; d <= count; d++) {
-    const date = format(
-      new Date(
-        currentMonthStart.value.getFullYear(),
-        currentMonthStart.value.getMonth(),
-        d,
-      ),
-      'yyyy-MM-dd',
-    )
-    const entries = circlesState.calendar.value[date] ?? []
-    const mine = userId ? entries.find((a) => a.user_id === userId) : undefined
-    const viab = circlesState.viability.value[date] ?? null
-    cells.push({
-      date,
-      dayOfMonth: d,
-      myState: mine?.state ?? null,
-      viability: viab,
-    })
-  }
-  return cells
-})
+const daysInMonth = computed(() =>
+  buildMonthDays(
+    currentMonthStart.value,
+    circlesState.calendar.value,
+    circlesState.viability.value,
+    auth.userId.value,
+  ),
+)
 
 /** True when navigating back would go before the current month. */
-const canGoPrev = computed<boolean>(() => {
-  const prevMonth = addMonths(currentMonthStart.value, -1)
-  return prevMonth >= startOfMonth(today)
-})
+const canGoPrev = computed<boolean>(() =>
+  canGoToPrevMonth(currentMonthStart.value, today),
+)
 
 /** Navigate the calendar one month back, stopping at the current month. */
 function prevMonth(): void {
@@ -216,8 +197,8 @@ function nextMonth(): void {
 
 /** Fetch availability and viability data for the currently displayed month. */
 async function reloadMonth(): Promise<void> {
-  const start = format(currentMonthStart.value, 'yyyy-MM-dd')
-  const end = format(addMonths(currentMonthStart.value, 1), 'yyyy-MM-dd')
+  const start = formatDate(currentMonthStart.value)
+  const end = formatDate(addMonths(currentMonthStart.value, 1))
   await Promise.all([
     circlesState.fetchCalendar(circleId, start, end),
     circlesState.fetchViability(circleId, start, end),
@@ -225,20 +206,15 @@ async function reloadMonth(): Promise<void> {
 }
 
 /** True if the current user is an owner or admin of this circle. */
-const isAdminOrOwner = computed<boolean>(() => {
-  const userId = auth.userId.value
-  if (!userId) return false
-  const member = circlesState.members.value.find((m) => m.user_id === userId)
-  return member?.role === 'owner' || member?.role === 'admin'
-})
+const isAdminOrOwner = computed<boolean>(() =>
+  computeIsAdminOrOwner(circlesState.members.value, auth.userId.value),
+)
 
 /** The current user's presence state for the selected day. */
 const selectedDayState = computed<'attending' | 'hosting' | null>(() => {
   if (!selectedDay.value) return null
-  const userId = auth.userId.value
-  if (!userId) return null
   const entries = circlesState.calendar.value[selectedDay.value] ?? []
-  return entries.find((a) => a.user_id === userId)?.state ?? null
+  return myState(entries, auth.userId.value)
 })
 
 /**
@@ -295,8 +271,8 @@ function onInviteRegenerated(): void {
 onMounted(async () => {
   startJob('load-circles')
   try {
-    const start = format(currentMonthStart.value, 'yyyy-MM-dd')
-    const end = format(addMonths(currentMonthStart.value, 3), 'yyyy-MM-dd')
+    const start = formatDate(currentMonthStart.value)
+    const end = formatDate(addMonths(currentMonthStart.value, 3))
     await Promise.all([
       circlesState.fetchCircle(circleId),
       circlesState.fetchMembers(circleId),

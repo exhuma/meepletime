@@ -1,0 +1,113 @@
+/**
+ * The MeepleTime skin — playful tabletop.
+ *
+ * Global, token-driven styling layered on top of Vuetify. Colours are
+ * read from the theme (`--v-theme-*`); every other value comes from
+ * `tokens.css` (`--mt-*`). Reskinning is a token swap, not edits here.
+ */
+@import './tokens.css';
+
+html {
+  background: rgb(var(--v-theme-background));
+}
+
+body {
+  margin: 0;
+  min-height: 100vh;
+  background:
+    radial-gradient(
+      ellipse at 50% -8%,
+      rgba(var(--v-theme-primary), 0.12) 0%,
+      transparent 60%
+    ),
+    radial-gradient(
+      ellipse at 100% 100%,
+      rgba(var(--v-theme-host), 0.08) 0%,
+      transparent 55%
+    ),
+    rgb(var(--v-theme-background));
+  color: rgb(var(--v-theme-on-background));
+}
+
+.v-application {
+  font-family: var(--v-font-family-base, sans-serif);
+  color: rgb(var(--v-theme-on-background));
+  background: transparent;
+}
+
+/* The board: a soft dotted felt grid behind the content. */
+.v-main {
+  position: relative;
+}
+
+.v-main::before {
+  content: '';
+  position: fixed;
+  inset: 0;
+  background-image: radial-gradient(
+    rgb(var(--v-theme-outline)) var(--mt-board-dot),
+    transparent var(--mt-board-dot)
+  );
+  background-size: var(--mt-board-gap) var(--mt-board-gap);
+  opacity: 0.1;
+  mask-image: radial-gradient(circle at 50% 28%, black, transparent 82%);
+  pointer-events: none;
+}
+
+.v-container {
+  max-width: min(100%, var(--mt-shell-width));
+}
+
+/* App bar reads like a scoreboard rail (full shell reskin is later). */
+.v-app-bar {
+  border-bottom: 2px solid rgba(var(--v-theme-outline), 0.2);
+  background: rgb(var(--v-theme-surface)) !important;
+}
+
+/* Cards / lists: warm, opaque game tiles with a soft drop. */
+.v-card {
+  border: 1px solid rgba(var(--v-theme-outline), 0.18);
+  box-shadow: var(--mt-shadow-card) !important;
+}
+
+.v-list-item {
+  border-radius: var(--mt-card-radius);
+}
+
+/* Buttons: chunky, friendly, no Material uppercase. */
+.v-btn {
+  text-transform: none;
+  letter-spacing: 0.005em;
+  font-family: var(--v-font-family-display, sans-serif);
+  font-weight: 600;
+}
+
+.v-btn--rounded {
+  border-radius: var(--mt-button-radius) !important;
+}
+
+.v-field {
+  border-radius: var(--mt-field-radius);
+}
+
+.v-field--variant-outlined .v-field__outline {
+  --v-field-border-opacity: 0.3;
+}
+
+/* Headings wear the display face. */
+.v-application h1,
+.v-application h2,
+.v-application h3,
+.v-application h4,
+.v-application h5,
+.v-application h6,
+.v-application .v-card-title,
+.v-application .text-h1,
+.v-application .text-h2,
+.v-application .text-h3,
+.v-application .text-h4,
+.v-application .text-h5,
+.v-application .text-h6 {
+  font-family: var(--v-font-family-display, serif);
+  letter-spacing: 0.004em;
+}

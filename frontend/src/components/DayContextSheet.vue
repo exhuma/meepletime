@@ -29,7 +29,7 @@
 
 <script setup lang="ts">
 import { computed } from 'vue'
-import { format, parseISO } from 'date-fns'
+import { safeFormat } from '../lib/datetime'
 
 const props = defineProps<{
   modelValue: boolean
@@ -52,14 +52,9 @@ const isOpen = computed({
   set: (v) => emit('update:modelValue', v),
 })
 
-const formattedDate = computed<string>(() => {
-  if (!props.date) return ''
-  try {
-    return format(parseISO(props.date), 'EEEE, MMMM d, yyyy')
-  } catch {
-    return props.date
-  }
-})
+const formattedDate = computed<string>(() =>
+  safeFormat(props.date, 'EEEE, MMMM d, yyyy'),
+)
 
 function close(): void {
   emit('update:modelValue', false)

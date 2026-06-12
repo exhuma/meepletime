@@ -2,10 +2,10 @@
   <div
     class="cell"
     :class="{
-      'cell--past': isPast,
-      'cell--viable': viability?.is_viable && !viability.is_soft_max_exceeded,
-      'cell--over-soft-max': viability?.is_soft_max_exceeded,
-      'cell--dimmed': dimmed,
+      'cell--past': vs.isPast,
+      'cell--viable': vs.fill === 'viable',
+      'cell--over-soft-max': vs.fill === 'over-soft-max',
+      'cell--dimmed': vs.isDimmed,
     }"
     role="button"
     :tabindex="dimmed ? -1 : 0"
@@ -21,7 +21,7 @@
     @keydown.f10.shift.prevent="emit('context', date)"
   >
     <span
-      v-if="viability?.has_multiple_hosts_warning"
+      v-if="vs.multipleHostsWarning"
       class="cell__warn"
       aria-hidden="true"
     />
@@ -36,8 +36,8 @@
         {{ myState === 'hosting' ? 'mdi-home' : 'mdi-check' }}
       </v-icon>
     </span>
-    <span v-if="viability && viability.attendee_count > 0" class="cell__count">
-      {{ viability.attendee_count }}
+    <span v-if="vs.attendeeCount !== null" class="cell__count">
+      {{ vs.attendeeCount }}
     </span>
   </div>
 </template>
@@ -46,6 +46,7 @@
 import { computed } from 'vue'
 import type { DayViability } from '../types'
 import { useLongPress } from '../composables/useLongPress'
+import { dayVisualState } from '../lib/viability'
 
 const props = defineProps<{
   date: string
@@ -66,6 +67,14 @@ const lp = useLongPress({
   onTap: () => emit('activate', props.date),
   onLongPress: () => emit('context', props.date),
 })
+
+/** Semantic visual state derived from this day's viability. */
+const vs = computed(() =>
+  dayVisualState(props.viability, {
+    isPast: props.isPast,
+    dimmed: props.dimmed,
+  }),
+)
 
 /** Screen-reader description of the cell's date and state. */
 const ariaLabel = computed<string>(() => {

@@ -1,0 +1,36 @@
+/**
+ * Non-colour design tokens as CSS custom properties.
+ *
+ * Colours come from the Vuetify theme (`--v-theme-*`, built from
+ * `tokens.ts`). Everything else — radii, the chunky token shadows,
+ * press motion and board texture — lives here as `--mt-*` so the skin
+ * and the Mt* components read one set of values.
+ */
+
+/* Characterful type: Fredoka (display) + Nunito (body). */
+@import url('https://fonts.googleapis.com/css2?family=Fredoka:wght@500;600;700&family=Nunito:wght@400;600;700;800&display=swap');
+
+:root {
+  /* Shape — chunky, tactile game pieces */
+  --mt-card-radius: 1.4rem;
+  --mt-field-radius: 0.85rem;
+  --mt-button-radius: 0.9rem;
+  --mt-chip-radius: 999px;
+  --mt-shell-width: 60rem;
+
+  /* Elevation — warm-tinted soft shadows */
+  --mt-shadow-card: 0 16px 34px -16px rgba(40, 24, 8, 0.45);
+  --mt-shadow-raised: 0 22px 48px -18px rgba(40, 24, 8, 0.55);
+
+  /* The 3D "base edge" that makes buttons/tokens feel pressable */
+  --mt-token-lip: 0.32rem;
+  --mt-token-edge: rgba(0, 0, 0, 0.24);
+
+  /* Motion — the press of a wooden piece onto the board */
+  --mt-press-translate: 0.18rem;
+  --mt-press-ms: 90ms;
+
+  /* Texture — the board: a soft dotted felt grid */
+  --mt-board-dot: 1.4px;
+  --mt-board-gap: 1.5rem;
+}

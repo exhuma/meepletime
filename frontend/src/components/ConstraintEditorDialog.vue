@@ -77,7 +77,7 @@
 
 <script setup lang="ts">
 import { computed, ref, watch } from 'vue'
-import { format, parseISO } from 'date-fns'
+import { safeFormat } from '../lib/datetime'
 import { useCircles } from '../composables/circles'
 import type { Circle, HostDayConstraint } from '../types'
 
@@ -111,14 +111,9 @@ const isOpen = computed({
   set: (v) => emit('update:modelValue', v),
 })
 
-const formattedDate = computed<string>(() => {
-  if (!props.date) return ''
-  try {
-    return format(parseISO(props.date), 'EEEE, MMMM d, yyyy')
-  } catch {
-    return props.date
-  }
-})
+const formattedDate = computed<string>(() =>
+  safeFormat(props.date, 'EEEE, MMMM d, yyyy'),
+)
 
 /** Convert a form string value to number | null for the API payload. */
 function parseOptInt(v: string | null): number | null {

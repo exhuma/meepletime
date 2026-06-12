@@ -1,96 +1,91 @@
 <template>
-  <v-container class="pa-4" max-width="600">
-    <div class="d-flex align-center mb-4">
-      <h2 class="text-h6 font-weight-bold">My Circles</h2>
-      <v-spacer />
-      <v-btn
-        variant="text"
-        color="primary"
+  <v-container class="pa-4">
+    <header class="mt-head">
+      <div>
+        <h1 class="text-h5 mt-head__title">My Circles</h1>
+        <p class="text-body-2 text-medium-emphasis mb-0">
+          Your game-night crews
+        </p>
+      </div>
+      <MtButton
+        variant="ghost"
+        tone="primary"
+        icon="mdi-key-variant"
         @click="joinDialog = true"
-        size="small"
       >
-        <v-icon start>mdi-key</v-icon> Join
-      </v-btn>
+        Join
+      </MtButton>
+    </header>
+
+    <!-- Empty state -->
+    <MtCard
+      v-if="!isBusy && circlesState.circles.value.length === 0"
+      class="pa-8 text-center mt-6"
+    >
+      <div class="mt-empty__meeple text-primary"><MtMeeple /></div>
+      <h2 class="text-h6 mb-2">No circles yet</h2>
+      <p class="text-body-2 text-medium-emphasis mb-0">
+        Create your first circle, or join one with an invite PIN.
+      </p>
+    </MtCard>
+
+    <!-- Circle tiles -->
+    <div v-else-if="!isBusy" class="mt-tiles mt-6">
+      <MtCard
+        v-for="(circle, i) in circlesState.circles.value"
+        :key="circle.id"
+        interactive
+        :tone="toneFor(i)"
+        :to="`/circles/${circle.id}`"
+        class="mt-tile"
+      >
+        <div class="mt-tile__body">
+          <div
+            class="mt-tile__avatar"
+            :class="`mt-tile__avatar--${toneFor(i)}`"
+          >
+            <MtMeeple />
+          </div>
+          <div class="mt-tile__text">
+            <div class="mt-tile__name">{{ circle.name }}</div>
+            <div class="mt-tile__desc text-medium-emphasis">
+              {{ circle.description || 'No description yet' }}
+            </div>
+          </div>
+          <v-icon class="mt-tile__chev">mdi-chevron-right</v-icon>
+        </div>
+      </MtCard>
     </div>
 
-    <v-alert
-      v-if="!isBusy && circlesState.circles.value.length === 0"
-      type="info"
-      class="mb-4"
-    >
-      You're not in any circles yet. Create one or join with an invite PIN!
-    </v-alert>
-
-    <v-list
-      v-if="!isBusy && circlesState.circles.value.length > 0"
-      lines="two"
-      class="mb-4"
-    >
-      <v-list-item
-        v-for="circle in circlesState.circles.value"
-        :key="circle.id"
-        :to="`/circles/${circle.id}`"
-        rounded="lg"
-        class="mb-2"
-        elevation="1"
-      >
-        <template #prepend>
-          <v-avatar color="primary" size="44">
-            <v-icon color="on-primary">mdi-account-group</v-icon>
-          </v-avatar>
-        </template>
-        <v-list-item-title class="font-weight-semibold">{{
-          circle.name
-        }}</v-list-item-title>
-        <v-list-item-subtitle>{{
-          circle.description || 'No description'
-        }}</v-list-item-subtitle>
-        <template #append>
-          <v-icon>mdi-chevron-right</v-icon>
-        </template>
-      </v-list-item>
-    </v-list>
-
-    <v-btn
-      color="primary"
-      size="large"
+    <MtButton
+      tone="primary"
+      size="x-large"
       block
-      prepend-icon="mdi-plus"
+      icon="mdi-plus-circle"
+      class="mt-6"
       @click="createDialog = true"
     >
-      Create Circle
-    </v-btn>
+      Create a Circle
+    </MtButton>
 
     <CreateCircleDialog v-model="createDialog" @created="onCircleCreated" />
 
     <v-dialog v-model="joinDialog" max-width="400">
-      <v-card>
-        <v-card-title>Join a Circle</v-card-title>
-        <v-card-text>
-          <v-text-field
-            :model-value="joinToken"
-            @update:model-value="joinToken = normalizePin($event)"
-            label="Invite PIN"
-            placeholder="ABC234"
-            prepend-inner-icon="mdi-key"
-            variant="outlined"
-            :maxlength="INVITE_LENGTH"
-            hint="6 characters, e.g. ABC234"
-            persistent-hint
-            class="invite-pin-field"
-          />
-        </v-card-text>
-        <v-card-actions>
-          <v-spacer />
-          <v-btn variant="text" @click="joinDialog = false">Cancel</v-btn>
-          <v-btn
-            color="primary"
-            @click="goToJoin"
-            :disabled="!isValidPin(joinToken)"
-            >Join</v-btn
-          >
-        </v-card-actions>
-      </v-card>
+      <MtCard class="pa-5">
+        <h2 class="text-h6 mb-1">Join a Circle</h2>
+        <p class="text-body-2 text-medium-emphasis mb-4">
+          Enter the invite PIN a host shared with you.
+        </p>
+        <MtPinField v-model="joinToken" @valid="joinValid = $event" />
+        <div class="mt-dialog__actions">
+          <MtButton variant="ghost" tone="primary" @click="joinDialog = false">
+            Cancel
+          </MtButton>
+          <MtButton tone="primary" :disabled="!joinValid" @click="goToJoin">
+            Join
+          </MtButton>
+        </div>
+      </MtCard>
     </v-dialog>
   </v-container>
 </template>
@@ -101,7 +96,8 @@ import { useRouter } from 'vue-router'
 import { useCircles } from '../composables/circles'
 import CreateCircleDialog from '../components/CreateCircleDialog.vue'
 import { useAppBar } from '../composables/appBar'
-import { normalizePin, isValidPin, INVITE_LENGTH } from '../utils/invite'
+import { MtButton, MtCard, MtPinField } from '../ui'
+import MtMeeple from '../ui/MtMeeple.vue'
 
 const circlesState = useCircles()
 const router = useRouter()
@@ -109,7 +105,14 @@ const router = useRouter()
 const createDialog = ref(false)
 const joinDialog = ref(false)
 const joinToken = ref('')
+const joinValid = ref(false)
 const { startJob, endJob, isBusy } = useAppBar()
+
+/** Rotate meeple colours across the list for playful variety. */
+const tones = ['primary', 'host', 'attend', 'viable'] as const
+function toneFor(i: number): (typeof tones)[number] {
+  return tones[i % tones.length]
+}
 
 onMounted(async () => {
   startJob('loading-circles-view')
@@ -127,17 +130,101 @@ function onCircleCreated(): void {
 
 /** Navigate to the join page for the entered invite PIN. */
 function goToJoin(): void {
-  if (isValidPin(joinToken.value)) {
-    joinDialog.value = false
-    router.push(`/join/${joinToken.value}`)
-  }
+  if (!joinValid.value) return
+  joinDialog.value = false
+  router.push(`/join/${joinToken.value}`)
 }
 </script>
 
 <style scoped>
-.invite-pin-field :deep(input) {
-  text-transform: uppercase;
-  letter-spacing: 0.25em;
+.mt-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 1rem;
+}
+
+.mt-head__title {
+  line-height: 1.1;
+}
+
+.mt-empty__meeple {
+  width: 88px;
+  height: 88px;
+  margin: 0 auto 1rem;
+  opacity: 0.9;
+}
+
+.mt-tiles {
+  display: flex;
+  flex-direction: column;
+  gap: 0.9rem;
+}
+
+.mt-tile__body {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  padding: 0.9rem 1rem;
+}
+
+.mt-tile__avatar {
+  flex: 0 0 auto;
+  width: 52px;
+  height: 52px;
+  padding: 9px;
+  border-radius: 1rem;
+  box-shadow: inset 0 -3px 0 0 rgba(0, 0, 0, 0.16);
+}
+
+.mt-tile__avatar--primary {
+  background: rgb(var(--v-theme-primary));
+  color: rgb(var(--v-theme-on-primary));
+}
+
+.mt-tile__avatar--host {
+  background: rgb(var(--v-theme-host));
+  color: rgb(var(--v-theme-on-host));
+}
+
+.mt-tile__avatar--attend {
+  background: rgb(var(--v-theme-attend));
+  color: rgb(var(--v-theme-on-attend));
+}
+
+.mt-tile__avatar--viable {
+  background: rgb(var(--v-theme-viable));
+  color: rgb(var(--v-theme-on-viable));
+}
+
+.mt-tile__text {
+  min-width: 0;
+  flex: 1 1 auto;
+}
+
+.mt-tile__name {
+  font-family: var(--v-font-family-display, sans-serif);
   font-weight: 600;
+  font-size: 1.1rem;
+  line-height: 1.2;
+}
+
+.mt-tile__desc {
+  font-size: 0.85rem;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.mt-tile__chev {
+  flex: 0 0 auto;
+  opacity: 0.5;
+}
+
+.mt-dialog__actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 0.5rem;
+  margin-top: 1.25rem;
 }
 </style>

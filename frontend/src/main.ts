@@ -1,9 +1,7 @@
 import { createApp } from 'vue'
-import { createVuetify } from 'vuetify'
 import 'vuetify/styles'
 import '@mdi/font/css/materialdesignicons.css'
-import * as components from 'vuetify/components'
-import * as directives from 'vuetify/directives'
+import './theme/skin.css'
 import router from './router'
 import App from './App.vue'
 import {
@@ -18,7 +16,7 @@ import {
   recentlyReauthed,
   setAuthError,
 } from './auth/reauthGuard'
-import { meepleTimeThemeOptions } from './brand-theme'
+import { createMeepleTimeVuetify } from './theme'
 
 setTokenProvider({
   getToken: () => {
@@ -80,42 +78,7 @@ setUnauthorizedHandler(async () => {
 // reset the re-authentication loop breaker.
 setAuthorizedHandler(() => clearReauthGuard())
 
-const vuetify = createVuetify({
-  components,
-  directives,
-  theme: meepleTimeThemeOptions,
-  defaults: {
-    VAppBar: {
-      color: 'surface',
-      elevation: 0,
-      flat: true,
-    },
-    VAvatar: {
-      rounded: 'lg',
-    },
-    VBtn: {
-      color: 'primary',
-      rounded: 'xl',
-      variant: 'elevated',
-    },
-    VCard: {
-      elevation: 0,
-      rounded: 'xl',
-    },
-    VDialog: {
-      maxWidth: 480,
-    },
-    VList: {
-      bgColor: 'transparent',
-    },
-    VTextField: {
-      color: 'primary',
-      density: 'comfortable',
-      hideDetails: 'auto',
-      variant: 'outlined',
-    },
-  },
-})
+const vuetify = createMeepleTimeVuetify()
 
 const app = createApp(App)
 app.use(router)
