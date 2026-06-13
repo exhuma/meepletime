@@ -1,20 +1,34 @@
-# Keycloak Operator Runbook
+# Appendix: Keycloak as an OIDC Provider
 
-This document describes how to configure Keycloak as the
-identity provider for MeepleTime.
+> **This is an appendix, not a requirement.** MeepleTime treats the
+> identity provider (IDP) as an **external** service and works with any
+> compliant OpenID Connect provider. This walkthrough is provided as a
+> convenience for operators who do not already run an IDP and want a
+> concrete, working example using [Keycloak](https://www.keycloak.org/).
+> If you already operate an OIDC provider, you only need the values in
+> the [deployment guide](deployment.md); skip the rest.
 
-## Overview
+## What MeepleTime needs from any IDP
 
-MeepleTime uses Keycloak (self-hosted OIDC, Option A).
+Whatever provider you use, MeepleTime requires:
 
-- The Vue frontend is a **public OIDC client**. It performs the
-  authorization-code + PKCE flow and holds tokens in the browser.
-  There is no in-app login form.
-- The FastAPI backend is a **stateless resource server**. It
-  validates bearer tokens on every request using Keycloak's JWKS
-  endpoint. It never participates in the OIDC flow.
+- A **public client** for the Vue SPA — authorization-code + PKCE, no
+  client secret. The frontend holds tokens in the browser; there is no
+  in-app login form.
+- Access tokens whose **`aud`** claim names the backend (the value you
+  set in `MEEPLETIME_OIDC_AUDIENCE`, e.g. `meepletime-backend`). The
+  FastAPI backend is a stateless resource server that validates bearer
+  tokens on every request against the IDP's JWKS endpoint and never
+  participates in the OIDC flow.
+- The standard **discovery document** at
+  `<authority>/.well-known/openid-configuration` (used to resolve the
+  JWKS keys) and the `sub`, `email`, and `name` claims (see
+  the "Token claims" section below).
 - `client_secret` must never appear in frontend code or build
   artefacts.
+
+The rest of this appendix shows how to satisfy those requirements in
+Keycloak specifically.
 
 ---
 
@@ -95,7 +109,26 @@ docker compose ps keycloak
    - **Web origins**: `http://localhost:5173`
 7. Click **Save**.
 
-### 4. Verify discovery document
+### 4. Make tokens target the backend audience
+
+The backend rejects tokens whose `aud` claim does not match
+`MEEPLETIME_OIDC_AUDIENCE`. By default Keycloak sets `aud` to
+`account`, so add an audience mapper that names the backend:
+
+1. Create a second client `meepletime-backend` (OpenID Connect). It is
+   only a resource-server identity, so leave **Standard flow** and
+   **Direct access grants** disabled — it never logs anyone in.
+2. Go to **Clients → meepletime-frontend → Client scopes →
+   meepletime-frontend-dedicated → Add mapper → By configuration →
+   Audience**.
+3. Set **Included Client Audience** to `meepletime-backend`, enable
+   **Add to access token**, and save.
+
+`meepletime-backend` is then the value you put in
+`MEEPLETIME_OIDC_AUDIENCE`. Confirm a token actually carries it via the
+**Client scopes → Evaluate** tab before deploying.
+
+### 5. Verify discovery document
 
 The FastAPI backend resolves the JWKS URI from the OIDC
 discovery document. Verify it is accessible:
@@ -110,24 +143,28 @@ You should see a JSON object containing `jwks_uri`.
 
 ---
 
-## Environment variables
+## Mapping Keycloak to MeepleTime settings
 
-Set these in `.env` (or the deployment secret manager):
+The canonical, prefixed environment variables (and which service reads
+them) are documented in the
+[deployment guide](deployment.md). This table only shows
+which Keycloak value goes into each one:
 
-| Variable                    | Example value                             | Description                                      |
-| --------------------------- | ----------------------------------------- | ------------------------------------------------ |
-| `OIDC_AUTHORITY`            | `http://keycloak:8080/realms/meepletime`  | Keycloak realm URL. Used by the backend.         |
-| `OIDC_AUDIENCE`             | `meepletime-frontend`                     | Expected `aud` claim. Must match the Client ID.  |
-| `OIDC_ISSUER`               | `http://keycloak:8080/realms/meepletime`  | Expected `iss` claim. Usually same as authority. |
-| `VITE_OIDC_AUTHORITY`       | `http://localhost:8080/realms/meepletime` | Frontend authority (browser-reachable URL).      |
-| `VITE_OIDC_CLIENT_ID`       | `meepletime-frontend`                     | Public client ID.                                |
-| `VITE_OIDC_REDIRECT_URI`    | `http://localhost:5173/auth/callback`     | Callback URI registered in Keycloak.             |
-| `VITE_OIDC_POST_LOGOUT_URI` | `http://localhost:5173/`                  | Post-logout redirect URI.                        |
+| Variable                     | Keycloak value                                  |
+| ---------------------------- | ----------------------------------------------- |
+| `MEEPLETIME_OIDC_AUTHORITY`  | The realm URL, e.g. `https://keycloak.example.com/realms/meepletime`. |
+| `MEEPLETIME_OIDC_AUDIENCE`   | The backend client id `meepletime-backend` (the audience added in step 4). |
+| `MEEPLETIME_OIDC_CLIENT_ID`  | The public SPA client id `meepletime-frontend`. |
+| `MEEPLETIME_OIDC_ISSUER`     | Optional. Leave unset — Keycloak's `iss` equals the realm URL, which is already the authority. Set it only if the backend reaches Keycloak over a different host than the public issuer in tokens. |
 
-> **Note**: `OIDC_AUTHORITY` and `VITE_OIDC_AUTHORITY` may differ
-> in a Docker environment where the backend uses the internal
-> hostname (`keycloak`) and the browser uses `localhost`. Both
-> must resolve to the same Keycloak realm.
+> **Internal vs. public host.** In a Docker network the backend may
+> reach Keycloak at an internal name (`http://keycloak:8080/...`) while
+> browsers use the public URL (`https://keycloak.example.com/...`).
+> Because the OIDC authority is baked into the browser session, set
+> `MEEPLETIME_OIDC_AUTHORITY` to the **public** realm URL. If you want
+> the backend to fetch JWKS over the internal name instead, that is
+> exactly the case where you also set `MEEPLETIME_OIDC_ISSUER` to the
+> public realm URL so token validation still matches the `iss` claim.
 
 ---
 
@@ -169,8 +206,8 @@ verify that `email` and `profile` scopes are assigned.
       built-in TLS).
 - [ ] Set `KC_ADMIN_PASSWORD` to a strong random value.
 - [ ] Register production redirect URIs in the Keycloak client.
-- [ ] Set `OIDC_AUTHORITY` / `VITE_OIDC_AUTHORITY` to the
-      production Keycloak URL.
+- [ ] Set `MEEPLETIME_OIDC_AUTHORITY` to the public production
+      Keycloak realm URL.
 - [ ] Back up the Keycloak database (or export the realm).
 - [ ] Mount `/opt/keycloak/themes` with the `meepletime` theme.
 - [ ] Verify **Realm settings → Themes → Login theme** is
