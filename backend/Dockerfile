@@ -11,11 +11,12 @@ COPY . .
 FROM python:3.14-slim
 WORKDIR /app
 COPY --from=build /app/.venv .venv
-COPY --from=build /app/src/app ./app
+COPY --from=build /app/src ./src
 COPY --from=build /app/alembic ./alembic
 COPY --from=build /app/alembic.ini ./alembic.ini
 COPY --from=build /app/logging.prod.yaml ./logging.prod.yaml
 ENV PATH="/app/.venv/bin:$PATH"
+ENV PYTHONPATH="/app/src"
 CMD ["sh", "-c", \
   "alembic upgrade head && \
   uvicorn app.main:app --host 0.0.0.0 --port 8000 \
