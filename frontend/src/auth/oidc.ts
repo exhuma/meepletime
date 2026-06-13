@@ -2,7 +2,7 @@
  * OIDC UserManager configuration for Keycloak Option A.
  *
  * Keycloak coordinates come from `../config`, which resolves them at
- * runtime (`window.__MT_CONFIG__`) with a Vite `VITE_*` build-time
+ * runtime (`window.__MEEPLETIME_CONFIG__`) with a Vite `VITE_*` build-time
  * fallback for local development.
  */
 import { UserManager, WebStorageStateStore } from 'oidc-client-ts'

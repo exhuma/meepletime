@@ -34,11 +34,11 @@ services:
     restart: unless-stopped
     environment:
       # Browser-facing config, injected into /config.js at startup.
-      MT_OIDC_AUTHORITY: ${MT_OIDC_AUTHORITY}
-      MT_OIDC_CLIENT_ID: ${MT_OIDC_CLIENT_ID:-meepletime-frontend}
+      MEEPLETIME_OIDC_AUTHORITY: ${MEEPLETIME_OIDC_AUTHORITY}
+      MEEPLETIME_OIDC_CLIENT_ID: ${MEEPLETIME_OIDC_CLIENT_ID}
       # Public base URL of the backend API (the browser calls it
       # directly; ensure it is in MEEPLETIME_CORS_ORIGINS above).
-      MT_API_BASE_URL: ${MT_API_BASE_URL}
+      MEEPLETIME_API_BASE_URL: ${MEEPLETIME_API_BASE_URL}
     ports:
       - "${FRONTEND_PORT:-80}:80"
     depends_on:

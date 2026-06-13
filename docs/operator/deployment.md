@@ -70,22 +70,24 @@ Requests from the browser are rejected by CORS otherwise.
 
 ### Frontend environment
 
-The frontend is a static build. Its browser-facing configuration is
-injected at container start into `/config.js` from these variables
-(the entrypoint renders `config.template.js` with `envsubst`):
+The frontend is a static build, but it also reads its browser-facing
+configuration from `MEEPLETIME_*` variables (the same prefix as the
+backend). They are injected at container start into `/config.js` (the
+entrypoint renders `config.template.js` with `envsubst`):
 
-| Variable           | Purpose                                       |
-| ------------------ | --------------------------------------------- |
-| `MT_OIDC_AUTHORITY`| Keycloak realm URL (same as the backend).     |
-| `MT_OIDC_CLIENT_ID`| Public client id, `meepletime-frontend`.      |
-| `MT_API_BASE_URL`  | Public base URL of the backend API.           |
+| Variable                     | Purpose                            |
+| ---------------------------- | ---------------------------------- |
+| `MEEPLETIME_OIDC_AUTHORITY`  | Keycloak realm URL (shared).       |
+| `MEEPLETIME_OIDC_CLIENT_ID`  | Public client id, `meepletime-frontend`. |
+| `MEEPLETIME_API_BASE_URL`    | Public base URL of the backend API.|
 
-`MT_API_BASE_URL` is the URL the **browser** uses to reach the
-backend, so it must be publicly resolvable and present in
-`MEEPLETIME_CORS_ORIGINS`. Because the OIDC authority is baked into
-the browser session, it must be the exact public Keycloak URL — a
-single image can serve any deployment because these values are applied
-at runtime, not at build time.
+`MEEPLETIME_OIDC_AUTHORITY` is shared with the backend — define it once
+in `.env`. `MEEPLETIME_API_BASE_URL` is the URL the **browser** uses to
+reach the backend, so it must be publicly resolvable and present in
+`MEEPLETIME_CORS_ORIGINS`. Because the OIDC authority is baked into the
+browser session, it must be the exact public Keycloak URL — a single
+image can serve any deployment because these values are applied at
+runtime, not at build time.
 
 ## 3. Bring up the stack
 
@@ -121,12 +123,13 @@ before upgrading if the release contains schema changes.
 
 ## 5. Troubleshooting
 
-- **Login redirects fail / token rejected** — `MT_OIDC_AUTHORITY` and
-  `MEEPLETIME_OIDC_ISSUER` must be the *same* realm URL, and the
-  Keycloak client redirect URIs must include the frontend origin. See
-  [Keycloak setup](keycloak.md).
+- **Login redirects fail / token rejected** —
+  `MEEPLETIME_OIDC_AUTHORITY` and `MEEPLETIME_OIDC_ISSUER` must be the
+  *same* realm URL, and the Keycloak client redirect URIs must include
+  the frontend origin. See [Keycloak setup](keycloak.md).
 - **API calls blocked in the browser** — the frontend origin is
-  missing from `MEEPLETIME_CORS_ORIGINS`, or `MT_API_BASE_URL` is
+  missing from `MEEPLETIME_CORS_ORIGINS`, or `MEEPLETIME_API_BASE_URL`
+  is
   wrong.
 - **Backend exits on start** — usually a bad `MEEPLETIME_DATABASE_URL`
   or the database is unreachable; check `docker compose logs backend`.

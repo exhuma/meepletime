@@ -2,14 +2,14 @@
  * Application configuration, resolved at runtime with a build-time
  * fallback.
  *
- * In production the Docker entrypoint writes `window.__MT_CONFIG__`
+ * In production the Docker entrypoint writes `window.__MEEPLETIME_CONFIG__`
  * from container environment variables (see `config.template.js`), so a
  * single static image can target any Keycloak realm or backend without
  * a rebuild. In local development that global is absent and the Vite
  * `import.meta.env.VITE_*` values are used instead.
  */
 
-/** Shape of the runtime config injected as `window.__MT_CONFIG__`. */
+/** Shape of the config injected as `window.__MEEPLETIME_CONFIG__`. */
 interface RuntimeConfig {
   oidcAuthority?: string
   oidcClientId?: string
@@ -18,11 +18,11 @@ interface RuntimeConfig {
 
 declare global {
   interface Window {
-    __MT_CONFIG__?: RuntimeConfig
+    __MEEPLETIME_CONFIG__?: RuntimeConfig
   }
 }
 
-const runtime: RuntimeConfig = window.__MT_CONFIG__ ?? {}
+const runtime: RuntimeConfig = window.__MEEPLETIME_CONFIG__ ?? {}
 
 /** Keycloak OIDC authority (issuer) URL. */
 export const oidcAuthority: string =
