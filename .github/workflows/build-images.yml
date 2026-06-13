@@ -1,7 +1,7 @@
 name: Build and publish images
 
 # Builds the backend and frontend Docker images and pushes them to the
-# GitHub Container Registry (GHCR) on version tags (e.g. v0.1.0).
+# private container registry on version tags (e.g. v0.1.0).
 # Trigger a manual run via the Actions tab with workflow_dispatch.
 on:
   push:
@@ -11,7 +11,6 @@ on:
 
 permissions:
   contents: read
-  packages: write
 
 jobs:
   build:
@@ -32,18 +31,32 @@ jobs:
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
 
-      - name: Log in to GHCR
+      - name: Resolve registry coordinates
+        id: registry
+        env:
+          DOCKER_REGISTRY: ${{ secrets.DOCKER_REGISTRY }}
+        run: |
+          # Strip the URL scheme and any trailing slash to get the
+          # "<host>/<project>" prefix used when tagging images, and
+          # isolate the bare host used to authenticate.
+          registry="${DOCKER_REGISTRY#https://}"
+          registry="${registry#http://}"
+          registry="${registry%/}"
+          echo "path=${registry}" >> "$GITHUB_OUTPUT"
+          echo "host=${registry%%/*}" >> "$GITHUB_OUTPUT"
+
+      - name: Log in to the container registry
         uses: docker/login-action@v3
         with:
-          registry: ghcr.io
-          username: ${{ github.actor }}
-          password: ${{ secrets.GITHUB_TOKEN }}
+          registry: ${{ steps.registry.outputs.host }}
+          username: ${{ secrets.DOCKER_USERNAME }}
+          password: ${{ secrets.DOCKER_PASSWORD }}
 
       - name: Derive image metadata
         id: meta
         uses: docker/metadata-action@v5
         with:
-          images: ghcr.io/${{ github.repository }}/${{ matrix.component }}
+          images: ${{ steps.registry.outputs.path }}/${{ matrix.component }}
           tags: |
             type=semver,pattern={{version}}
             type=semver,pattern={{major}}.{{minor}}
