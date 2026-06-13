@@ -10,6 +10,7 @@ import {
   setTokenProvider,
 } from './api'
 import { userManager } from './auth/oidc'
+import { oidcAuthority, oidcClientId } from './config'
 import {
   clearReauthGuard,
   markReauthAttempt,
@@ -24,10 +25,11 @@ setTokenProvider({
     // under the deterministic key:
     //   oidc.user:<authority>:<client_id>
     // This is the documented key format used by the library's
-    // own WebStorageStateStore implementation.
-    const authority = import.meta.env.VITE_OIDC_AUTHORITY as string
-    const clientId = import.meta.env.VITE_OIDC_CLIENT_ID as string
-    const key = `oidc.user:${authority}:${clientId}`
+    // own WebStorageStateStore implementation. The coordinates come
+    // from `./config`, which resolves them identically for production
+    // (runtime `window.__MEEPLETIME_CONFIG__`) and development
+    // (`VITE_*` build-time fallback).
+    const key = `oidc.user:${oidcAuthority}:${oidcClientId}`
     const raw = sessionStorage.getItem(key)
     if (!raw) return null
     try {
