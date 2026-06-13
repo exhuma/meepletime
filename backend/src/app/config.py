@@ -33,6 +33,21 @@ class Settings(BaseSettings):
         allowed per window for a user+IP key.
     :param INVITE_REGEN_WINDOW_SECONDS: Sliding-window size in
         seconds for invite regeneration throttling.
+    :param APP_BASE_URL: Public base URL of the frontend, used to
+        build deep links inside notification bodies.
+    :param SMTP_HOST: SMTP server host. Email delivery is inert
+        when unset.
+    :param SMTP_PORT: SMTP server port (STARTTLS submission).
+    :param SMTP_USERNAME: SMTP auth username, if required.
+    :param SMTP_PASSWORD: SMTP auth password, if required.
+    :param SMTP_FROM: ``From`` address for notification emails.
+    :param SMTP_USE_TLS: Use STARTTLS when connecting.
+    :param VAPID_PUBLIC_KEY: VAPID public key (base64url) exposed to
+        browsers for Web Push subscription.
+    :param VAPID_PRIVATE_KEY: VAPID private key (server-only, never
+        exposed). Web Push is inert when unset.
+    :param VAPID_SUBJECT: VAPID ``sub`` claim, e.g.
+        ``mailto:ops@example.com``.
     """
 
     DATABASE_URL: PostgresDsn
@@ -48,6 +63,16 @@ class Settings(BaseSettings):
     ]
     INVITE_REGEN_LIMIT: int = 5
     INVITE_REGEN_WINDOW_SECONDS: int = 60
+    APP_BASE_URL: str = "http://localhost:5173"
+    SMTP_HOST: str | None = None
+    SMTP_PORT: int = 587
+    SMTP_USERNAME: str | None = None
+    SMTP_PASSWORD: str | None = None
+    SMTP_FROM: str | None = None
+    SMTP_USE_TLS: bool = True
+    VAPID_PUBLIC_KEY: str | None = None
+    VAPID_PRIVATE_KEY: str | None = None
+    VAPID_SUBJECT: str | None = None
 
     model_config = SettingsConfigDict(
         env_file=".env",

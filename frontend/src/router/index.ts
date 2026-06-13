@@ -54,6 +54,11 @@ const routes: RouteRecordRaw[] = [
     component: () => import('../views/JoinView.vue'),
     meta: { requiresAuth: true },
   },
+  {
+    path: '/profile',
+    component: () => import('../views/ProfileSettingsView.vue'),
+    meta: { requiresAuth: true },
+  },
 ]
 
 const router = createRouter({

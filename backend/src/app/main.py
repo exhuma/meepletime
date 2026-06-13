@@ -74,10 +74,12 @@ def create_app() -> FastAPI:
     from app.routers import (
         auth,
         availability,
+        circle_telegram,
         circles,
         day_notes,
         host_day_constraints,
         memberships,
+        notifications,
         viability,
     )
 
@@ -88,6 +90,8 @@ def create_app() -> FastAPI:
     app.include_router(viability.router)
     app.include_router(host_day_constraints.router)
     app.include_router(day_notes.router)
+    app.include_router(notifications.router)
+    app.include_router(circle_telegram.router)
 
     @app.get("/health")
     def health_check(

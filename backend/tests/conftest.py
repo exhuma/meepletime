@@ -86,6 +86,16 @@ def _make_test_settings() -> Settings:
             CORS_ORIGINS=["http://localhost:5173"],
             INVITE_REGEN_LIMIT=3,
             INVITE_REGEN_WINDOW_SECONDS=60,
+            APP_BASE_URL="http://localhost:5173",
+            SMTP_HOST=None,
+            SMTP_PORT=587,
+            SMTP_USERNAME=None,
+            SMTP_PASSWORD=None,
+            SMTP_FROM=None,
+            SMTP_USE_TLS=True,
+            VAPID_PUBLIC_KEY=None,
+            VAPID_PRIVATE_KEY=None,
+            VAPID_SUBJECT=None,
         ),
     )
 

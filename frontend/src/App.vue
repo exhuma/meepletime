@@ -56,6 +56,15 @@
         @click="action.action()"
       />
 
+      <MtButton
+        v-if="auth.isLoggedIn.value"
+        variant="icon"
+        tone="primary"
+        icon="mdi-cog"
+        title="Notification settings"
+        @click="router.push('/profile')"
+      />
+
       <template v-if="auth.isLoggedIn.value">
         <v-avatar
           size="34"

@@ -81,3 +81,35 @@ export interface HostDayConstraintSet {
   override_soft_max_attendees: number | null
   override_hard_max_attendees: number | null
 }
+
+export interface NotificationSettings {
+  email_enabled: boolean
+  webpush_enabled: boolean
+  telegram_dm_enabled: boolean
+}
+
+export interface CircleTelegramConfig {
+  id: string
+  label: string
+  mode: 'group' | 'dm'
+  group_chat_id: string | null
+  token_hint: string
+  created_at: string
+}
+
+export interface TelegramChatOption {
+  chat_id: string
+  name: string
+  type: string
+}
+
+export interface TelegramDmBot {
+  id: string
+  label: string
+  linked: boolean
+}
+
+export interface NotificationTestResult {
+  ok: boolean
+  message: string
+}
