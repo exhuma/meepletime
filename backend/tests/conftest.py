@@ -41,6 +41,11 @@ os.environ.setdefault(
     "MEEPLETIME_DEV_SHARED_SECRET",
     "test-secret-with-at-least-thirty-two-chars!",
 )
+# Mount the dev-login router by default so the happy-path tests can
+# reach /auth/dev/*. The mount decision is read from the real
+# (cached) get_settings() inside create_app(), not from the client
+# fixture's dependency override, so it must come from the environment.
+os.environ.setdefault("MEEPLETIME_DEV_AUTH_ENABLED", "true")
 
 # ------------------------------------------------------------------ #
 # Standard imports — after env bootstrap                             #
@@ -78,6 +83,7 @@ def _make_test_settings() -> Settings:
                 "@localhost:5432/meepletime_test"
             ),
             DEV_SHARED_SECRET=_TEST_SECRET,
+            DEV_AUTH_ENABLED=True,
             OIDC_AUDIENCE=_TEST_AUDIENCE,
             OIDC_ISSUER=_TEST_ISSUER,
             OIDC_AUTHORITY=_TEST_ISSUER,

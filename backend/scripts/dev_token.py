@@ -20,10 +20,10 @@ from __future__ import annotations
 
 import argparse
 import sys
-from datetime import UTC, datetime, timedelta
 
-import jwt
 from pydantic_settings import BaseSettings, SettingsConfigDict
+
+from app.auth.dev_token import mint_dev_token
 
 
 class _DevSettings(BaseSettings):
@@ -77,20 +77,14 @@ def main() -> None:
         )
         sys.exit(1)
 
-    now = datetime.now(tz=UTC)
-    payload = {
-        "iss": settings.OIDC_ISSUER,
-        "aud": settings.OIDC_AUDIENCE,
-        "sub": args.sub,
-        "email": args.email,
-        "name": args.name,
-        "iat": now,
-        "exp": now + timedelta(seconds=args.ttl),
-    }
-    token: str = jwt.encode(
-        payload,
-        settings.DEV_SHARED_SECRET,
-        algorithm="HS256",
+    token = mint_dev_token(
+        sub=args.sub,
+        email=args.email,
+        name=args.name,
+        secret=settings.DEV_SHARED_SECRET,
+        issuer=settings.OIDC_ISSUER,
+        audience=settings.OIDC_AUDIENCE,
+        ttl_seconds=args.ttl,
     )
     print(token)
 

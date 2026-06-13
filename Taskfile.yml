@@ -33,6 +33,43 @@ tasks:
     dir: backend
     cmd: uv run python scripts/dev_token.py {{.CLI_ARGS}}
 
+  dev:login:
+    desc: >-
+      Mint a dev token via the running backend's /auth/dev/login
+      endpoint (no Keycloak). Requires MEEPLETIME_DEV_AUTH_ENABLED.
+      Usage: task dev:login [-- <sub>]  (default identity: dev-agent)
+    cmd: >-
+      curl -fsS -X POST http://localhost:8000/auth/dev/login
+      -H 'Content-Type: application/json'
+      -d '{"sub":"{{.CLI_ARGS | default "dev-agent"}}"}'
+
+  dev:db:
+    desc: >-
+      Start a throwaway PostgreSQL 16 container on localhost:5432 for
+      running the backend OUTSIDE the dev-container (e.g. full
+      Playwright runs). Ephemeral: data is dropped when stopped. Point
+      the backend at it with a shell override (it beats backend/.env):
+      export
+      MEEPLETIME_DATABASE_URL=postgresql://meepletime:changeme@localhost:5432/meepletime
+      Stop with `task dev:db-stop`.
+    cmds:
+      - >-
+        docker run -d --rm --name meepletime-dev-db
+        -e POSTGRES_DB=meepletime -e POSTGRES_USER=meepletime
+        -e POSTGRES_PASSWORD=changeme
+        -p 5432:5432 postgres:16-alpine
+      - echo "Waiting for PostgreSQL to accept connections…"
+      - >-
+        until docker exec meepletime-dev-db
+        pg_isready -U meepletime -q; do sleep 1; done
+      - >-
+        echo "Ready →
+        postgresql://meepletime:changeme@localhost:5432/meepletime"
+
+  dev:db-stop:
+    desc: Stop and remove the throwaway dev database from `task dev:db`.
+    cmd: docker rm -f meepletime-dev-db
+
   test:backend:
     desc: Run the backend test suite
     dir: backend

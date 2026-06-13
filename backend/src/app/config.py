@@ -25,6 +25,11 @@ class Settings(BaseSettings):
         self-minted HS256 JWTs (signed with this secret) instead
         of validating tokens via Keycloak JWKS.  **Development
         and headless-agent use only. Never set in production.**
+    :param DEV_AUTH_ENABLED: When true, mounts the ``/auth/dev/*``
+        in-app dev-login endpoints so the SPA can authenticate
+        without Keycloak. Requires ``DEV_SHARED_SECRET`` (used to
+        sign the minted tokens). **Development and headless-agent
+        use only. Never enable in production.**
     :param NOTIFICATION_DEBOUNCE_SECONDS: Debounce window for
         notification coalescing, in seconds.
     :param FRONTEND_URL: Allowed CORS origin for the Vue frontend.
@@ -55,6 +60,7 @@ class Settings(BaseSettings):
     OIDC_AUDIENCE: str
     OIDC_ISSUER: str | None = None
     DEV_SHARED_SECRET: str | None = None
+    DEV_AUTH_ENABLED: bool = False
     NOTIFICATION_DEBOUNCE_SECONDS: int = 10
     FRONTEND_URL: str = "http://localhost:5173"
     CORS_ORIGINS: list[str] = [
@@ -94,6 +100,27 @@ class Settings(BaseSettings):
         """
         if self.OIDC_ISSUER is None:
             self.OIDC_ISSUER = self.OIDC_AUTHORITY
+        return self
+
+    @model_validator(mode="after")
+    def _require_secret_for_dev_auth(self) -> Settings:
+        """
+        Ensure the dev-login endpoints have a secret to sign with.
+
+        ``DEV_AUTH_ENABLED`` mints HS256 tokens that the same
+        ``DEV_SHARED_SECRET`` then verifies, so the signer must
+        equal the verifier. Fail loudly on misconfiguration rather
+        than silently generating an ephemeral secret.
+
+        :returns: The validated settings instance.
+        :raises ValueError: When dev auth is enabled without a
+            shared secret.
+        """
+        if self.DEV_AUTH_ENABLED and self.DEV_SHARED_SECRET is None:
+            raise ValueError(
+                "MEEPLETIME_DEV_AUTH_ENABLED requires "
+                "MEEPLETIME_DEV_SHARED_SECRET to be set"
+            )
         return self
 
 

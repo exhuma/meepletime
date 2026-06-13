@@ -93,6 +93,18 @@ def create_app() -> FastAPI:
     app.include_router(notifications.router)
     app.include_router(circle_telegram.router)
 
+    if settings.DEV_AUTH_ENABLED:
+        # Dev-only: in-app login without Keycloak. The router is not
+        # imported or mounted otherwise, so /auth/dev/* is a plain
+        # 404 in production. See app.routers.auth_dev.
+        from app.routers import auth_dev
+
+        app.include_router(auth_dev.router)
+        LOG.warning(
+            "DEV AUTH ENABLED: /auth/dev/* mounted. "
+            "Never enable MEEPLETIME_DEV_AUTH_ENABLED in production."
+        )
+
     @app.get("/health")
     def health_check(
         db: Session = Depends(get_db),

@@ -13,6 +13,7 @@
 import { computed, ref } from 'vue'
 import type { User as OidcUser } from 'oidc-client-ts'
 import { userManager } from '../auth/oidc'
+import { devAuth } from '../config'
 import api from '../api'
 import type { User } from '../types'
 import type { ComputedRef } from 'vue'
@@ -76,6 +77,14 @@ export function useAuth() {
 
   /** Sign the user out and redirect to the post-logout URI. */
   async function logout(): Promise<void> {
+    if (devAuth) {
+      // No Keycloak end-session endpoint exists in dev: just drop the
+      // local session and return to the dev-login picker.
+      await userManager.removeUser()
+      _oidcUser.value = null
+      _backendUser.value = null
+      return
+    }
     await userManager.signoutRedirect()
   }
 

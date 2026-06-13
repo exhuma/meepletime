@@ -37,3 +37,24 @@ export const apiBaseUrl: string =
   runtime.apiBaseUrl ||
   (import.meta.env.VITE_API_BASE_URL as string | undefined) ||
   'http://localhost:8000'
+
+/**
+ * Whether the dev-only in-app login (no Keycloak) is enabled.
+ *
+ * Two independent gates, both required:
+ *
+ * - `import.meta.env.DEV` is `true` only under the Vite dev server
+ *   and is replaced with a literal `false` in *any* production
+ *   build. Because it folds to `false` statically, Rollup
+ *   dead-code-eliminates the dev-login UI and helper, so they
+ *   never ship in a built artefact (verify: `grep -r auth/dev
+ *   dist/` is empty).
+ * - `VITE_DEV_AUTH=true` is the explicit opt-in a developer must
+ *   set, so dev login is off by default even locally.
+ *
+ * Deliberately **not** part of `RuntimeConfig`: it is never read
+ * from `window.__MEEPLETIME_CONFIG__`, so the production runtime
+ * config mechanism cannot turn it on either.
+ */
+export const devAuth: boolean =
+  import.meta.env.DEV && import.meta.env.VITE_DEV_AUTH === 'true'

@@ -8,6 +8,14 @@
 > If you already operate an OIDC provider, you only need the values in
 > the [deployment guide](deployment.md); skip the rest.
 
+> **Local development without Keycloak.** Contributors who just want to
+> run the app locally can skip standing up an IDP entirely by using the
+> dev-only login path — see
+> [Development login (no Keycloak)](../developer/auth.md). Those switches
+> are development-only and can never activate in a production build or
+> image; production authentication is always Keycloak (or another OIDC
+> provider) as described below.
+
 ## What MeepleTime needs from any IDP
 
 Whatever provider you use, MeepleTime requires:

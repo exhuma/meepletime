@@ -94,6 +94,7 @@ import { computed, onMounted } from 'vue'
 import { useAuth } from './composables/auth'
 import { useAppBar } from './composables/appBar'
 import { useRouter } from 'vue-router'
+import { devAuth } from './config'
 import { MtButton } from './ui'
 import MtMeeple from './ui/MtMeeple.vue'
 
@@ -117,6 +118,9 @@ const userInitial = computed<string>(() => {
 /** Sign out the current user via OIDC. */
 async function handleLogout(): Promise<void> {
   await auth.logout()
+  // Keycloak logout is a full-page redirect; the dev path only clears
+  // local state, so send the user back to the dev-login picker.
+  if (devAuth) await router.replace('/login')
 }
 </script>
 

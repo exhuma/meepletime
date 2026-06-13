@@ -121,6 +121,8 @@ task frontend         # vite dev server (--host 0.0.0.0)
 task build:frontend   # production frontend build
 task test:backend     # pytest; pass args after --, e.g. task test:backend -- -k circles
 task dev:token        # mint an HS256 dev JWT for headless API calls (see below)
+task dev:db           # throwaway Postgres on localhost:5432 for host runs
+task dev:db-stop      # stop/remove the throwaway dev DB (drops data)
 task db-shell         # psql into $MEEPLETIME_DATABASE_URL
 ```
 
@@ -166,6 +168,24 @@ for audience-claim propagation). See `module-auth-oidc`.
   backend *also* accepts self-minted **HS256** JWTs (algorithm is chosen
   from the token's `alg` header). This is **development/headless-agent
   only — never set it in production.** Mint one with `task dev:token`.
+- **Dev login (in-app, no Keycloak):** for driving the *whole SPA*
+  without Keycloak, set `MEEPLETIME_DEV_AUTH_ENABLED=true` (backend)
+  and `VITE_DEV_AUTH=true` (frontend dev server). The backend then
+  mounts a single `POST /auth/dev/login` that mints a real HS256 token
+  for the identity (`sub`/`email`/`name`) in the request body — the
+  HTTP twin of `task dev:token` — flowing through the standard
+  validator + user-provisioning (**not** a bypass). It has **no**
+  notion of named presets and no enumeration endpoint, so no dev
+  credentials are baked into the API. The dev-only `LoginView` picker
+  offers a few convenience identities (documented in
+  `docs/developer/auth.md`, defined only in the stripped-from-prod
+  frontend). Roles are per-circle, so an "admin" identity has no global
+  powers until it joins/owns a circle. Gating is defense-in-depth —
+  backend default off (router unmounted → 404), startup refuses to boot
+  if enabled without `DEV_SHARED_SECRET`, and the frontend honours
+  `VITE_DEV_AUTH` only under the Vite dev server (`import.meta.env.DEV`),
+  so any production build excludes the code entirely. **Never enable
+  either flag in production.** See `docs/developer/auth.md`.
 
 ---
 
