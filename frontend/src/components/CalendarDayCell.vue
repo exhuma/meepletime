@@ -88,7 +88,7 @@ const ariaLabel = computed<string>(() => {
 
 <style scoped>
 .cell {
-  background: rgb(var(--v-theme-surface));
+  background: rgb(var(--v-theme-surface-container-low));
   min-height: clamp(52px, 13vw, 76px);
   padding: 4px 5px;
   display: flex;

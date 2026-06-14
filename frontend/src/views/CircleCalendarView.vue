@@ -323,20 +323,18 @@ onMounted(async () => {
 .cal-nav__arrows {
   display: flex;
   align-items: center;
+  gap: 0.25rem;
 }
 
 .calendar-grid {
   display: grid;
   grid-template-columns: repeat(7, 1fr);
-  gap: 3px;
-  background: rgb(var(--v-theme-outline-variant));
-  border: 1px solid rgb(var(--v-theme-outline-variant));
-  border-radius: 16px;
-  overflow: hidden;
+  gap: 6px;
+  background: transparent;
 }
 
 .calendar-header {
-  background: rgb(var(--v-theme-surface-container-low));
+  background: transparent;
   text-align: center;
   font-size: 0.75rem;
   font-weight: 600;
@@ -345,6 +343,6 @@ onMounted(async () => {
 }
 
 .calendar-blank {
-  background: rgb(var(--v-theme-surface-container-lowest));
+  background: transparent;
 }
 </style>
