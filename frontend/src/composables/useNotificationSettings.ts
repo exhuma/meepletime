@@ -1,7 +1,11 @@
 import { ref, readonly } from 'vue'
 import type { DeepReadonly, Ref } from 'vue'
 import api from '../api'
-import type { NotificationSettings, NotificationTestResult } from '../types'
+import type {
+  EmailConfirmResult,
+  NotificationSettings,
+  NotificationTestResult,
+} from '../types'
 import { browserSubscribe, getBrowserSubscription } from '../lib/webpush'
 
 // Module-level singleton state for the current user's settings.
@@ -74,6 +78,37 @@ export function useNotificationSettings() {
     })
   }
 
+  /** Start confirming a notification address; stores updated state. */
+  async function setNotificationEmail(email: string): Promise<void> {
+    settings.value = await api.post<NotificationSettings>(
+      '/notifications/email',
+      { email },
+    )
+  }
+
+  /** Resend the pending confirmation link with a fresh deadline. */
+  async function resendNotificationEmail(): Promise<void> {
+    settings.value = await api.post<NotificationSettings>(
+      '/notifications/email/resend',
+    )
+  }
+
+  /** Clear the confirmed address and any pending confirmation. */
+  async function clearNotificationEmail(): Promise<void> {
+    settings.value = await api.delete<NotificationSettings>(
+      '/notifications/email',
+    )
+  }
+
+  /** Submit a confirmation code (no auth required). */
+  async function confirmNotificationEmail(
+    code: string,
+  ): Promise<EmailConfirmResult> {
+    return api.post<EmailConfirmResult>('/notifications/email/confirm', {
+      code,
+    })
+  }
+
   return {
     settings: readonly(settings) as DeepReadonly<
       Ref<NotificationSettings | null>
@@ -83,5 +118,9 @@ export function useNotificationSettings() {
     subscribeWebPush,
     unsubscribeWebPush,
     testChannel,
+    setNotificationEmail,
+    resendNotificationEmail,
+    clearNotificationEmail,
+    confirmNotificationEmail,
   }
 }

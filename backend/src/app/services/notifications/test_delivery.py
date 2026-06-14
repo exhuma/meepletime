@@ -29,6 +29,7 @@ from app.models.notification_settings import (
     UserNotificationSettings,
 )
 from app.models.user import User
+from app.services.notification_settings import get_or_create_settings
 from app.services.notifications.channels import (
     get_channel,
     register_default_channels,
@@ -100,6 +101,21 @@ def _empty_target_message(channel_key: str) -> str:
     )
 
 
+def _resolved_email(db: Session, user: User) -> str:
+    """
+    Return the address real notifications would use for this user.
+
+    Prefers the confirmed notification email, falling back to the
+    account (profile) email.
+
+    :param db: Active database session.
+    :param user: The user being tested.
+    :returns: The effective email address.
+    """
+    settings = get_or_create_settings(db, user.id)
+    return settings.notification_email or user.email
+
+
 def _send_via_channel(
     channel_key: str, user: User, db: Session
 ) -> tuple[bool, str]:
@@ -120,7 +136,7 @@ def _send_via_channel(
     recipient = Recipient(
         user_id=user.id,
         delivery_id=None,
-        email=user.email,
+        email=_resolved_email(db, user),
         settings=_forced_settings(user.id, channel_key),
     )
     targets = channel.collect_targets(ctx, [recipient], db)

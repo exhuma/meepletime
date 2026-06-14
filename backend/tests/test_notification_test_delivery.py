@@ -13,8 +13,8 @@ from app.models.notification_settings import (
     TelegramMemberLink,
 )
 from app.models.user import User
+from app.services import email as email_svc
 from app.services.notifications import test_delivery as td
-from app.services.notifications.channels import email as email_mod
 
 
 def _user(db: Session, email: str = "u@x.test") -> User:
@@ -31,7 +31,7 @@ def test_email_test_ok_when_configured(
     """Ensure a configured email channel reports a successful test."""
     user = _user(db_session)
     monkeypatch.setattr(
-        email_mod,
+        email_svc,
         "get_settings",
         lambda: SimpleNamespace(
             SMTP_HOST="smtp.test",
@@ -45,7 +45,7 @@ def test_email_test_ok_when_configured(
     smtp = MagicMock()
     ctx = MagicMock()
     ctx.__enter__.return_value = smtp
-    monkeypatch.setattr(email_mod.smtplib, "SMTP", MagicMock(return_value=ctx))
+    monkeypatch.setattr(email_svc.smtplib, "SMTP", MagicMock(return_value=ctx))
 
     ok, message = td.send_user_test(db_session, user, "email")
     assert ok is True

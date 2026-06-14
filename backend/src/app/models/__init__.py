@@ -14,6 +14,7 @@ from app.models.notification import (
 )
 from app.models.notification_settings import (
     CircleTelegramConfig,
+    EmailConfirmation,
     TelegramMemberLink,
     UserNotificationSettings,
     WebPushSubscription,
@@ -35,6 +36,7 @@ __all__ = [
     "NotificationEvent",
     "NotificationDelivery",
     "NotificationChannelAttempt",
+    "EmailConfirmation",
     "UserNotificationSettings",
     "WebPushSubscription",
     "CircleTelegramConfig",

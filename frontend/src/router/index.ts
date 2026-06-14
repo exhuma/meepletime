@@ -24,6 +24,11 @@ const routes: RouteRecordRaw[] = [
     component: () => import('../views/AuthCallbackView.vue'),
   },
   {
+    path: '/confirm-email',
+    component: () => import('../views/ConfirmEmailView.vue'),
+    meta: { title: 'Confirm email' },
+  },
+  {
     path: '/welcome',
     component: () => import('../views/WelcomeView.vue'),
     meta: { requiresAuth: true, title: 'Welcome' },

@@ -150,3 +150,30 @@ def test_dispatch_no_channels_is_noop(db_session: Session) -> None:
     dispatch_event(event, db_session, channels=[])
 
     assert _attempts(db_session, event.id) == []
+
+
+def test_load_recipients_prefers_notification_email(
+    db_session: Session,
+) -> None:
+    """A confirmed notification_email overrides the profile email."""
+    from app.models.notification_settings import (
+        UserNotificationSettings,
+    )
+    from app.services.notifications.dispatch import _load_recipients
+
+    event, users = _seed_event(db_session)
+    db_session.add(
+        UserNotificationSettings(
+            user_id=users["ok"].id,
+            email_enabled=True,
+            notification_email="notify@x.test",
+        )
+    )
+    db_session.flush()
+
+    recipients = _load_recipients(event, db_session)
+    by_user = {r.user_id: r for r in recipients}
+    # ok_user has a confirmed notification address -> it wins.
+    assert by_user[users["ok"].id].email == "notify@x.test"
+    # fail_user has no settings row -> falls back to profile email.
+    assert by_user[users["fail"].id].email == "fail@x.test"

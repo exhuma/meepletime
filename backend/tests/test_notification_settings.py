@@ -17,6 +17,9 @@ def test_get_settings_returns_defaults(
         "email_enabled": True,
         "webpush_enabled": False,
         "telegram_dm_enabled": False,
+        "notification_email": None,
+        "pending_email": None,
+        "pending_expires_at": None,
     }
 
 

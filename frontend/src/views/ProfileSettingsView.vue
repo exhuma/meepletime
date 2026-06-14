@@ -38,7 +38,8 @@
                 @update:model-value="onEmailChange"
               />
               <p class="text-caption text-medium-emphasis ps-row__hint">
-                Sends a message to your account email address.
+                Emails go to your confirmed notification address, or your
+                account email if none is set.
               </p>
             </div>
             <MtButton
@@ -49,6 +50,60 @@
             >
               Test
             </MtButton>
+          </div>
+
+          <!-- Notification email address -->
+          <div class="ps-email">
+            <v-text-field
+              v-model="emailInput"
+              label="Notification email"
+              type="email"
+              density="comfortable"
+              :disabled="emailBusy"
+              hide-details="auto"
+              placeholder="Use account email"
+            />
+            <div v-if="pendingEmail" class="ps-email__status">
+              <v-chip size="small" color="warning" variant="tonal">
+                Pending: {{ pendingEmail }}
+              </v-chip>
+              <MtButton
+                variant="soft"
+                tone="primary"
+                :loading="emailBusy"
+                @click="onResendEmail"
+              >
+                Resend link
+              </MtButton>
+            </div>
+            <div v-else-if="confirmedEmail" class="ps-email__status">
+              <v-chip size="small" color="success" variant="tonal">
+                Confirmed: {{ confirmedEmail }}
+              </v-chip>
+            </div>
+            <div class="ps-email__actions">
+              <MtButton
+                variant="solid"
+                tone="primary"
+                :loading="emailBusy"
+                :disabled="!emailInput || emailInput === confirmedEmail"
+                @click="onSaveEmail"
+              >
+                Send confirmation
+              </MtButton>
+              <MtButton
+                v-if="confirmedEmail || pendingEmail"
+                variant="soft"
+                tone="primary"
+                :loading="emailBusy"
+                @click="onClearEmail"
+              >
+                Use account email
+              </MtButton>
+            </div>
+            <p v-if="emailMessage" class="text-caption ps-email__msg">
+              {{ emailMessage }}
+            </p>
           </div>
 
           <v-divider class="my-3" />
@@ -119,7 +174,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted } from 'vue'
+import { ref, onMounted, computed } from 'vue'
 import { useNotificationSettings } from '../composables/useNotificationSettings'
 import { useAppBarContext, useAppBar } from '../composables/appBar'
 import { isWebPushSupported } from '../lib/webpush'
@@ -135,6 +190,9 @@ const {
   subscribeWebPush,
   unsubscribeWebPush,
   testChannel,
+  setNotificationEmail,
+  resendNotificationEmail,
+  clearNotificationEmail,
 } = useNotificationSettings()
 const { startJob, endJob } = useAppBar()
 
@@ -147,6 +205,15 @@ const webpushEnabled = ref(false)
 const telegramDmEnabled = ref(false)
 const webpushSupported = isWebPushSupported()
 
+const emailInput = ref('')
+const emailBusy = ref(false)
+const emailMessage = ref('')
+
+const confirmedEmail = computed(
+  () => settings.value?.notification_email ?? null,
+)
+const pendingEmail = computed(() => settings.value?.pending_email ?? null)
+
 onMounted(async () => {
   startJob('profile-settings')
   try {
@@ -154,6 +221,7 @@ onMounted(async () => {
     emailEnabled.value = settings.value?.email_enabled ?? false
     webpushEnabled.value = settings.value?.webpush_enabled ?? false
     telegramDmEnabled.value = settings.value?.telegram_dm_enabled ?? false
+    emailInput.value = settings.value?.notification_email ?? ''
   } catch {
     error.value = 'Could not load your notification settings.'
   } finally {
@@ -190,6 +258,46 @@ async function onTelegramDmChange(value: boolean | null): Promise<void> {
     telegramDmEnabled.value = settings.value?.telegram_dm_enabled ?? false
   } finally {
     saving.value = false
+  }
+}
+
+async function onSaveEmail(): Promise<void> {
+  emailBusy.value = true
+  emailMessage.value = ''
+  try {
+    await setNotificationEmail(emailInput.value.trim())
+    emailMessage.value = 'Confirmation link sent. Check your inbox.'
+  } catch {
+    emailMessage.value = 'Could not send the confirmation link.'
+  } finally {
+    emailBusy.value = false
+  }
+}
+
+async function onResendEmail(): Promise<void> {
+  emailBusy.value = true
+  emailMessage.value = ''
+  try {
+    await resendNotificationEmail()
+    emailMessage.value = 'A new confirmation link is on its way.'
+  } catch {
+    emailMessage.value = 'Could not resend the link just yet.'
+  } finally {
+    emailBusy.value = false
+  }
+}
+
+async function onClearEmail(): Promise<void> {
+  emailBusy.value = true
+  emailMessage.value = ''
+  try {
+    await clearNotificationEmail()
+    emailInput.value = ''
+    emailMessage.value = 'Notifications will use your account email.'
+  } catch {
+    emailMessage.value = 'Could not clear the address.'
+  } finally {
+    emailBusy.value = false
   }
 }
 
@@ -261,5 +369,22 @@ async function onWebpushChange(value: boolean | null): Promise<void> {
 .ps-row__hint {
   margin-top: 0.15rem;
   margin-bottom: 0;
+}
+
+.ps-email {
+  margin-top: 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+.ps-email__status,
+.ps-email__actions {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+.ps-email__msg {
+  color: rgb(var(--v-theme-on-surface-variant, 120 120 120));
 }
 </style>

@@ -51,6 +51,23 @@ each qualifying transition sends you a short message with a direct link
 to the relevant day. If email delivery is not configured by your
 operator, the switch has no effect and no mail is sent.
 
+### Notification email
+
+By default, notifications go to your account email. You can set a
+separate **notification email** in the **Notifications** section of your
+profile:
+
+1. Enter the address and save.
+2. A confirmation email is sent to that address — click the link inside
+   (valid for 24 hours) to activate it.
+3. If the link expires before you click it, use the **Resend link**
+   action to get a fresh one.
+
+Once confirmed, that address is used for all email notifications instead
+of your account email. If you never set one (or remove it), notifications
+continue to go to your account email as long as email notifications are
+turned on.
+
 ## Browser notifications
 
 Turning on **Browser notifications** asks your browser for permission
