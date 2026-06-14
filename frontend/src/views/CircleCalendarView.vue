@@ -338,7 +338,7 @@ onMounted(async () => {
   display: flex;
   justify-content: center;
   align-items: flex-start;
-  gap: 1.5rem;
+  gap: var(--mt-rail-gap);
 }
 
 .cal-main {

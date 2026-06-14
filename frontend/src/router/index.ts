@@ -17,6 +17,7 @@ const routes: RouteRecordRaw[] = [
   {
     path: '/login',
     component: () => import('../views/LoginView.vue'),
+    meta: { title: 'Sign in' },
   },
   {
     path: '/auth/callback',
@@ -25,7 +26,7 @@ const routes: RouteRecordRaw[] = [
   {
     path: '/circles',
     component: () => import('../views/CirclesView.vue'),
-    meta: { requiresAuth: true },
+    meta: { requiresAuth: true, title: 'Circles' },
   },
   {
     // Tabbed circle shell: calendar and list share a header strip.
@@ -36,10 +37,12 @@ const routes: RouteRecordRaw[] = [
       {
         path: '',
         component: () => import('../views/CircleCalendarView.vue'),
+        meta: { title: 'Calendar' },
       },
       {
         path: 'list',
         component: () => import('../views/CircleListView.vue'),
+        meta: { title: 'List' },
       },
     ],
   },
@@ -47,17 +50,17 @@ const routes: RouteRecordRaw[] = [
     // Day detail is full-screen, outside the tabbed shell.
     path: '/circles/:id/day/:date',
     component: () => import('../views/DayDetailView.vue'),
-    meta: { requiresAuth: true },
+    meta: { requiresAuth: true, title: 'Day' },
   },
   {
     path: '/join/:token',
     component: () => import('../views/JoinView.vue'),
-    meta: { requiresAuth: true },
+    meta: { requiresAuth: true, title: 'Join circle' },
   },
   {
     path: '/profile',
     component: () => import('../views/ProfileSettingsView.vue'),
-    meta: { requiresAuth: true },
+    meta: { requiresAuth: true, title: 'Profile' },
   },
 ]
 
@@ -82,6 +85,15 @@ router.beforeEach(async (to) => {
     }
   }
   return true
+})
+
+// Keep the browser tab title in sync with the active route. The leaf
+// child's title wins over the parent shell (reverse-scan `matched`);
+// circle pages later refine this to the circle name once it loads.
+router.afterEach((to) => {
+  const match = [...to.matched].reverse().find((r) => r.meta.title)
+  const title = match?.meta.title as string | undefined
+  document.title = title ? `${title} · MeepleTime` : 'MeepleTime'
 })
 
 export default router

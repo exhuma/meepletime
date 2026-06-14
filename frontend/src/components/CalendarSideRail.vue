@@ -55,8 +55,8 @@ const rows = computed<UpcomingDay[]>(() =>
 
 <style scoped>
 .side-rail {
-  width: 320px;
-  flex: 0 0 320px;
+  width: var(--mt-rail-width);
+  flex: 0 0 var(--mt-rail-width);
 }
 
 .side-rail__heading {

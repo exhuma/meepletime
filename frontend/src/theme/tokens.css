@@ -17,6 +17,10 @@
   --mt-button-radius: 0.75rem;
   --mt-chip-radius: 999px;
   --mt-shell-width: 60rem;
+  /* Desktop calendar side-rail column + its gap from the main column.
+     Shared by the rail and the title spacer so they stay aligned. */
+  --mt-rail-width: 20rem;
+  --mt-rail-gap: 1.5rem;
 
   /* Elevation — quiet, warm shadows */
   --mt-shadow-card: 0 8px 24px -16px rgba(0, 0, 0, 0.55);
