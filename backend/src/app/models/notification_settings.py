@@ -70,6 +70,9 @@ class UserNotificationSettings(Base):
     telegram_dm_enabled: Mapped[bool] = mapped_column(
         Boolean, nullable=False, default=False
     )
+    notification_email: Mapped[str | None] = mapped_column(
+        String(255), nullable=True
+    )
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True),
         default=lambda: datetime.now(UTC),
@@ -201,6 +204,40 @@ class TelegramMemberLink(Base):
         index=True,
     )
     chat_id: Mapped[str] = mapped_column(String(64), nullable=False)
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True),
+        default=lambda: datetime.now(UTC),
+        nullable=False,
+    )
+
+
+class EmailConfirmation(Base):
+    """
+    A pending notification-email confirmation for one user.
+
+    At most one row per user (``unique(user_id)``). Holds the opaque
+    confirmation ``token`` (re-sent verbatim on retry), the address
+    awaiting confirmation, and the expiry deadline. The row is deleted
+    when the address is confirmed or cleared.
+    """
+
+    __tablename__ = "email_confirmations"
+
+    id: Mapped[uuid.UUID] = mapped_column(
+        UUID(as_uuid=True), primary_key=True, default=uuid.uuid4
+    )
+    user_id: Mapped[uuid.UUID] = mapped_column(
+        UUID(as_uuid=True),
+        ForeignKey("users.id", ondelete="CASCADE"),
+        nullable=False,
+        unique=True,
+        index=True,
+    )
+    pending_email: Mapped[str] = mapped_column(String(255), nullable=False)
+    token: Mapped[str] = mapped_column(String(64), nullable=False, index=True)
+    expires_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), nullable=False
+    )
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True),
         default=lambda: datetime.now(UTC),
