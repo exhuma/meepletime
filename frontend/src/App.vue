@@ -14,7 +14,11 @@
           color="primary"
           class="app-avatar ml-2 hidden-md-and-up"
         >
-          <span class="text-caption font-weight-bold">{{ userInitial }}</span>
+          <span
+            class="text-caption font-weight-bold"
+            :style="{ color: 'rgb(var(--v-theme-on-primary))' }"
+            >{{ userInitial }}</span
+          >
         </v-avatar>
         <MtButton
           variant="icon"
@@ -71,7 +75,11 @@
           color="primary"
           class="app-avatar hidden-sm-and-down"
         >
-          <span class="text-caption font-weight-bold">{{ userInitial }}</span>
+          <span
+            class="text-caption font-weight-bold"
+            :style="{ color: 'rgb(var(--v-theme-on-primary))' }"
+            >{{ userInitial }}</span
+          >
         </v-avatar>
         <MtButton
           variant="icon"
@@ -82,6 +90,8 @@
         />
       </template>
     </v-app-bar>
+
+    <AppNav />
 
     <v-main>
       <router-view />
@@ -96,6 +106,7 @@ import { useAppBar } from './composables/appBar'
 import { useRouter } from 'vue-router'
 import { devAuth } from './config'
 import { MtButton } from './ui'
+import AppNav from './components/AppNav.vue'
 
 const { title, actions, isBusy } = useAppBar()
 

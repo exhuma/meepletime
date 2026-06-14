@@ -1,81 +1,87 @@
 <template>
   <div>
-    <v-container class="pa-3" style="max-width: 720px">
-      <!-- Month navigation -->
-      <div class="cal-nav">
-        <span class="cal-nav__label">{{ monthLabel }}</span>
-        <div class="cal-nav__arrows">
-          <MtButton
-            variant="icon"
-            tone="primary"
-            icon="mdi-chevron-left"
-            :disabled="!canGoPrev"
-            @click="prevMonth"
-          />
-          <MtButton
-            variant="icon"
-            tone="primary"
-            icon="mdi-chevron-right"
-            @click="nextMonth"
-          />
-        </div>
-      </div>
-
-      <!-- Calendar grid -->
-      <div class="calendar-grid">
-        <!-- Day headers -->
-        <div class="calendar-header" v-for="day in dayHeaders" :key="day">
-          {{ day }}
+    <div class="cal-layout">
+      <v-container class="pa-3 cal-main" style="max-width: 720px">
+        <!-- Month navigation -->
+        <div class="cal-nav">
+          <span class="cal-nav__label">{{ monthLabel }}</span>
+          <div class="cal-nav__arrows">
+            <MtButton
+              variant="icon"
+              tone="primary"
+              icon="mdi-chevron-left"
+              :disabled="!canGoPrev"
+              @click="prevMonth"
+            />
+            <MtButton
+              variant="icon"
+              tone="primary"
+              icon="mdi-chevron-right"
+              @click="nextMonth"
+            />
+          </div>
         </div>
 
-        <!-- Blank cells for first week offset -->
-        <div
-          v-for="n in firstDayOffset"
-          :key="`blank-${n}`"
-          class="calendar-blank"
-        ></div>
+        <!-- Calendar grid -->
+        <div class="calendar-grid">
+          <!-- Day headers -->
+          <div class="calendar-header" v-for="day in dayHeaders" :key="day">
+            {{ day }}
+          </div>
 
-        <!-- Day cells -->
-        <CalendarDayCell
-          v-for="day in daysInMonth"
-          :key="day.date"
-          :date="day.date"
-          :day-of-month="day.dayOfMonth"
-          :my-state="day.myState"
-          :viability="day.viability"
-          :is-today="day.date === todayStr"
-          :is-past="day.date < todayStr"
-          :dimmed="viableOnly && !day.viability?.is_viable"
-          @activate="onActivate"
-          @context="onContext"
-        />
-      </div>
+          <!-- Blank cells for first week offset -->
+          <div
+            v-for="n in firstDayOffset"
+            :key="`blank-${n}`"
+            class="calendar-blank"
+          ></div>
 
-      <!-- Legend -->
-      <div class="d-flex flex-wrap ga-2 px-2 py-3">
-        <v-chip size="x-small" color="attend" variant="tonal">
-          <v-icon start size="12" color="attend">mdi-check-circle</v-icon
-          >Attending
-        </v-chip>
-        <v-chip size="x-small" color="host" variant="tonal">
-          <v-icon start size="12">mdi-home-variant</v-icon>Hosting
-        </v-chip>
-        <v-chip size="x-small" color="viable" variant="flat">Viable day</v-chip>
-        <v-chip size="x-small" color="tertiary" variant="tonal"
-          >Over soft max</v-chip
+          <!-- Day cells -->
+          <CalendarDayCell
+            v-for="day in daysInMonth"
+            :key="day.date"
+            :date="day.date"
+            :day-of-month="day.dayOfMonth"
+            :my-state="day.myState"
+            :viability="day.viability"
+            :is-today="day.date === todayStr"
+            :is-past="day.date < todayStr"
+            :dimmed="viableOnly && !day.viability?.is_viable"
+            @activate="onActivate"
+            @context="onContext"
+          />
+        </div>
+
+        <!-- Legend -->
+        <div class="d-flex flex-wrap ga-2 px-2 py-3">
+          <v-chip size="x-small" color="attend" variant="tonal">
+            <v-icon start size="12" color="attend">mdi-check-circle</v-icon
+            >Attending
+          </v-chip>
+          <v-chip size="x-small" color="host" variant="tonal">
+            <v-icon start size="12">mdi-home-variant</v-icon>Hosting
+          </v-chip>
+          <v-chip size="x-small" color="viable" variant="flat"
+            >Viable day</v-chip
+          >
+          <v-chip size="x-small" color="tertiary" variant="tonal"
+            >Over soft max</v-chip
+          >
+          <v-chip size="x-small" color="tertiary" variant="text">
+            <v-icon start size="10">mdi-circle</v-icon>Multiple hosts
+          </v-chip>
+        </div>
+
+        <p
+          class="text-caption text-medium-emphasis text-center mt-1 d-flex align-center justify-center"
         >
-        <v-chip size="x-small" color="tertiary" variant="text">
-          <v-icon start size="10">mdi-circle</v-icon>Multiple hosts
-        </v-chip>
-      </div>
+          <v-icon size="14" class="mr-1">mdi-gesture-tap-hold</v-icon>
+          Tap a day to set availability · long-press or right-click for options
+        </p>
+      </v-container>
 
-      <p
-        class="text-caption text-medium-emphasis text-center mt-1 d-flex align-center justify-center"
-      >
-        <v-icon size="14" class="mr-1">mdi-gesture-tap-hold</v-icon>
-        Tap a day to set availability · long-press or right-click for options
-      </p>
-    </v-container>
+      <CalendarSideRail v-if="mdAndUp" :circle-id="circleId" />
+    </div>
 
     <!-- Invite / QR Code dialog -->
     <InviteDialog
@@ -115,6 +121,7 @@
 
 <script setup lang="ts">
 import { ref, computed, onMounted } from 'vue'
+import { useDisplay } from 'vuetify'
 import { useRoute, useRouter } from 'vue-router'
 import { addMonths, startOfMonth } from 'date-fns'
 import { useCircles } from '../composables/circles'
@@ -124,6 +131,7 @@ import CircleNotificationsDialog from '../components/CircleNotificationsDialog.v
 import DayContextSheet from '../components/DayContextSheet.vue'
 import ConstraintEditorDialog from '../components/ConstraintEditorDialog.vue'
 import CalendarDayCell from '../components/CalendarDayCell.vue'
+import CalendarSideRail from '../components/CalendarSideRail.vue'
 import { MtButton } from '../ui'
 import {
   formatDate,
@@ -160,6 +168,7 @@ const route = useRoute()
 const router = useRouter()
 const circlesState = useCircles()
 const auth = useAuth()
+const { mdAndUp } = useDisplay()
 const { startJob, endJob } = useAppBar()
 
 const circleId = route.params.id as string
@@ -305,6 +314,23 @@ onMounted(async () => {
 </script>
 
 <style scoped>
+/*
+ * On desktop the calendar and its side rail sit in one centred row;
+ * the v-container keeps its own max-width and the rail takes a fixed
+ * column to its right. Below md the rail is not rendered, so this
+ * collapses to the single calendar column unchanged.
+ */
+.cal-layout {
+  display: flex;
+  justify-content: center;
+  align-items: flex-start;
+  gap: 1.5rem;
+}
+
+.cal-main {
+  flex: 0 1 auto;
+}
+
 .cal-nav {
   display: flex;
   align-items: center;
