@@ -44,13 +44,7 @@ body {
   content: '';
   position: fixed;
   inset: 0;
-  background-image: radial-gradient(
-    rgb(var(--v-theme-outline)) var(--mt-board-dot),
-    transparent var(--mt-board-dot)
-  );
-  background-size: var(--mt-board-gap) var(--mt-board-gap);
-  opacity: 0.1;
-  mask-image: radial-gradient(circle at 50% 28%, black, transparent 82%);
+  background-image: none;
   pointer-events: none;
 }
 

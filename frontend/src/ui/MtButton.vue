@@ -41,7 +41,17 @@ const props = withDefaults(
   { variant: 'solid', tone: 'primary' },
 )
 
-const vColor = computed(() => (props.tone === 'danger' ? 'error' : props.tone))
+const vColor = computed(() => {
+  if (props.tone === 'danger') return 'error'
+  // Icon/ghost buttons read as light accents on dark surfaces.
+  if (
+    props.tone === 'primary' &&
+    (props.variant === 'icon' || props.variant === 'ghost')
+  ) {
+    return 'primary-accent'
+  }
+  return props.tone
+})
 
 const vVariant = computed(() => {
   switch (props.variant) {
