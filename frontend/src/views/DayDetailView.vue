@@ -18,7 +18,10 @@
 
         <div v-if="hostAttendee" class="dd-host">
           <v-avatar size="40" color="host">
-            <span class="text-caption font-weight-bold">
+            <span
+              class="text-caption font-weight-bold"
+              :style="{ color: 'rgb(var(--v-theme-on-host))' }"
+            >
               {{ initials(hostAttendee.pseudonym) }}
             </span>
           </v-avatar>
@@ -40,7 +43,12 @@
               size="36"
               :color="a.state === 'hosting' ? 'host' : 'attend'"
             >
-              <span class="text-caption font-weight-bold">
+              <span
+                class="text-caption font-weight-bold"
+                :style="{
+                  color: `rgb(var(--v-theme-on-${a.state === 'hosting' ? 'host' : 'attend'}))`,
+                }"
+              >
                 {{ initials(a.pseudonym) }}
               </span>
             </v-avatar>
@@ -142,7 +150,11 @@ const hostAttendee = computed(
 )
 
 function initials(name: string): string {
-  return (name?.trim().slice(0, 2) || '?').toUpperCase()
+  const parts = name?.trim().split(/\s+/).filter(Boolean) ?? []
+  if (!parts.length) return '?'
+  const s =
+    parts.length === 1 ? parts[0].slice(0, 2) : parts[0][0] + parts[1][0]
+  return s.toUpperCase()
 }
 
 /** Submit a new note for the current day. */
@@ -194,7 +206,7 @@ onMounted(async () => {
   border-radius: var(--mt-card-radius);
 }
 .dd-host__name {
-  font-family: var(--v-font-family-display);
+  font-family: var(--v-font-family-display, 'Noto Serif', serif);
   font-size: 1.05rem;
   font-weight: 600;
 }
