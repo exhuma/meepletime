@@ -2,9 +2,10 @@
 
 from __future__ import annotations
 
+from datetime import datetime
 from typing import Literal
 
-from pydantic import BaseModel
+from pydantic import BaseModel, EmailStr
 
 NotificationTestChannel = Literal["email", "webpush", "telegram"]
 
@@ -15,6 +16,9 @@ class NotificationSettingsOut(BaseModel):
     email_enabled: bool
     webpush_enabled: bool
     telegram_dm_enabled: bool
+    notification_email: str | None = None
+    pending_email: str | None = None
+    pending_expires_at: datetime | None = None
 
     model_config = {"from_attributes": True}
 
@@ -58,3 +62,25 @@ class NotificationTestOut(BaseModel):
 
     ok: bool
     message: str
+
+
+EmailConfirmStatusValue = Literal["confirmed", "expired", "invalid"]
+
+
+class NotificationEmailIn(BaseModel):
+    """Request to start confirming a notification address."""
+
+    email: EmailStr
+
+
+class EmailConfirmIn(BaseModel):
+    """A confirmation code submitted from the email link."""
+
+    code: str
+
+
+class EmailConfirmOut(BaseModel):
+    """Outcome of submitting a confirmation code."""
+
+    status: EmailConfirmStatusValue
+    email: str | None = None
