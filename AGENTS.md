@@ -4,10 +4,12 @@ This is the single source of truth for any AI coding agent working in
 this repository (Claude Code, Codex, Cursor, …). `CLAUDE.md` is a thin
 pointer to this file.
 
-Before generating or modifying files, load **every** instruction kit
-listed below in order. All rules in those kits are non-negotiable unless
-`contract.md` explicitly overrides them. Correctness and security take
-priority over convenience.
+Before generating or modifying files, select and load the instruction
+kits relevant to the task at hand (see **Instruction kits** below — kits
+are chosen per task via the `instructions-exhuma` MCP, not from a fixed
+list). All rules in loaded kits are non-negotiable unless `contract.md`
+explicitly overrides them. Correctness and security take priority over
+convenience.
 
 ---
 
@@ -17,8 +19,8 @@ priority over convenience.
   edit it unless explicitly asked, and never implement features it
   excludes. If it ever goes missing, alert the developer before doing
   feature work.
-- **`AGENTS.md`** (this file) — mandatory rule-kit loading order and
-  task-scoped rules. Treat its rules as non-negotiable unless
+- **`AGENTS.md`** (this file) — the per-task rule-kit selection workflow
+  and task-scoped rules. Treat its rules as non-negotiable unless
   `contract.md` overrides them.
 - **`TODO.md`** — current backlog / in-flight work.
 
@@ -48,64 +50,62 @@ APScheduler. Frontend: Vue 3 (`<script setup lang="ts">` only), Vuetify
 
 ## Instruction kits
 
-Load these kits at the start of every session that touches backend or
-frontend code:
+Rule kits are served on demand by the **`instructions-exhuma` MCP
+server** — their files are never copied into this repo. **Select kits
+per task, not once per session.** Do not treat any fixed list as "load
+everything up front": a static list loads too much or too little, and
+the traits a task actually touches often only emerge mid-conversation
+(e.g. "add a setting" may turn out to touch auth, or docs, or release
+metadata). Re-run selection whenever the task's direction firms up or
+new traits come into scope.
 
-1. `stack-fastapi-vuetify` — core stack rules (always)
-2. `module-auth-oidc` — OIDC general rules (Keycloak, Option A)
-3. `module-auth-oidc-python` — backend token validation
-4. `module-auth-oidc-vue` — frontend OIDC flow (PKCE)
-5. `module-database-postgresql` — PostgreSQL / Alembic
-6. `module-code-style-python` — Python style and linting
+### Per-task selection workflow
 
-Optional (recommended):
+For each task that touches code, docs, or tooling:
 
-7. `module-dev-tooling-taskfile` — Taskfile conventions
-8. `module-docs-sphinx` — Sphinx documentation
+1. **Discover** — `list_available_traits` for the trait vocabulary and
+   `list_kits` for what's available (kits and versions change; don't
+   rely on names memorised here).
+2. **Map task → traits** — infer which traits the task touches from the
+   repository and the developer's intent.
+3. **Select & load** — `select_kits` with those traits (use
+   `broaden=True` if `broadening_recommended` is set), narrow with
+   `explain_kit_candidate`, then `get_kit` to pull full instructions
+   into context. Re-run when new traits appear.
 
-### Task-scoped applicability
+If a needed capability has no kit, file a gap via
+`check_existing_gap_issue` then `request_clarification_or_addition`.
 
-The baseline list above remains mandatory whenever backend or frontend
-code is touched. Use the following as an additional selection rule so
-agents do not drift into loading only the most recently edited part of
-the stack.
+### Repo trait fingerprint (seed for `select_kits`)
 
-**Backend-only tasks** — still load the full mandatory baseline, then
-also consider:
+These are the traits this repository exhibits — use them as the starting
+point for selection, then add/remove per the specific task:
 
-- `module-fastapi` — backend architecture, dependency usage, error
-  handling, and endpoint composition
-- `module-api-design` — HTTP semantics, status codes, pagination, and
-  response consistency
-- `module-observability-healthz` — health probes and operational
-  readiness checks when the task is ops-facing
+- **languages:** `python`, `typescript`
+- **frameworks:** `fastapi`, `vue`, `vuetify`, `vite`, `sqlalchemy`,
+  `alembic`, `taskfile`, `uv`
+- **capabilities:** `auth`, `oidc`, `oidc-only`, `web-ui`, `rest-api`,
+  `database`, `postgresql`, `migrations`, `code-style`
+- **contexts:** `backend`, `frontend`, `tooling`, `docs`
 
-**Frontend-only tasks** — still load the full mandatory baseline, then
-also consider:
+Backend tasks usually pull the FastAPI/OIDC-python/Postgres/code-style
+kits and the stack baseline; frontend tasks the Vue/Vuetify/OIDC-vue
+kits; docs tasks `module-operator-docs` (the repo ships operator docs
+under `docs/operator/`). Treat these as likely matches that
+`select_kits` will surface — not a checklist to load blind.
 
-- `module-vue-vuetify` — Vue 3 + Vuetify implementation rules
-- `module-api-design` — request/response expectations shared with the
-  backend
-- `module-release-metadata` — only when exposing build/version metadata
-  in the frontend
+**Avoid false narrowing:** don't drop frontend kits just because recent
+changes were backend-only (or vice-versa), and don't assume backend kits
+are irrelevant to a docs/tooling task — they may still constrain
+behaviour. When kit selection and recent edit history disagree,
+`contract.md` and this file win.
 
-**Cross-cutting or ops tasks** — prefer adding these on top of the
-baseline when relevant:
+### Hard exclusion (non-negotiable)
 
-- `module-dev-tooling-taskfile` — local developer workflow and task
-  automation
-- `module-observability-healthz` — live/readiness checks and operational
-  probes
-- `module-library-preferences` — when choosing or replacing dependencies
-
-**Avoiding false narrowing**
-
-- Do not infer that frontend kits are no longer applicable merely
-  because the most recent changes were backend-only.
-- Do not infer that backend kits are optional merely because a task
-  touches only docs or tooling; they may still constrain behavior.
-- Use `contract.md` and this file as the primary source of truth when
-  kit selection and recent edit history disagree.
+**`module-auth-local` must never be selected or applied.** This project
+is OIDC-only (Keycloak, Option A); local password auth was removed and
+must not return (the kit's own manifest excludes `oidc-only`, which this
+repo declares). See Authentication below.
 
 ---
 
