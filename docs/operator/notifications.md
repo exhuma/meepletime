@@ -35,6 +35,15 @@ active once `MEEPLETIME_SMTP_HOST` and `MEEPLETIME_SMTP_FROM` are set.
 | `MEEPLETIME_SMTP_USERNAME` | (unset) | Auth username, if your server requires it. |
 | `MEEPLETIME_SMTP_PASSWORD` | (unset) | Auth password, if your server requires it. |
 | `MEEPLETIME_SMTP_USE_TLS`  | `true`  | Issue `STARTTLS` after connecting.       |
+| `MEEPLETIME_EMAIL_CONFIRMATION_TTL_HOURS` | `24` | How long a notification-email confirmation link remains valid. |
+
+Users can set a dedicated notification email in their profile. When they
+do, a confirmation link is sent using these same SMTP settings; the link
+is valid for `EMAIL_CONFIRMATION_TTL_HOURS` hours (default 24). The
+address is only used for delivery after the link is confirmed. Until
+then — or when no notification email is set — notifications fall back to
+the user's account (profile) email, provided email notifications are
+enabled.
 
 Behaviour notes:
 
