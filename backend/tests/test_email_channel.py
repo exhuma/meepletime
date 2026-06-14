@@ -8,7 +8,7 @@ from types import SimpleNamespace
 from unittest.mock import MagicMock
 
 from app.models.notification_settings import UserNotificationSettings
-from app.services.notifications.channels import email as email_mod
+from app.services import email as email_svc
 from app.services.notifications.channels.base import (
     ChannelTarget,
     Recipient,
@@ -64,7 +64,7 @@ def _smtp_settings(**overrides: object) -> SimpleNamespace:
 def test_collect_targets_skips_when_unconfigured(monkeypatch) -> None:
     """Ensure no targets are produced when SMTP is unconfigured."""
     monkeypatch.setattr(
-        email_mod,
+        email_svc,
         "get_settings",
         lambda: SimpleNamespace(SMTP_HOST=None, SMTP_FROM=None),
     )
@@ -77,7 +77,7 @@ def test_collect_targets_skips_when_unconfigured(monkeypatch) -> None:
 
 def test_collect_targets_honors_enabled_flag(monkeypatch) -> None:
     """Ensure only recipients with email enabled get a target."""
-    monkeypatch.setattr(email_mod, "get_settings", lambda: _smtp_settings())
+    monkeypatch.setattr(email_svc, "get_settings", lambda: _smtp_settings())
     channel = EmailChannel()
     recipients = [
         _recipient("on@x.test", True),
@@ -89,12 +89,12 @@ def test_collect_targets_honors_enabled_flag(monkeypatch) -> None:
 
 def test_send_uses_starttls_and_login(monkeypatch) -> None:
     """Ensure send performs STARTTLS, login, and send_message."""
-    monkeypatch.setattr(email_mod, "get_settings", lambda: _smtp_settings())
+    monkeypatch.setattr(email_svc, "get_settings", lambda: _smtp_settings())
     smtp = MagicMock()
     smtp_ctx = MagicMock()
     smtp_ctx.__enter__.return_value = smtp
     smtp_factory = MagicMock(return_value=smtp_ctx)
-    monkeypatch.setattr(email_mod.smtplib, "SMTP", smtp_factory)
+    monkeypatch.setattr(email_svc.smtplib, "SMTP", smtp_factory)
 
     channel = EmailChannel()
     target = ChannelTarget(address="to@x.test")
