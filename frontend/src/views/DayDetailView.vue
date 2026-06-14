@@ -22,7 +22,9 @@
                 <v-icon v-if="a.state === 'hosting'" color="host" class="mr-3"
                   >mdi-home-variant</v-icon
                 >
-                <v-icon color="attend" class="mr-3">mdi-check-circle</v-icon>
+                <v-icon v-else color="attend" class="mr-3"
+                  >mdi-check-circle</v-icon
+                >
               </template>
               <v-list-item-title>{{ a.pseudonym }}</v-list-item-title>
               <v-list-item-subtitle class="text-capitalize">{{
