@@ -3,8 +3,8 @@
  *
  * Colours come from the Vuetify theme (`--v-theme-*`, built from
  * `tokens.ts`). Everything else — radii, the chunky token shadows,
- * press motion and board texture — lives here as `--mt-*` so the skin
- * and the Mt* components read one set of values.
+ * press motion — lives here as `--mt-*` so the skin and the Mt*
+ * components read one set of values.
  */
 
 /* Stitch identity: Noto Serif (display) + Plus Jakarta Sans (body). */
@@ -27,10 +27,5 @@
   --mt-token-edge: rgba(0, 0, 0, 0.18);
 
   /* Motion */
-  --mt-press-translate: 0.1rem;
   --mt-press-ms: 90ms;
-
-  /* Texture — disabled (Stitch surfaces are flat) */
-  --mt-board-dot: 0px;
-  --mt-board-gap: 0rem;
 }

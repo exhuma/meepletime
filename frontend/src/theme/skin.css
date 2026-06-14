@@ -35,17 +35,8 @@ body {
   background: transparent;
 }
 
-/* The board: a soft dotted felt grid behind the content. */
 .v-main {
   position: relative;
-}
-
-.v-main::before {
-  content: '';
-  position: fixed;
-  inset: 0;
-  background-image: none;
-  pointer-events: none;
 }
 
 .v-container {
