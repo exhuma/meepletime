@@ -8,22 +8,15 @@ inert (returns no targets) when SMTP is not configured.
 
 from __future__ import annotations
 
-import smtplib
-from email.message import EmailMessage
-
 from sqlalchemy.orm import Session
 
-from app.config import get_settings
+from app.services.email import is_smtp_configured, send_email
 from app.services.notifications.channels import register
 from app.services.notifications.channels.base import (
     ChannelTarget,
     Recipient,
 )
 from app.services.notifications.context import EventContext
-
-# Hard network timeout for SMTP operations, in seconds. The scheduler
-# worker thread must never block indefinitely on a stuck server.
-_SMTP_TIMEOUT = 5
 
 
 class EmailChannel:
@@ -37,8 +30,7 @@ class EmailChannel:
 
         :returns: ``True`` when host and from-address are set.
         """
-        settings = get_settings()
-        return bool(settings.SMTP_HOST and settings.SMTP_FROM)
+        return is_smtp_configured()
 
     def collect_targets(
         self,
@@ -82,23 +74,11 @@ class EmailChannel:
         :param db: Active database session (unused).
         :raises OSError: On connection or SMTP transport failure.
         """
-        settings = get_settings()
-        message = EmailMessage()
-        message["Subject"] = ctx.title
-        message["From"] = settings.SMTP_FROM
-        message["To"] = target.address
-        message.set_content(f"{ctx.body}\n\n{ctx.url}\n")
-
-        with smtplib.SMTP(
-            settings.SMTP_HOST,
-            settings.SMTP_PORT,
-            timeout=_SMTP_TIMEOUT,
-        ) as smtp:
-            if settings.SMTP_USE_TLS:
-                smtp.starttls()
-            if settings.SMTP_USERNAME and settings.SMTP_PASSWORD:
-                smtp.login(settings.SMTP_USERNAME, settings.SMTP_PASSWORD)
-            smtp.send_message(message)
+        send_email(
+            target.address,
+            ctx.title,
+            f"{ctx.body}\n\n{ctx.url}\n",
+        )
 
 
 register(EmailChannel())
