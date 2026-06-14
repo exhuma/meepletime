@@ -24,6 +24,11 @@ const routes: RouteRecordRaw[] = [
     component: () => import('../views/AuthCallbackView.vue'),
   },
   {
+    path: '/welcome',
+    component: () => import('../views/WelcomeView.vue'),
+    meta: { requiresAuth: true, title: 'Welcome' },
+  },
+  {
     path: '/circles',
     component: () => import('../views/CirclesView.vue'),
     meta: { requiresAuth: true, title: 'Circles' },

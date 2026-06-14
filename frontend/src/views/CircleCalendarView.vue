@@ -23,7 +23,7 @@
         </div>
 
         <!-- Calendar grid -->
-        <div class="calendar-grid">
+        <div class="calendar-grid" data-tour="calendar-grid">
           <!-- Day headers -->
           <div class="calendar-header" v-for="day in dayHeaders" :key="day">
             {{ day }}
@@ -53,7 +53,10 @@
         </div>
 
         <!-- Legend -->
-        <div class="d-flex flex-wrap ga-2 px-2 py-3">
+        <div
+          class="d-flex flex-wrap ga-2 px-2 py-3"
+          data-tour="calendar-legend"
+        >
           <v-chip size="x-small" color="attend" variant="tonal">
             <v-icon start size="12" color="attend">mdi-check-circle</v-icon
             >Attending
@@ -127,7 +130,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, onMounted } from 'vue'
+import { ref, computed, onMounted, nextTick } from 'vue'
 import { useDisplay } from 'vuetify'
 import { useRoute, useRouter } from 'vue-router'
 import { addMonths, startOfMonth } from 'date-fns'
@@ -153,6 +156,7 @@ import {
   myState,
 } from '../lib/members'
 import { useAppBar, useAppBarContext } from '../composables/appBar'
+import { useOnboarding } from '../composables/useOnboarding'
 
 useAppBarContext('Circle Calendar', [
   {
@@ -183,6 +187,7 @@ const circlesState = useCircles()
 const auth = useAuth()
 const { mdAndUp } = useDisplay()
 const { startJob, endJob } = useAppBar()
+const onboarding = useOnboarding()
 
 const circleId = route.params.id as string
 const viableOnly = ref(false)
@@ -324,6 +329,9 @@ onMounted(async () => {
   } finally {
     endJob('load-circles')
   }
+  // Introduce this view's tips once the grid/tabs have rendered.
+  await nextTick()
+  await onboarding.startTour('calendar')
 })
 </script>
 

@@ -113,3 +113,8 @@ export interface NotificationTestResult {
   ok: boolean
   message: string
 }
+
+export interface OnboardingState {
+  welcome_seen: boolean
+  seen_tips: string[]
+}

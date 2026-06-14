@@ -11,6 +11,7 @@
         variant="ghost"
         tone="primary"
         icon="mdi-key-variant"
+        data-tour="circles-join"
         @click="joinDialog = true"
       >
         Join
@@ -64,6 +65,7 @@
       block
       icon="mdi-plus-circle"
       class="mt-6"
+      data-tour="circles-create"
       @click="createDialog = true"
     >
       Create a Circle
@@ -90,11 +92,12 @@
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted } from 'vue'
+import { ref, onMounted, nextTick } from 'vue'
 import { useRouter } from 'vue-router'
 import { useCircles } from '../composables/circles'
 import CreateCircleDialog from '../components/CreateCircleDialog.vue'
 import { useAppBar } from '../composables/appBar'
+import { useOnboarding } from '../composables/useOnboarding'
 import { MtButton, MtCard, MtDialog, MtPinField } from '../ui'
 import { resolveImageUrl } from '../lib/circleImage'
 import type { Circle } from '../types'
@@ -109,6 +112,7 @@ import type { Circle } from '../types'
 
 const circlesState = useCircles()
 const router = useRouter()
+const onboarding = useOnboarding()
 
 const createDialog = ref(false)
 const joinDialog = ref(false)
@@ -144,6 +148,9 @@ onMounted(async () => {
   } finally {
     endJob('loading-circles-view')
   }
+  // Introduce this view's tips once the buttons have rendered.
+  await nextTick()
+  await onboarding.startTour('circles')
 })
 
 /** Close the create dialog after a circle has been created. */

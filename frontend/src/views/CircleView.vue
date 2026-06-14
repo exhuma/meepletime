@@ -19,6 +19,7 @@
           color="primary"
           density="comfortable"
           grow
+          data-tour="circle-tabs"
           @update:model-value="onTab"
         >
           <v-tab value="calendar">

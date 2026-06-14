@@ -80,6 +80,7 @@ def create_app() -> FastAPI:
         host_day_constraints,
         memberships,
         notifications,
+        onboarding,
         viability,
     )
 
@@ -92,6 +93,7 @@ def create_app() -> FastAPI:
     app.include_router(day_notes.router)
     app.include_router(notifications.router)
     app.include_router(circle_telegram.router)
+    app.include_router(onboarding.router)
 
     if settings.DEV_AUTH_ENABLED:
         # Dev-only: in-app login without Keycloak. The router is not

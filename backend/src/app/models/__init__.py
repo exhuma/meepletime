@@ -18,6 +18,7 @@ from app.models.notification_settings import (
     UserNotificationSettings,
     WebPushSubscription,
 )
+from app.models.onboarding import UserOnboardingState
 from app.models.user import User
 
 __all__ = [
@@ -38,4 +39,5 @@ __all__ = [
     "WebPushSubscription",
     "CircleTelegramConfig",
     "TelegramMemberLink",
+    "UserOnboardingState",
 ]

@@ -13,7 +13,7 @@
     </v-app-bar>
     -->
     <v-container class="pa-4" style="max-width: 600px">
-      <div class="mb-6">
+      <div class="mb-6" data-tour="day-detail-header">
         <h3 class="text-subtitle-1 font-weight-bold mb-2">Attendees</h3>
 
         <div v-if="hostAttendee" class="dd-host">
@@ -107,7 +107,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, onMounted } from 'vue'
+import { ref, computed, onMounted, nextTick } from 'vue'
 import { useRoute } from 'vue-router'
 import { useCircles } from '../composables/circles'
 import { enrichAttendees } from '../lib/members'
@@ -115,10 +115,12 @@ import { safeFormat } from '../lib/datetime'
 import { MtButton } from '../ui'
 import type { Note } from '../types'
 import { useAppBar, useAppBarContext } from '../composables/appBar'
+import { useOnboarding } from '../composables/useOnboarding'
 
 const route = useRoute()
 const { startJob, endJob } = useAppBar()
 const circlesState = useCircles()
+const onboarding = useOnboarding()
 
 const circleId = route.params.id as string
 const date = route.params.date as string
@@ -188,6 +190,9 @@ onMounted(async () => {
   } finally {
     endJob('loading-day-detail-view')
   }
+  // Introduce this view's tips once the content has rendered.
+  await nextTick()
+  await onboarding.startTour('dayDetail')
 })
 </script>
 
