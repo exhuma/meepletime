@@ -32,6 +32,8 @@ class Settings(BaseSettings):
         use only. Never enable in production.**
     :param NOTIFICATION_DEBOUNCE_SECONDS: Debounce window for
         notification coalescing, in seconds.
+    :param EMAIL_CONFIRMATION_TTL_HOURS: Validity window, in hours,
+        for a notification-email confirmation link.
     :param FRONTEND_URL: Allowed CORS origin for the Vue frontend.
     :param CORS_ORIGINS: Allowed CORS origins for API requests.
     :param INVITE_REGEN_LIMIT: Max invite regeneration requests
@@ -66,6 +68,7 @@ class Settings(BaseSettings):
     DEV_SHARED_SECRET: str | None = None
     DEV_AUTH_ENABLED: bool = False
     NOTIFICATION_DEBOUNCE_SECONDS: int = 10
+    EMAIL_CONFIRMATION_TTL_HOURS: int = 24
     FRONTEND_URL: str = "http://localhost:5173"
     CORS_ORIGINS: list[str] = [
         "http://localhost:5173",
