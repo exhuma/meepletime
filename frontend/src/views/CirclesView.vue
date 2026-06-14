@@ -96,6 +96,7 @@ import { useCircles } from '../composables/circles'
 import CreateCircleDialog from '../components/CreateCircleDialog.vue'
 import { useAppBar } from '../composables/appBar'
 import { MtButton, MtCard, MtDialog, MtPinField } from '../ui'
+import { resolveImageUrl } from '../lib/circleImage'
 import type { Circle } from '../types'
 
 // nextViableDate (from ../lib/circleStatus) and safeFormat (from
@@ -116,8 +117,9 @@ const joinValid = ref(false)
 const { startJob, endJob, isBusy } = useAppBar()
 
 function heroStyle(c: Pick<Circle, 'image_ref'>) {
-  return c.image_ref
-    ? { backgroundImage: `url("${c.image_ref.replace(/"/g, '%22')}")` }
+  const url = resolveImageUrl(c.image_ref)
+  return url
+    ? { backgroundImage: `url("${url.replace(/"/g, '%22')}")` }
     : {
         background:
           'linear-gradient(135deg, rgb(var(--v-theme-primary)),' +

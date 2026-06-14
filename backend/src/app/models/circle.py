@@ -70,3 +70,9 @@ class Circle(Base):
     notification_events: Mapped[list["NotificationEvent"]] = relationship(
         "NotificationEvent", back_populates="circle"
     )
+    image: Mapped["CircleImage | None"] = relationship(
+        "CircleImage",
+        back_populates="circle",
+        uselist=False,
+        cascade="all, delete-orphan",
+    )

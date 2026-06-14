@@ -92,6 +92,13 @@
       @regenerated="onInviteRegenerated"
     />
 
+    <EditCircleDialog
+      v-if="circlesState.currentCircle.value"
+      v-model="editDialog"
+      :circle="circlesState.currentCircle.value"
+      :is-admin="isAdminOrOwner"
+    />
+
     <CircleNotificationsDialog
       v-if="circlesState.currentCircle.value"
       v-model="notificationsDialog"
@@ -127,6 +134,7 @@ import { addMonths, startOfMonth } from 'date-fns'
 import { useCircles } from '../composables/circles'
 import { useAuth } from '../composables/auth'
 import InviteDialog from '../components/InviteDialog.vue'
+import EditCircleDialog from '../components/EditCircleDialog.vue'
 import CircleNotificationsDialog from '../components/CircleNotificationsDialog.vue'
 import DayContextSheet from '../components/DayContextSheet.vue'
 import ConstraintEditorDialog from '../components/ConstraintEditorDialog.vue'
@@ -153,6 +161,11 @@ useAppBarContext('Circle Calendar', [
     action: () => (inviteDialog.value = true),
   },
   {
+    icon: 'mdi-pencil',
+    label: 'Edit circle settings',
+    action: () => (editDialog.value = true),
+  },
+  {
     icon: 'mdi-bell-cog',
     label: 'Notification settings',
     action: () => (notificationsDialog.value = true),
@@ -174,6 +187,7 @@ const { startJob, endJob } = useAppBar()
 const circleId = route.params.id as string
 const viableOnly = ref(false)
 const inviteDialog = ref(false)
+const editDialog = ref(false)
 const notificationsDialog = ref(false)
 const selectedDay = ref<string | null>(null)
 const contextSheetOpen = ref(false)

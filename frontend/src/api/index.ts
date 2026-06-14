@@ -70,9 +70,10 @@ async function request<T>(
 
   let fetchBody: BodyInit | undefined
   if (body != null) {
-    if (body instanceof URLSearchParams) {
+    if (body instanceof URLSearchParams || body instanceof FormData) {
       fetchBody = body
-      // Browser sets Content-Type automatically for URLSearchParams
+      // Browser sets Content-Type automatically (and the multipart
+      // boundary for FormData); setting it manually would break it.
     } else {
       headers['Content-Type'] = 'application/json'
       fetchBody = JSON.stringify(body)
@@ -113,12 +114,16 @@ const api = {
     return request<T>('POST', path, { body })
   },
 
+  patch<T = void>(path: string, body?: unknown): Promise<T> {
+    return request<T>('PATCH', path, { body })
+  },
+
   put<T = void>(path: string, body?: unknown): Promise<T> {
     return request<T>('PUT', path, { body })
   },
 
-  delete(path: string): Promise<void> {
-    return request<void>('DELETE', path)
+  delete<T = void>(path: string): Promise<T> {
+    return request<T>('DELETE', path)
   },
 }
 

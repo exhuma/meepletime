@@ -2,7 +2,16 @@
 
 import uuid
 
-from fastapi import APIRouter, Depends, HTTPException, Request, status
+from fastapi import (
+    APIRouter,
+    Depends,
+    File,
+    HTTPException,
+    Request,
+    Response,
+    UploadFile,
+    status,
+)
 from sqlalchemy import select
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
@@ -17,6 +26,7 @@ from app.dependencies import (
     require_owner,
 )
 from app.models.circle import Circle
+from app.models.circle_image import CircleImage
 from app.models.membership import CircleMembership, MemberRole
 from app.models.user import User
 from app.rate_limit import enforce_limit_or_429
@@ -144,6 +154,126 @@ def delete_circle(
     require_owner(membership)
     db.delete(circle)
     db.commit()
+
+
+def _image_ref(circle_id: uuid.UUID, image: CircleImage) -> str:
+    """
+    Build the API-relative hero-image URL with a cache-bust version.
+
+    The path is relative to the API base (no host), so the frontend
+    resolves it against its configured ``apiBaseUrl``. The ``v``
+    query param changes whenever the image is replaced, forcing
+    browsers to refetch even though the path is otherwise stable.
+
+    :param circle_id: Owning circle identifier.
+    :param image: Persisted image row (``updated_at`` must be set).
+    :returns: Path such as ``/circles/<id>/image?v=<epoch>``.
+    """
+    version = int(image.updated_at.timestamp())
+    return f"/circles/{circle_id}/image?v={version}"
+
+
+@router.post("/circles/{circle_id}/image", response_model=CircleOut)
+def upload_circle_image(
+    circle_id: uuid.UUID,
+    file: UploadFile = File(...),
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_active_user),
+    settings: Settings = Depends(get_settings),
+) -> Circle:
+    """
+    Upload (or replace) the circle's hero image. Owner/admin only.
+
+    :raises HTTPException: 400 for an unsupported content type, 413
+        when the payload exceeds ``CIRCLE_IMAGE_MAX_BYTES``.
+    """
+    circle = get_circle_or_404(db, circle_id)
+    membership = get_membership_or_403(db, circle_id, current_user.id)
+    require_admin_or_owner(membership)
+
+    content_type = file.content_type or ""
+    if content_type not in settings.CIRCLE_IMAGE_ALLOWED_TYPES:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Unsupported image type",
+        )
+
+    data = file.file.read()
+    if len(data) > settings.CIRCLE_IMAGE_MAX_BYTES:
+        raise HTTPException(
+            status_code=status.HTTP_413_CONTENT_TOO_LARGE,
+            detail="Image is too large",
+        )
+
+    image = db.execute(
+        select(CircleImage).where(CircleImage.circle_id == circle_id)
+    ).scalar_one_or_none()
+    if image is None:
+        image = CircleImage(circle_id=circle_id)
+        db.add(image)
+    image.content_type = content_type
+    image.data = data
+
+    db.flush()
+    db.refresh(image)
+    circle.image_ref = _image_ref(circle_id, image)
+
+    db.commit()
+    db.refresh(circle)
+    return circle
+
+
+@router.get("/circles/{circle_id}/image")
+def get_circle_image(
+    circle_id: uuid.UUID,
+    db: Session = Depends(get_db),
+) -> Response:
+    """
+    Return the circle's hero image bytes.
+
+    Public (no authentication): the unguessable circle UUID acts as
+    the access capability, mirroring the public invite-preview
+    endpoint. Responses are cacheable because the caller's URL is
+    versioned via the ``v`` query param.
+
+    :raises HTTPException: 404 when the circle has no stored image.
+    """
+    image = db.execute(
+        select(CircleImage).where(CircleImage.circle_id == circle_id)
+    ).scalar_one_or_none()
+    if image is None:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="No image for this circle",
+        )
+    return Response(
+        content=image.data,
+        media_type=image.content_type,
+        headers={"Cache-Control": "public, max-age=31536000, immutable"},
+    )
+
+
+@router.delete("/circles/{circle_id}/image", response_model=CircleOut)
+def delete_circle_image(
+    circle_id: uuid.UUID,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_active_user),
+) -> Circle:
+    """Remove the circle's hero image. Owner/admin only."""
+    circle = get_circle_or_404(db, circle_id)
+    membership = get_membership_or_403(db, circle_id, current_user.id)
+    require_admin_or_owner(membership)
+
+    image = db.execute(
+        select(CircleImage).where(CircleImage.circle_id == circle_id)
+    ).scalar_one_or_none()
+    if image is not None:
+        db.delete(image)
+    circle.image_ref = None
+
+    db.commit()
+    db.refresh(circle)
+    return circle
 
 
 @router.post("/circles/{circle_id}/invite", response_model=CircleOut)

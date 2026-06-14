@@ -102,6 +102,12 @@ def _make_test_settings() -> Settings:
             VAPID_PUBLIC_KEY=None,
             VAPID_PRIVATE_KEY=None,
             VAPID_SUBJECT=None,
+            CIRCLE_IMAGE_MAX_BYTES=5 * 1024 * 1024,
+            CIRCLE_IMAGE_ALLOWED_TYPES={
+                "image/jpeg",
+                "image/png",
+                "image/webp",
+            },
         ),
     )
 

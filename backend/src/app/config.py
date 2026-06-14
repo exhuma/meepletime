@@ -53,6 +53,10 @@ class Settings(BaseSettings):
         exposed). Web Push is inert when unset.
     :param VAPID_SUBJECT: VAPID ``sub`` claim, e.g.
         ``mailto:ops@example.com``.
+    :param CIRCLE_IMAGE_MAX_BYTES: Maximum accepted size, in bytes,
+        for an uploaded circle hero image.
+    :param CIRCLE_IMAGE_ALLOWED_TYPES: Accepted ``Content-Type``
+        values for uploaded circle hero images.
     """
 
     DATABASE_URL: PostgresDsn
@@ -79,6 +83,12 @@ class Settings(BaseSettings):
     VAPID_PUBLIC_KEY: str | None = None
     VAPID_PRIVATE_KEY: str | None = None
     VAPID_SUBJECT: str | None = None
+    CIRCLE_IMAGE_MAX_BYTES: int = 5 * 1024 * 1024
+    CIRCLE_IMAGE_ALLOWED_TYPES: set[str] = {
+        "image/jpeg",
+        "image/png",
+        "image/webp",
+    }
 
     model_config = SettingsConfigDict(
         env_file=".env",

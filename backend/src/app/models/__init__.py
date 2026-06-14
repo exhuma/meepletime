@@ -3,6 +3,7 @@
 from app.models.auth_identity import AuthIdentity
 from app.models.availability import AvailabilityState, DayAvailability
 from app.models.circle import Circle
+from app.models.circle_image import CircleImage
 from app.models.day_note import DayNote
 from app.models.host_day_constraint import HostDayConstraint
 from app.models.membership import CircleMembership, MemberRole
@@ -23,6 +24,7 @@ __all__ = [
     "AuthIdentity",
     "User",
     "Circle",
+    "CircleImage",
     "CircleMembership",
     "MemberRole",
     "DayAvailability",

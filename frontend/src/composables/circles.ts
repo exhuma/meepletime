@@ -39,6 +39,37 @@ export function useCircles() {
     return created
   }
 
+  /** Merge an updated circle into currentCircle and the list. */
+  function syncCircle(updated: Circle): Circle {
+    if (currentCircle.value?.id === updated.id) {
+      currentCircle.value = updated
+    }
+    circles.value = circles.value.map((c) =>
+      c.id === updated.id ? updated : c,
+    )
+    return updated
+  }
+
+  /** Update circle settings (owner/admin). Returns the updated circle. */
+  async function updateCircle(
+    id: string,
+    data: Partial<Circle>,
+  ): Promise<Circle> {
+    return syncCircle(await api.patch<Circle>(`/circles/${id}`, data))
+  }
+
+  /** Upload/replace the circle hero image (owner/admin). */
+  async function uploadCircleImage(id: string, file: File): Promise<Circle> {
+    const form = new FormData()
+    form.append('file', file)
+    return syncCircle(await api.post<Circle>(`/circles/${id}/image`, form))
+  }
+
+  /** Remove the circle hero image (owner/admin). */
+  async function deleteCircleImage(id: string): Promise<Circle> {
+    return syncCircle(await api.delete<Circle>(`/circles/${id}/image`))
+  }
+
   /** Fetch all members of circleId and update members state. */
   async function fetchMembers(circleId: string): Promise<void> {
     members.value = await api.get<Member[]>(`/circles/${circleId}/members`)
@@ -242,6 +273,9 @@ export function useCircles() {
     fetchCircles,
     fetchCircle,
     createCircle,
+    updateCircle,
+    uploadCircleImage,
+    deleteCircleImage,
     fetchMembers,
     fetchCalendar,
     setAvailability,
