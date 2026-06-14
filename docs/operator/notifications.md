@@ -80,17 +80,27 @@ variables are set.
 
 ### Generating a key pair
 
-The `vapid` CLI ships with the backend's dependencies:
+Generate a VAPID key pair with the `web-push` CLI (no install needed):
 
 ```
-vapid --gen                    # writes private_key.pem + public_key.pem
-vapid --applicationServerKey   # prints the base64url public key
+npx web-push generate-vapid-keys
 ```
 
-Set `MEEPLETIME_VAPID_PUBLIC_KEY` to the `applicationServerKey` output,
-point `MEEPLETIME_VAPID_PRIVATE_KEY` at the mounted `private_key.pem`,
-and set a contact in `MEEPLETIME_VAPID_SUBJECT`. Only the public key is
-ever sent to browsers (via `GET /notifications/webpush/key`).
+This prints a base64url public and private key, for example:
+
+```
+Public Key:
+BNcd...<87 chars>
+
+Private Key:
+abc1...<43 chars>
+```
+
+Set `MEEPLETIME_VAPID_PUBLIC_KEY` to the printed **Public Key**,
+`MEEPLETIME_VAPID_PRIVATE_KEY` to the **Private Key** (the base64url
+string can be used directly — no PEM file required), and set a contact
+in `MEEPLETIME_VAPID_SUBJECT`. Only the public key is ever sent to
+browsers (via `GET /notifications/webpush/key`).
 
 ### HTTPS is required (Traefik)
 
