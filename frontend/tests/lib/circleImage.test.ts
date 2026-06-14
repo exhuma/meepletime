@@ -3,6 +3,7 @@ import { describe, it, expect } from 'vitest'
 import {
   resolveImageUrl,
   validateImageFile,
+  heroBackgroundStyle,
   MAX_IMAGE_BYTES,
 } from '../../src/lib/circleImage'
 
@@ -25,6 +26,22 @@ describe('resolveImageUrl', () => {
   it('resolves a relative API path against the API base', () => {
     const url = resolveImageUrl('/circles/abc/image?v=42')
     expect(url).toBe('http://localhost:8000/circles/abc/image?v=42')
+  })
+})
+
+describe('heroBackgroundStyle', () => {
+  it('uses the resolved image as a background-image when present', () => {
+    const style = heroBackgroundStyle('/circles/abc/image?v=42')
+    expect(style.backgroundImage).toBe(
+      'url("http://localhost:8000/circles/abc/image?v=42")',
+    )
+    expect(style.background).toBeUndefined()
+  })
+
+  it('falls back to the brand gradient when there is no image', () => {
+    const style = heroBackgroundStyle(null)
+    expect(style.background).toContain('linear-gradient')
+    expect(style.backgroundImage).toBeUndefined()
   })
 })
 

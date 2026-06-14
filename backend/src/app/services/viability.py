@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from datetime import date
+from datetime import date, timedelta
 
 from sqlalchemy import select
 from sqlalchemy.orm import Session
@@ -154,3 +154,45 @@ def compute_viability(
         viable_host_count=viable_host_count,
         availabilities=avail_out,
     )
+
+
+def next_viable_date(
+    circle: Circle,
+    db: Session,
+    *,
+    today: date,
+    horizon_days: int = 366,
+) -> date | None:
+    """
+    Return the earliest viable date on or after *today* for *circle*.
+
+    Only days with at least one availability record can ever be
+    viable (an empty day is never a meetup candidate), so the search
+    is limited to those candidate dates within
+    ``[today, today + horizon_days]``, evaluated in ascending order
+    with an early exit on the first viable one.
+
+    :param circle: The circle whose schedule is searched.
+    :param today: The current date in the circle's timezone.
+    :param horizon_days: How far ahead to look (default ~1 year).
+    :returns: The earliest upcoming viable date, or ``None``.
+    """
+    horizon = today + timedelta(days=horizon_days)
+    candidate_dates = (
+        db.execute(
+            select(DayAvailability.local_date)
+            .where(
+                DayAvailability.circle_id == circle.id,
+                DayAvailability.local_date >= today,
+                DayAvailability.local_date <= horizon,
+            )
+            .distinct()
+            .order_by(DayAvailability.local_date)
+        )
+        .scalars()
+        .all()
+    )
+    for candidate in candidate_dates:
+        if compute_viability(circle, candidate, db).is_viable:
+            return candidate
+    return None

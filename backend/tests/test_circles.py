@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import logging
 import uuid
+from datetime import date, timedelta
 
 from fastapi.testclient import TestClient
 
@@ -65,6 +66,46 @@ def test_created_circle_appears_in_list(
     assert response.status_code == 200
     names = [c["name"] for c in response.json()]
     assert "RPG Campaign" in names
+
+
+def test_list_circles_includes_next_viable_date(
+    client: TestClient,
+    auth_headers: dict[str, str],
+) -> None:
+    """Ensure GET /circles annotates each circle's next viable date."""
+    create = client.post(
+        "/circles",
+        json={"name": "Viable Soon", "timezone": "UTC"},
+        headers=auth_headers,
+    )
+    circle_id = create.json()["id"]
+    target = (date.today() + timedelta(days=5)).isoformat()
+    # Mark the owner as attending an upcoming day -> that day is viable.
+    client.post(
+        f"/circles/{circle_id}/availability/jobs",
+        json={"action": "cycle", "arguments": {"local_date": target}},
+        headers=auth_headers,
+    )
+
+    response = client.get("/circles", headers=auth_headers)
+    assert response.status_code == 200
+    body = next(c for c in response.json() if c["id"] == circle_id)
+    assert body["next_viable_date"] == target
+
+
+def test_list_circles_next_viable_date_null_when_none(
+    client: TestClient,
+    auth_headers: dict[str, str],
+) -> None:
+    """Ensure next_viable_date is null when no upcoming day is viable."""
+    client.post(
+        "/circles",
+        json={"name": "Quiet Circle", "timezone": "UTC"},
+        headers=auth_headers,
+    )
+    response = client.get("/circles", headers=auth_headers)
+    assert response.status_code == 200
+    assert all(c["next_viable_date"] is None for c in response.json())
 
 
 def test_get_circle_non_member_returns_403(

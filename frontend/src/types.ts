@@ -20,6 +20,11 @@ export interface Circle {
   created_by_user_id: string
   created_at: string
   updated_at: string
+  /**
+   * Earliest upcoming viable date (ISO yyyy-MM-dd), or null when none.
+   * Only the circles-list endpoint (GET /circles) populates this.
+   */
+  next_viable_date?: string | null
 }
 
 export interface Member {

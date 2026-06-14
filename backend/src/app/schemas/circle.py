@@ -1,7 +1,7 @@
 """Pydantic schemas for circle resources."""
 
 import uuid
-from datetime import datetime
+from datetime import date, datetime
 from typing import Any
 
 from pydantic import BaseModel
@@ -48,3 +48,14 @@ class CircleOut(BaseModel):
     updated_at: datetime
 
     model_config = {"from_attributes": True}
+
+
+class CircleListOut(CircleOut):
+    """Circle as returned by the list endpoint.
+
+    Adds ``next_viable_date`` — the earliest upcoming day the circle
+    can actually meet, computed per circle. ``None`` means no
+    upcoming viable day. Only the list endpoint populates this.
+    """
+
+    next_viable_date: date | None = None

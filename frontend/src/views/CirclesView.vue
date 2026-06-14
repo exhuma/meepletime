@@ -41,7 +41,10 @@
         :to="`/circles/${circle.id}`"
         class="circle-card"
       >
-        <div class="circle-card__hero" :style="heroStyle(circle)">
+        <div
+          class="circle-card__hero"
+          :style="heroBackgroundStyle(circle.image_ref)"
+        >
           <span v-if="!circle.image_ref" class="circle-card__initials">
             {{ initials(circle.name) }}
           </span>
@@ -53,8 +56,25 @@
           </div>
           <div class="circle-card__next text-medium-emphasis">
             <v-icon size="14" start>mdi-calendar-check</v-icon>
-            {{ nextLabel(circle.id) }}
+            {{ nextLabel(circle) }}
           </div>
+          <div
+            v-if="sizeLabel(circle)"
+            class="circle-card__meta text-medium-emphasis"
+          >
+            <v-icon size="14" start>mdi-account-group</v-icon>
+            {{ sizeLabel(circle) }}
+          </div>
+          <v-chip
+            v-if="circle.host_needed"
+            class="circle-card__host"
+            size="small"
+            variant="tonal"
+            color="primary"
+            prepend-icon="mdi-account-alert"
+          >
+            Host needed
+          </v-chip>
         </div>
       </MtCard>
     </div>
@@ -93,22 +113,16 @@
 
 <script setup lang="ts">
 import { ref, onMounted, nextTick } from 'vue'
+import type { DeepReadonly } from 'vue'
 import { useRouter } from 'vue-router'
 import { useCircles } from '../composables/circles'
 import CreateCircleDialog from '../components/CreateCircleDialog.vue'
 import { useAppBar } from '../composables/appBar'
 import { useOnboarding } from '../composables/useOnboarding'
 import { MtButton, MtCard, MtDialog, MtPinField } from '../ui'
-import { resolveImageUrl } from '../lib/circleImage'
+import { heroBackgroundStyle } from '../lib/circleImage'
+import { safeFormat } from '../lib/datetime'
 import type { Circle } from '../types'
-
-// nextViableDate (from ../lib/circleStatus) and safeFormat (from
-// ../lib/datetime) are intentionally not imported here: the circles-list
-// endpoint does not yet return per-circle viability data, so there is
-// nothing to pass to nextViableDate. When the payload includes a viability
-// map, nextLabel can become:
-//   const d = nextViableDate(map, todayStr)
-//   return d ? 'Next: ' + safeFormat(d, 'EEE, MMM d') : 'No upcoming viable days'
 
 const circlesState = useCircles()
 const router = useRouter()
@@ -120,25 +134,28 @@ const joinToken = ref('')
 const joinValid = ref(false)
 const { startJob, endJob, isBusy } = useAppBar()
 
-function heroStyle(c: Pick<Circle, 'image_ref'>) {
-  const url = resolveImageUrl(c.image_ref)
-  return url
-    ? { backgroundImage: `url("${url.replace(/"/g, '%22')}")` }
-    : {
-        background:
-          'linear-gradient(135deg, rgb(var(--v-theme-primary)),' +
-          ' rgb(var(--v-theme-tertiary)))',
-      }
-}
-
 function initials(name: string): string {
   return name.trim().slice(0, 2).toUpperCase()
 }
 
-// TODO: when the circles-list payload includes a viability map per circle,
-// replace this with nextViableDate + safeFormat (see comment above).
-function nextLabel(_circleId: string): string {
-  return 'Open to see upcoming days'
+/** Label for the circle's next upcoming viable meetup day. */
+function nextLabel(c: DeepReadonly<Circle>): string {
+  return c.next_viable_date
+    ? 'Next: ' + safeFormat(c.next_viable_date, 'EEE, MMM d')
+    : 'No upcoming viable days'
+}
+
+/**
+ * Plain-language group-size summary, or null when no limits are set.
+ * Soft max reads as the comfortable/ideal size; hard max as the cap.
+ */
+function sizeLabel(c: DeepReadonly<Circle>): string | null {
+  const soft = c.soft_max_attendees
+  const hard = c.hard_max_attendees
+  if (soft != null && hard != null) return `Ideal up to ${soft}, max ${hard}`
+  if (soft != null) return `Ideal up to ${soft}`
+  if (hard != null) return `Max ${hard}`
+  return null
 }
 
 onMounted(async () => {
@@ -186,9 +203,16 @@ function goToJoin(): void {
 }
 
 .mt-tiles {
-  display: flex;
-  flex-direction: column;
+  display: grid;
+  grid-template-columns: 1fr;
   gap: 0.9rem;
+}
+
+/* Two per row from tablet/desktop widths up; mobile stays single column. */
+@media (min-width: 700px) {
+  .mt-tiles {
+    grid-template-columns: 1fr 1fr;
+  }
 }
 
 .circle-card__hero {
@@ -240,5 +264,17 @@ function goToJoin(): void {
   display: flex;
   align-items: center;
   gap: 0.25rem;
+}
+
+.circle-card__meta {
+  font-size: 0.8rem;
+  margin-top: 0.25rem;
+  display: flex;
+  align-items: center;
+  gap: 0.25rem;
+}
+
+.circle-card__host {
+  margin-top: 0.5rem;
 }
 </style>

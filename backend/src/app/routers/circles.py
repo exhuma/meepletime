@@ -1,6 +1,8 @@
 """Circles router: circle creation and management."""
 
 import uuid
+from datetime import date, datetime
+from zoneinfo import ZoneInfo, ZoneInfoNotFoundError
 
 from fastapi import (
     APIRouter,
@@ -30,12 +32,27 @@ from app.models.circle_image import CircleImage
 from app.models.membership import CircleMembership, MemberRole
 from app.models.user import User
 from app.rate_limit import enforce_limit_or_429
-from app.schemas.circle import CircleCreate, CircleOut, CircleUpdate
+from app.schemas.circle import (
+    CircleCreate,
+    CircleListOut,
+    CircleOut,
+    CircleUpdate,
+)
 from app.schemas.membership import InviteJoin, MembershipOut
 from app.services.invite import generate_unique_pin, normalize_pin
+from app.services.viability import next_viable_date
 from app.utils import apply_partial_update
 
 router = APIRouter(tags=["circles"])
+
+
+def _today_in_timezone(tz_name: str) -> date:
+    """Return today's date in *tz_name*, falling back to UTC."""
+    try:
+        tz = ZoneInfo(tz_name)
+    except (ZoneInfoNotFoundError, ValueError):
+        tz = ZoneInfo("UTC")
+    return datetime.now(tz).date()
 
 
 def limit_invite_regeneration(
@@ -54,13 +71,18 @@ def limit_invite_regeneration(
     )
 
 
-@router.get("/circles", response_model=list[CircleOut])
+@router.get("/circles", response_model=list[CircleListOut])
 def list_circles(
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_active_user),
-) -> list[Circle]:
-    """Return all circles that the authenticated user belongs to."""
-    return list(
+) -> list[CircleListOut]:
+    """Return all circles the authenticated user belongs to.
+
+    Each circle is annotated with ``next_viable_date`` — the earliest
+    upcoming day the circle can actually meet (computed per circle in
+    the circle's own timezone), or ``None`` when there is none.
+    """
+    circles = (
         db.execute(
             select(Circle)
             .join(
@@ -72,6 +94,14 @@ def list_circles(
         .scalars()
         .all()
     )
+    result: list[CircleListOut] = []
+    for circle in circles:
+        out = CircleListOut.model_validate(circle)
+        out.next_viable_date = next_viable_date(
+            circle, db, today=_today_in_timezone(circle.timezone)
+        )
+        result.append(out)
+    return result
 
 
 @router.post(

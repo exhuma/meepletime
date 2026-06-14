@@ -28,6 +28,29 @@ export function resolveImageUrl(ref: string | null | undefined): string | null {
 }
 
 /**
+ * Background style for a circle hero surface.
+ *
+ * Resolves the stored ``image_ref`` to a CSS ``background-image`` when
+ * present; otherwise returns the brand primary→tertiary gradient
+ * fallback. Shared by the circle cards and the detail-page banner.
+ *
+ * @param imageRef The persisted image reference, or null/empty.
+ * @returns A style object suitable for ``:style`` binding.
+ */
+export function heroBackgroundStyle(
+  imageRef: string | null | undefined,
+): Record<string, string> {
+  const url = resolveImageUrl(imageRef)
+  return url
+    ? { backgroundImage: `url("${url.replace(/"/g, '%22')}")` }
+    : {
+        background:
+          'linear-gradient(135deg, rgb(var(--v-theme-primary)),' +
+          ' rgb(var(--v-theme-tertiary)))',
+      }
+}
+
+/**
  * Validate a selected file against the upload constraints.
  *
  * @param file The user-selected file.

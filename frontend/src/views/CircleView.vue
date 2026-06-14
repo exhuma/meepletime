@@ -6,9 +6,20 @@
          list tab has no rail, so it stays plain-centred. -->
     <div class="head-layout">
       <v-container class="pa-3 pb-0 head-main" style="max-width: 720px">
-        <h1 class="circle-title">
-          {{ circlesState.currentCircle.value?.name || 'Loading…' }}
-        </h1>
+        <!-- Subtle hero banner: the circle photo (or brand-gradient
+             fallback) fades into the page via a bottom scrim, with the
+             circle name overlaid. Purely atmospheric, kept understated. -->
+        <div
+          class="circle-hero"
+          :style="
+            heroBackgroundStyle(circlesState.currentCircle.value?.image_ref)
+          "
+        >
+          <div class="circle-hero__scrim" aria-hidden="true"></div>
+          <h1 class="circle-title">
+            {{ circlesState.currentCircle.value?.name || 'Loading…' }}
+          </h1>
+        </div>
 
         <!-- Calendar / List tab strip shared by both child views.
              Selection is driven by the active route; navigation happens
@@ -48,6 +59,7 @@ import { useDisplay } from 'vuetify'
 import { useRoute, useRouter } from 'vue-router'
 import { useCircles } from '../composables/circles'
 import { rememberCircle } from '../composables/lastCircle'
+import { heroBackgroundStyle } from '../lib/circleImage'
 
 const route = useRoute()
 const router = useRouter()
@@ -105,11 +117,39 @@ onMounted(() => {
   flex: 0 0 var(--mt-rail-width);
 }
 
+.circle-hero {
+  position: relative;
+  height: 132px;
+  margin-bottom: 0.75rem;
+  border-radius: var(--mt-card-radius, 1rem);
+  background-size: cover;
+  background-position: center;
+  overflow: hidden;
+  display: flex;
+  align-items: flex-end;
+}
+
+/* Fade the photo into the page background so it reads as a quiet
+   accent and keeps the overlaid title legible. */
+.circle-hero__scrim {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(
+    to top,
+    rgb(var(--v-theme-background)) 0%,
+    rgba(var(--v-theme-background), 0.55) 35%,
+    rgba(var(--v-theme-background), 0) 100%
+  );
+}
+
 .circle-title {
+  position: relative;
+  margin: 0;
+  padding: 0 0.9rem 0.55rem;
   font-family: var(--v-font-family-display, 'Noto Serif', serif);
   font-size: 1.5rem;
   font-weight: 600;
   line-height: 1.1;
-  margin-bottom: 0.5rem;
+  color: rgb(var(--v-theme-on-background));
 }
 </style>
