@@ -2,8 +2,17 @@
   <v-container class="fill-height" fluid>
     <v-row justify="center" align="center">
       <v-col cols="12" sm="6" md="4" class="text-center">
-        <div class="login-meeple text-primary"><MtMeeple /></div>
-        <h1 class="login-title">MeepleTime</h1>
+        <!-- Hero brand mark -->
+        <div class="login-meeple">
+          <v-icon size="80" color="primary-accent">mdi-dice-5</v-icon>
+        </div>
+        <h1 class="login-title">Welcome to MeepleTime</h1>
+        <p class="login-sub text-medium-emphasis">
+          Gather your party for game night.
+        </p>
+
+        <!-- ── Auth area ── all existing logic preserved exactly ── -->
+
         <!-- Dev-only login (no Keycloak). DevLoginPanel is lazy
              behind a static import.meta.env.DEV guard, so Rollup
              drops it (and its /auth/dev calls) from prod builds. -->
@@ -17,7 +26,7 @@
             indeterminate
             color="primary"
             size="40"
-            class="mt-5"
+            class="mt-8"
           />
           <p class="mt-4 text-medium-emphasis">Redirecting to sign in…</p>
         </template>
@@ -43,7 +52,6 @@ import { userManager } from '../auth/oidc'
 import { clearReauthGuard, hasAuthError } from '../auth/reauthGuard'
 import { devAuth } from '../config'
 import { MtButton } from '../ui'
-import MtMeeple from '../ui/MtMeeple.vue'
 
 // Dev-only picker. The static import.meta.env.DEV guard folds to
 // `false` in any production build, so the dynamic import lives in
@@ -91,15 +99,24 @@ async function retrySignIn(): Promise<void> {
 
 <style scoped>
 .login-meeple {
-  width: 84px;
-  height: 84px;
-  margin: 0 auto 0.75rem;
+  width: 96px;
+  height: 96px;
+  margin: 0 auto 1.25rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 
 .login-title {
-  font-family: var(--v-font-family-display, sans-serif);
+  font-family: var(--v-font-family-display, 'Noto Serif', serif);
   font-size: 2rem;
-  font-weight: 600;
-  line-height: 1;
+  font-weight: 700;
+  line-height: 1.15;
+  margin-bottom: 0.5rem;
+}
+
+.login-sub {
+  font-size: 1rem;
+  margin-bottom: 2rem;
 }
 </style>

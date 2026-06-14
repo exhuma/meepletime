@@ -6,6 +6,7 @@
       'cell--viable': vs.fill === 'viable',
       'cell--over-soft-max': vs.fill === 'over-soft-max',
       'cell--dimmed': vs.isDimmed,
+      'cell--hosting': myState === 'hosting',
     }"
     role="button"
     :tabindex="dimmed ? -1 : 0"
@@ -31,11 +32,8 @@
     <span v-if="myState === 'hosting'" class="cell__mine">
       <v-icon size="15" color="host">mdi-home-variant</v-icon>
     </span>
-    <span
-      v-else-if="myState === 'attending'"
-      class="cell__mine cell__mine--meeple"
-    >
-      <MtMeeple />
+    <span v-else-if="myState === 'attending'" class="cell__mine">
+      <v-icon size="15" color="attend">mdi-check-circle</v-icon>
     </span>
     <span v-if="vs.attendeeCount !== null" class="cell__count">
       {{ vs.attendeeCount }}
@@ -48,7 +46,6 @@ import { computed } from 'vue'
 import type { DayViability } from '../types'
 import { useLongPress } from '../composables/useLongPress'
 import { dayVisualState } from '../lib/viability'
-import MtMeeple from '../ui/MtMeeple.vue'
 
 const props = defineProps<{
   date: string
@@ -91,7 +88,7 @@ const ariaLabel = computed<string>(() => {
 
 <style scoped>
 .cell {
-  background: rgb(var(--v-theme-surface));
+  background: rgb(var(--v-theme-surface-container-low));
   min-height: clamp(52px, 13vw, 76px);
   padding: 4px 5px;
   display: flex;
@@ -100,6 +97,7 @@ const ariaLabel = computed<string>(() => {
   position: relative;
   cursor: pointer;
   user-select: none;
+  border-radius: 0.6rem;
   /* Allow vertical page scroll; long-press is cancelled on move. */
   touch-action: pan-y;
   transition:
@@ -153,14 +151,12 @@ const ariaLabel = computed<string>(() => {
   border-radius: 999px;
 }
 
-.cell__mine {
-  margin-top: 2px;
+.cell--hosting {
+  box-shadow: inset 0 0 0 2px rgb(var(--v-theme-host));
 }
 
-.cell__mine--meeple {
-  width: 15px;
-  height: 15px;
-  color: rgb(var(--v-theme-attend));
+.cell__mine {
+  margin-top: 2px;
 }
 
 .cell__count {

@@ -35,23 +35,8 @@ body {
   background: transparent;
 }
 
-/* The board: a soft dotted felt grid behind the content. */
 .v-main {
   position: relative;
-}
-
-.v-main::before {
-  content: '';
-  position: fixed;
-  inset: 0;
-  background-image: radial-gradient(
-    rgb(var(--v-theme-outline)) var(--mt-board-dot),
-    transparent var(--mt-board-dot)
-  );
-  background-size: var(--mt-board-gap) var(--mt-board-gap);
-  opacity: 0.1;
-  mask-image: radial-gradient(circle at 50% 28%, black, transparent 82%);
-  pointer-events: none;
 }
 
 .v-container {

@@ -15,25 +15,46 @@
     <v-container class="pa-4" style="max-width: 600px">
       <div class="mb-6">
         <h3 class="text-subtitle-1 font-weight-bold mb-2">Attendees</h3>
-        <MtCard v-if="enrichedAttendees.length > 0">
-          <v-list lines="one">
-            <v-list-item v-for="a in enrichedAttendees" :key="a.user_id">
-              <template #prepend>
-                <v-icon v-if="a.state === 'hosting'" color="host" class="mr-3"
-                  >mdi-home-variant</v-icon
-                >
-                <span v-else class="dd-meeple"><MtMeeple /></span>
-              </template>
-              <v-list-item-title>{{ a.pseudonym }}</v-list-item-title>
-              <v-list-item-subtitle class="text-capitalize">{{
-                a.state
-              }}</v-list-item-subtitle>
-            </v-list-item>
-          </v-list>
-        </MtCard>
-        <v-alert v-else type="info" density="compact"
-          >No attendees yet.</v-alert
-        >
+
+        <div v-if="hostAttendee" class="dd-host">
+          <v-avatar size="40" color="host">
+            <span
+              class="text-caption font-weight-bold"
+              :style="{ color: 'rgb(var(--v-theme-on-host))' }"
+            >
+              {{ initials(hostAttendee.pseudonym) }}
+            </span>
+          </v-avatar>
+          <div>
+            <div class="text-caption text-medium-emphasis">Host</div>
+            <div class="dd-host__name">{{ hostAttendee.pseudonym }}</div>
+          </div>
+          <v-icon color="host" class="ml-auto">mdi-home-variant</v-icon>
+        </div>
+
+        <div class="dd-attendees">
+          <div class="text-subtitle-2 mb-2">
+            Attending ({{ enrichedAttendees.length }})
+          </div>
+          <div v-if="enrichedAttendees.length > 0" class="dd-avatars">
+            <v-avatar
+              v-for="a in enrichedAttendees"
+              :key="a.user_id"
+              size="36"
+              :color="a.state === 'hosting' ? 'host' : 'attend'"
+            >
+              <span
+                class="text-caption font-weight-bold"
+                :style="{
+                  color: `rgb(var(--v-theme-on-${a.state === 'hosting' ? 'host' : 'attend'}))`,
+                }"
+              >
+                {{ initials(a.pseudonym) }}
+              </span>
+            </v-avatar>
+          </div>
+          <p v-else class="dd-empty text-medium-emphasis">No attendees yet.</p>
+        </div>
       </div>
 
       <div>
@@ -58,9 +79,7 @@
             </v-card-text>
           </v-card>
         </div>
-        <v-alert v-else type="info" density="compact" class="mb-4"
-          >No notes yet.</v-alert
-        >
+        <p v-else class="dd-empty text-medium-emphasis mb-4">No notes yet.</p>
 
         <v-form @submit.prevent="submitNote">
           <v-textarea
@@ -93,8 +112,7 @@ import { useRoute } from 'vue-router'
 import { useCircles } from '../composables/circles'
 import { enrichAttendees } from '../lib/members'
 import { safeFormat } from '../lib/datetime'
-import { MtCard, MtButton } from '../ui'
-import MtMeeple from '../ui/MtMeeple.vue'
+import { MtButton } from '../ui'
 import type { Note } from '../types'
 import { useAppBar, useAppBarContext } from '../composables/appBar'
 
@@ -122,6 +140,18 @@ useAppBarContext(formattedDate.value, [])
 const enrichedAttendees = computed(() =>
   enrichAttendees(attendees.value, circlesState.members.value),
 )
+
+const hostAttendee = computed(
+  () => enrichedAttendees.value.find((a) => a.state === 'hosting') ?? null,
+)
+
+function initials(name: string): string {
+  const parts = name?.trim().split(/\s+/).filter(Boolean) ?? []
+  if (!parts.length) return '?'
+  const s =
+    parts.length === 1 ? parts[0].slice(0, 2) : parts[0][0] + parts[1][0]
+  return s.toUpperCase()
+}
 
 /** Submit a new note for the current day. */
 async function submitNote(): Promise<void> {
@@ -162,12 +192,32 @@ onMounted(async () => {
 </script>
 
 <style scoped>
-/* Attendee meeple glyph, sized to sit beside the host icon. */
-.dd-meeple {
-  display: inline-block;
-  width: 22px;
-  height: 22px;
-  margin-right: 12px;
-  color: rgb(var(--v-theme-attend));
+.dd-host {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.75rem 1rem;
+  margin-bottom: 1rem;
+  background: rgb(var(--v-theme-surface-container));
+  border-radius: var(--mt-card-radius);
+}
+.dd-host__name {
+  font-family: var(--v-font-family-display, 'Noto Serif', serif);
+  font-size: 1.05rem;
+  font-weight: 600;
+}
+.dd-attendees {
+  margin-bottom: 1.5rem;
+}
+.dd-avatars {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+}
+.dd-empty {
+  padding: 0.75rem 1rem;
+  background: rgb(var(--v-theme-surface-container));
+  border-radius: var(--mt-card-radius);
+  font-size: 0.9rem;
 }
 </style>

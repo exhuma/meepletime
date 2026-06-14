@@ -7,9 +7,9 @@
  * `tokens.css` as `--mt-*` variables. Swapping the look means swapping
  * this file — nothing else references raw colour values.
  *
- * Aesthetic: a warm wooden game table. Parchment and walnut surfaces,
- * bright "meeple" accents (coral, leaf, sky, honey), chunky tactile
- * shapes.
+ * Aesthetic: dual identity — a warm parchment table by day (light) and
+ * the Stitch "Warmer Dark" charcoal-and-terracotta scheme by night
+ * (dark, default).
  */
 
 /** Raw, un-themed palette. Referenced only by the semantic maps. */
@@ -59,10 +59,11 @@ const light: ThemeColors = {
   'surface-tint': palette.coral,
   outline: '#b59a78',
   'outline-variant': '#e0cdb0',
-  primary: palette.coral,
+  primary: '#d8492f',
   'on-primary': '#ffffff',
   'primary-container': '#ffd9cf',
   'on-primary-container': '#5b1704',
+  'primary-accent': '#d8492f',
   secondary: palette.wood500,
   'on-secondary': '#ffffff',
   'secondary-container': '#ecdcc4',
@@ -71,14 +72,15 @@ const light: ThemeColors = {
   'on-tertiary': '#ffffff',
   'tertiary-container': '#f7d8b8',
   'on-tertiary-container': '#4a2400',
-  attend: palette.leaf,
+  attend: '#5c7a4e',
   'on-attend': '#ffffff',
-  'attend-container': '#cdeccb',
-  'on-attend-container': '#123610',
-  host: palette.sky,
+  'attend-container': '#dbe7c8',
+  'on-attend-container': '#243218',
+  // Hosting shares the terracotta/primary family in light too.
+  host: '#c4502c',
   'on-host': '#ffffff',
-  'host-container': '#cfe6f3',
-  'on-host-container': '#062a40',
+  'host-container': '#ffd9cf',
+  'on-host-container': '#5b1704',
   viable: palette.honey,
   'on-viable': '#4a2f00',
   'viable-container': '#ffe6a8',
@@ -92,61 +94,65 @@ const light: ThemeColors = {
   'inverse-primary': palette.coralLight,
 }
 
-/** Game-night tabletop: dark walnut board, warm cream text. */
+/** Game-night tabletop: Stitch Warmer Dark. */
 const dark: ThemeColors = {
-  background: palette.walnut900,
-  'on-background': '#efe2d4',
-  surface: palette.walnut800,
-  'on-surface': '#efe2d4',
-  'surface-variant': '#3c2f25',
-  'on-surface-variant': '#d3bda4',
-  'surface-container-lowest': '#150f0b',
-  'surface-container-low': palette.walnut800,
-  'surface-container': '#2a201a',
-  'surface-container-high': '#332720',
-  'surface-container-highest': '#3e3128',
-  'surface-dim': palette.walnut900,
-  'surface-bright': '#473930',
-  'surface-tint': palette.coralLight,
-  outline: '#9b8369',
-  'outline-variant': '#4f4034',
-  primary: palette.coralLight,
-  'on-primary': '#5b1704',
+  background: '#1a1614',
+  'on-background': '#ede0dc',
+  surface: '#1a1614',
+  'on-surface': '#ede0dc',
+  'surface-variant': '#433a35',
+  'on-surface-variant': '#d0c4c1',
+  'surface-container-lowest': '#120e0c',
+  'surface-container-low': '#26211e',
+  'surface-container': '#2e2824',
+  'surface-container-high': '#39312c',
+  'surface-container-highest': '#433a35',
+  'surface-dim': '#1a1614',
+  'surface-bright': '#4d423d',
+  'surface-tint': '#f75f2d',
+  outline: '#9c8e8b',
+  'outline-variant': '#5a4139',
+  // Terracotta is the filled CTA; peach is the accent tone.
+  primary: '#f75f2d',
+  'on-primary': '#3a0a00',
   'primary-container': '#7a2e16',
-  'on-primary-container': '#ffd9cf',
-  secondary: '#d8bd96',
-  'on-secondary': '#3a2a16',
-  'secondary-container': '#54422a',
-  'on-secondary-container': '#f0ddc2',
-  tertiary: palette.clayLight,
-  'on-tertiary': '#4a2400',
-  'tertiary-container': '#6a3a18',
-  'on-tertiary-container': '#ffd8b8',
-  attend: palette.leafLight,
-  'on-attend': '#0c3a16',
-  'attend-container': '#2c5a33',
-  'on-attend-container': '#c9f0cd',
-  host: palette.skyLight,
-  'on-host': '#07344a',
-  'host-container': '#2a5066',
-  'on-host-container': '#cfe6f3',
-  viable: palette.honeyLight,
-  'on-viable': '#4a2f00',
-  'viable-container': '#6a5012',
-  'on-viable-container': '#ffe6a8',
-  error: palette.berryLight,
+  'on-primary-container': '#ffdbd0',
+  // Peach accent for icons/links/text on dark surfaces.
+  'primary-accent': '#ffb59f',
+  secondary: '#a3b18a',
+  'on-secondary': '#1d2418',
+  'secondary-container': '#3a4a2c',
+  'on-secondary-container': '#d6e4c0',
+  tertiary: '#ffb95f',
+  'on-tertiary': '#472a00',
+  'tertiary-container': '#653e00',
+  'on-tertiary-container': '#ffddb8',
+  // Domain: attending=sage, hosting=terracotta(peach), viable=amber.
+  attend: '#a3b18a',
+  'on-attend': '#1d2418',
+  'attend-container': '#3a4a2c',
+  'on-attend-container': '#d6e4c0',
+  host: '#ffb59f',
+  'on-host': '#5e1700',
+  'host-container': '#7a2e16',
+  'on-host-container': '#ffdbd0',
+  viable: '#ffb95f',
+  'on-viable': '#472a00',
+  'viable-container': '#5a3d12',
+  'on-viable-container': '#ffddb8',
+  error: '#ffb4ab',
   'on-error': '#690005',
   'error-container': '#93000a',
   'on-error-container': '#ffdad6',
-  'inverse-surface': '#efe2d4',
+  'inverse-surface': '#ede0dc',
   'inverse-on-surface': '#2e2927',
-  'inverse-primary': '#8f3d21',
+  'inverse-primary': '#ae3100',
 }
 
 /** Type families (also declared to Vuetify as theme `variables`). */
 export const fonts = {
-  base: "'Nunito', sans-serif",
-  display: "'Fredoka', 'Nunito', sans-serif",
+  base: "'Plus Jakarta Sans', sans-serif",
+  display: "'Noto Serif', Georgia, serif",
 } as const
 
 /** The complete token set. A second skin = a second object like this. */

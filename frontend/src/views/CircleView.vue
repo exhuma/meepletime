@@ -33,6 +33,7 @@
 import { computed, onMounted } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { useCircles } from '../composables/circles'
+import { rememberCircle } from '../composables/lastCircle'
 
 const route = useRoute()
 const router = useRouter()
@@ -55,6 +56,7 @@ function onTab(value: unknown): void {
 // Circle and members are shared by both tabs, so the wrapper owns
 // fetching them; each child view fetches its own date-window data.
 onMounted(() => {
+  rememberCircle(circleId)
   circlesState.fetchCircle(circleId)
   circlesState.fetchMembers(circleId)
 })
@@ -62,7 +64,7 @@ onMounted(() => {
 
 <style scoped>
 .circle-title {
-  font-family: var(--v-font-family-display, sans-serif);
+  font-family: var(--v-font-family-display, 'Noto Serif', serif);
   font-size: 1.5rem;
   font-weight: 600;
   line-height: 1.1;

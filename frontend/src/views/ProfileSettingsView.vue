@@ -19,23 +19,28 @@
           >{{ notice }}</v-alert
         >
 
-        <MtCard v-if="settings" tone="primary" class="pa-5">
-          <h1 class="settings-title mb-1">Notifications</h1>
-          <p class="text-body-2 text-medium-emphasis mb-4">
+        <MtCard v-if="settings" class="ps-section">
+          <h1 class="ps-section__title">Notifications</h1>
+          <p class="text-body-2 text-medium-emphasis mb-5">
             Choose how MeepleTime tells you when a day becomes a viable meetup.
             You can mute individual circles separately.
           </p>
 
-          <div class="d-flex align-center">
-            <v-switch
-              v-model="emailEnabled"
-              label="Email"
-              color="primary"
-              hide-details
-              class="flex-grow-1"
-              :disabled="saving"
-              @update:model-value="onEmailChange"
-            />
+          <!-- Email row -->
+          <div class="ps-row">
+            <div class="ps-row__toggle">
+              <v-switch
+                v-model="emailEnabled"
+                label="Email"
+                color="primary"
+                hide-details
+                :disabled="saving"
+                @update:model-value="onEmailChange"
+              />
+              <p class="text-caption text-medium-emphasis ps-row__hint">
+                Sends a message to your account email address.
+              </p>
+            </div>
             <MtButton
               variant="soft"
               tone="primary"
@@ -45,22 +50,30 @@
               Test
             </MtButton>
           </div>
-          <p class="text-caption text-medium-emphasis mb-3">
-            Sends a message to your account email address.
-          </p>
 
-          <v-divider class="mb-3" />
+          <v-divider class="my-3" />
 
-          <div class="d-flex align-center">
-            <v-switch
-              v-model="webpushEnabled"
-              label="Browser notifications (this device)"
-              color="primary"
-              hide-details
-              class="flex-grow-1"
-              :disabled="saving || !webpushSupported"
-              @update:model-value="onWebpushChange"
-            />
+          <!-- Browser-push row -->
+          <div class="ps-row">
+            <div class="ps-row__toggle">
+              <v-switch
+                v-model="webpushEnabled"
+                label="Browser notifications (this device)"
+                color="primary"
+                hide-details
+                :disabled="saving || !webpushSupported"
+                @update:model-value="onWebpushChange"
+              />
+              <p class="text-caption text-medium-emphasis ps-row__hint">
+                <template v-if="!webpushSupported">
+                  This browser does not support background notifications.
+                </template>
+                <template v-else>
+                  Shows a system notification even when the tab is closed.
+                  Enable once per device.
+                </template>
+              </p>
+            </div>
             <MtButton
               variant="soft"
               tone="primary"
@@ -71,28 +84,25 @@
               Test
             </MtButton>
           </div>
-          <p class="text-caption text-medium-emphasis">
-            <template v-if="!webpushSupported">
-              This browser does not support background notifications.
-            </template>
-            <template v-else>
-              Shows a system notification even when the tab is closed. Enable
-              once per device.
-            </template>
-          </p>
 
-          <v-divider class="mb-3" />
+          <v-divider class="my-3" />
 
-          <div class="d-flex align-center">
-            <v-switch
-              v-model="telegramDmEnabled"
-              label="Telegram direct messages"
-              color="primary"
-              hide-details
-              class="flex-grow-1"
-              :disabled="saving"
-              @update:model-value="onTelegramDmChange"
-            />
+          <!-- Telegram row -->
+          <div class="ps-row">
+            <div class="ps-row__toggle">
+              <v-switch
+                v-model="telegramDmEnabled"
+                label="Telegram direct messages"
+                color="primary"
+                hide-details
+                :disabled="saving"
+                @update:model-value="onTelegramDmChange"
+              />
+              <p class="text-caption text-medium-emphasis ps-row__hint">
+                Allows personal Telegram DMs. Link your chat from a circle's
+                notification settings (under the circle calendar) for each bot.
+              </p>
+            </div>
             <MtButton
               variant="soft"
               tone="primary"
@@ -102,10 +112,6 @@
               Test
             </MtButton>
           </div>
-          <p class="text-caption text-medium-emphasis">
-            Allows personal Telegram DMs. Link your chat from a circle's
-            notification settings (under the circle calendar) for each bot.
-          </p>
         </MtCard>
       </v-col>
     </v-row>
@@ -228,9 +234,32 @@ async function onWebpushChange(value: boolean | null): Promise<void> {
 </script>
 
 <style scoped>
-.settings-title {
-  font-family: var(--v-font-family-display, sans-serif);
+.ps-section {
+  padding: 1.5rem;
+}
+
+.ps-section__title {
+  font-family: var(--v-font-family-display, 'Noto Serif', serif);
   font-size: 1.4rem;
-  font-weight: 600;
+  font-weight: 700;
+  line-height: 1.2;
+  margin-bottom: 0.35rem;
+}
+
+/* Each channel row: toggle+hint on the left, Test button on the right. */
+.ps-row {
+  display: flex;
+  align-items: flex-start;
+  gap: 1rem;
+}
+
+.ps-row__toggle {
+  flex: 1 1 0;
+  min-width: 0;
+}
+
+.ps-row__hint {
+  margin-top: 0.15rem;
+  margin-bottom: 0;
 }
 </style>

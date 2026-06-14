@@ -8,7 +8,11 @@
 
         <MtCard v-if="!isBusy && circleInfo" tone="primary" class="pa-5">
           <div class="join-head">
-            <div class="join-meeple text-primary"><MtMeeple /></div>
+            <div class="join-meeple">
+              <v-icon size="48" color="primary-accent"
+                >mdi-dice-multiple</v-icon
+              >
+            </div>
             <div>
               <div class="text-caption text-medium-emphasis">
                 You're invited to
@@ -64,7 +68,6 @@ import type { Circle } from '../types'
 import { useAppBar } from '../composables/appBar'
 import { normalizePin } from '../lib/invite'
 import { MtCard, MtButton } from '../ui'
-import MtMeeple from '../ui/MtMeeple.vue'
 
 const route = useRoute()
 const router = useRouter()

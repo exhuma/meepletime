@@ -34,7 +34,7 @@
 
       <v-app-bar-title>
         <span class="brand">
-          <span class="brand__logo text-primary"><MtMeeple /></span>
+          <v-icon class="brand__logo text-primary" size="22">mdi-dice-5</v-icon>
           <span class="brand__name">MeepleTime</span>
           <template v-if="title">
             <span class="brand__sep">·</span>
@@ -83,6 +83,8 @@
       </template>
     </v-app-bar>
 
+    <AppNav />
+
     <v-main>
       <router-view />
     </v-main>
@@ -96,7 +98,7 @@ import { useAppBar } from './composables/appBar'
 import { useRouter } from 'vue-router'
 import { devAuth } from './config'
 import { MtButton } from './ui'
-import MtMeeple from './ui/MtMeeple.vue'
+import AppNav from './components/AppNav.vue'
 
 const { title, actions, isBusy } = useAppBar()
 
