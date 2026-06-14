@@ -6,6 +6,7 @@
       'cell--viable': vs.fill === 'viable',
       'cell--over-soft-max': vs.fill === 'over-soft-max',
       'cell--dimmed': vs.isDimmed,
+      'cell--hosting': myState === 'hosting',
     }"
     role="button"
     :tabindex="dimmed ? -1 : 0"
@@ -31,10 +32,7 @@
     <span v-if="myState === 'hosting'" class="cell__mine">
       <v-icon size="15" color="host">mdi-home-variant</v-icon>
     </span>
-    <span
-      v-else-if="myState === 'attending'"
-      class="cell__mine cell__mine--attend"
-    >
+    <span v-else-if="myState === 'attending'" class="cell__mine">
       <v-icon size="15" color="attend">mdi-check-circle</v-icon>
     </span>
     <span v-if="vs.attendeeCount !== null" class="cell__count">
@@ -99,6 +97,7 @@ const ariaLabel = computed<string>(() => {
   position: relative;
   cursor: pointer;
   user-select: none;
+  border-radius: 0.6rem;
   /* Allow vertical page scroll; long-press is cancelled on move. */
   touch-action: pan-y;
   transition:
@@ -152,11 +151,11 @@ const ariaLabel = computed<string>(() => {
   border-radius: 999px;
 }
 
-.cell__mine {
-  margin-top: 2px;
+.cell--hosting {
+  box-shadow: inset 0 0 0 2px rgb(var(--v-theme-host));
 }
 
-.cell__mine--attend {
+.cell__mine {
   margin-top: 2px;
 }
 

@@ -3,20 +3,22 @@
     <v-container class="pa-3" style="max-width: 720px">
       <!-- Month navigation -->
       <div class="cal-nav">
-        <MtButton
-          variant="icon"
-          tone="primary"
-          icon="mdi-chevron-left"
-          :disabled="!canGoPrev"
-          @click="prevMonth"
-        />
         <span class="cal-nav__label">{{ monthLabel }}</span>
-        <MtButton
-          variant="icon"
-          tone="primary"
-          icon="mdi-chevron-right"
-          @click="nextMonth"
-        />
+        <div class="cal-nav__arrows">
+          <MtButton
+            variant="icon"
+            tone="primary"
+            icon="mdi-chevron-left"
+            :disabled="!canGoPrev"
+            @click="prevMonth"
+          />
+          <MtButton
+            variant="icon"
+            tone="primary"
+            icon="mdi-chevron-right"
+            @click="nextMonth"
+          />
+        </div>
       </div>
 
       <!-- Calendar grid -->
@@ -307,15 +309,20 @@ onMounted(async () => {
   display: flex;
   align-items: center;
   gap: 0.5rem;
-  padding: 0.25rem 0 0.75rem;
+  padding: 0.5rem 0 1rem;
 }
 
 .cal-nav__label {
   flex: 1 1 auto;
-  text-align: center;
-  font-family: var(--v-font-family-display, sans-serif);
-  font-size: 1.05rem;
-  font-weight: 600;
+  font-family: var(--v-font-family-display);
+  font-size: 1.9rem;
+  font-weight: 700;
+  letter-spacing: -0.01em;
+}
+
+.cal-nav__arrows {
+  display: flex;
+  align-items: center;
 }
 
 .calendar-grid {
