@@ -21,6 +21,11 @@ services:
       # JSON array of allowed CORS origins, e.g.
       # ["https://meeple.example.com"].
       MEEPLETIME_CORS_ORIGINS: ${MEEPLETIME_CORS_ORIGINS}
+      # Public base URL of the frontend SPA. The backend embeds this
+      # in the links it emails (notification deep links and the
+      # address-confirmation link), so it must be the public URL
+      # users reach the app at — not the internal container address.
+      MEEPLETIME_APP_BASE_URL: ${MEEPLETIME_APP_BASE_URL}
     ports:
       - "${BACKEND_PORT:-8000}:8000"
     healthcheck:

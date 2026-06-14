@@ -88,7 +88,6 @@ def _make_test_settings() -> Settings:
             OIDC_ISSUER=_TEST_ISSUER,
             OIDC_AUTHORITY=_TEST_ISSUER,
             NOTIFICATION_DEBOUNCE_SECONDS=60,
-            FRONTEND_URL="http://localhost:5173",
             CORS_ORIGINS=["http://localhost:5173"],
             INVITE_REGEN_LIMIT=3,
             INVITE_REGEN_WINDOW_SECONDS=60,

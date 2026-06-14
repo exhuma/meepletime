@@ -56,7 +56,6 @@ All settings are controlled via environment variables. Copy `.env.example` to `.
 |----------------|------------------------------------------------|----------------------------------------------|
 | `DB_PASSWORD`  | `changeme`                                     | PostgreSQL password                          |
 | `SECRET_KEY`   | `changeme-replace-in-production`               | JWT signing secret — **change in production**|
-| `FRONTEND_URL` | `http://localhost`                             | Allowed CORS origin for the frontend         |
 
 The backend also supports:
 

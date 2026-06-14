@@ -59,10 +59,20 @@ The backend reads its configuration from the following
 | `MEEPLETIME_OIDC_AUDIENCE`  | yes      | Expected `aud` claim. Tokens must be issued for the backend, e.g. `meepletime-backend`.                                                                           |
 | `MEEPLETIME_OIDC_ISSUER`    | no       | Expected `iss` claim. Defaults to `MEEPLETIME_OIDC_AUTHORITY`; only set it when it differs (see below).                                                           |
 | `MEEPLETIME_CORS_ORIGINS`   | yes      | JSON array of allowed browser origins.                                                                                                                            |
+| `MEEPLETIME_APP_BASE_URL`   | yes      | Public base URL of the frontend SPA. The backend embeds it in the links it emails (notification deep links and the email-address confirmation link).             |
 
 `MEEPLETIME_CORS_ORIGINS` must be valid JSON and must include the
 frontend's public origin, e.g. `["https://meeple.example.com"]`.
 Requests from the browser are rejected by CORS otherwise.
+
+`MEEPLETIME_APP_BASE_URL` is the public URL your users reach the app
+at (e.g. `https://meeple.example.com`, no trailing slash) — **not** the
+internal container address. The backend bakes it into the links it
+sends by email, so if it is left unset those links fall back to
+`http://localhost:5173` and will not resolve for recipients. This is a
+backend setting, not a request-derived value: notification emails are
+produced by a background scheduler with no incoming request, so proxy
+headers (e.g. Traefik's `X-Forwarded-*`) cannot supply it.
 
 #### Authority vs. issuer
 

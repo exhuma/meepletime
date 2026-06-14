@@ -34,14 +34,15 @@ class Settings(BaseSettings):
         notification coalescing, in seconds.
     :param EMAIL_CONFIRMATION_TTL_HOURS: Validity window, in hours,
         for a notification-email confirmation link.
-    :param FRONTEND_URL: Allowed CORS origin for the Vue frontend.
     :param CORS_ORIGINS: Allowed CORS origins for API requests.
     :param INVITE_REGEN_LIMIT: Max invite regeneration requests
         allowed per window for a user+IP key.
     :param INVITE_REGEN_WINDOW_SECONDS: Sliding-window size in
         seconds for invite regeneration throttling.
-    :param APP_BASE_URL: Public base URL of the frontend, used to
-        build deep links inside notification bodies.
+    :param APP_BASE_URL: Public base URL of the frontend SPA, used to
+        build the links embedded in notification and email-confirmation
+        messages. Must be set in production; the localhost default is
+        for local development only.
     :param SMTP_HOST: SMTP server host. Email delivery is inert
         when unset.
     :param SMTP_PORT: SMTP server port (STARTTLS submission).
@@ -69,7 +70,6 @@ class Settings(BaseSettings):
     DEV_AUTH_ENABLED: bool = False
     NOTIFICATION_DEBOUNCE_SECONDS: int = 10
     EMAIL_CONFIRMATION_TTL_HOURS: int = 24
-    FRONTEND_URL: str = "http://localhost:5173"
     CORS_ORIGINS: list[str] = [
         "http://localhost:5173",
         "http://localhost:3000",
