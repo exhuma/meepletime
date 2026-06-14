@@ -60,7 +60,10 @@
             title="More actions"
           />
         </template>
-        <v-list density="compact">
+        <!-- bg-color overrides the app-wide `VList: bgColor: transparent`
+             default (theme); a floating menu needs an opaque surface so
+             the page does not show through it. -->
+        <v-list density="compact" bg-color="surface" elevation="8">
           <v-list-item
             v-for="action in actions"
             :key="action.label"
