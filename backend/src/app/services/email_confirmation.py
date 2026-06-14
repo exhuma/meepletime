@@ -48,6 +48,20 @@ def _now() -> datetime:
     return datetime.now(UTC)
 
 
+def _as_aware(dt: datetime) -> datetime:
+    """
+    Coerce a possibly-naive UTC datetime to timezone-aware UTC.
+
+    Values written are always UTC; SQLite reads them back naive
+    while PostgreSQL preserves the tzinfo. Normalising here keeps
+    comparisons against :func:`_now` valid on both.
+
+    :param dt: A datetime that may be naive (assumed UTC) or aware.
+    :returns: The equivalent timezone-aware UTC datetime.
+    """
+    return dt if dt.tzinfo is not None else dt.replace(tzinfo=UTC)
+
+
 def _ttl() -> timedelta:
     """:returns: The configured confirmation validity window."""
     return timedelta(hours=get_settings().EMAIL_CONFIRMATION_TTL_HOURS)
@@ -144,7 +158,7 @@ def resend_confirmation(db: Session, user_id: uuid.UUID) -> EmailConfirmation:
     row = get_pending(db, user_id)
     if row is None:
         raise NoPendingConfirmation
-    last_send = row.expires_at - _ttl()
+    last_send = _as_aware(row.expires_at) - _ttl()
     if (_now() - last_send).total_seconds() < RESEND_COOLDOWN_SECONDS:
         raise ResendTooSoon
     row.expires_at = _now() + _ttl()
@@ -168,7 +182,7 @@ def confirm(db: Session, code: str) -> ConfirmStatus:
     ).scalar_one_or_none()
     if row is None:
         return ConfirmStatus.INVALID
-    if row.expires_at <= _now():
+    if _as_aware(row.expires_at) <= _now():
         return ConfirmStatus.EXPIRED
     settings = get_or_create_settings(db, row.user_id)
     settings.notification_email = row.pending_email
