@@ -7,8 +7,8 @@
  * and the Mt* components read one set of values.
  */
 
-/* Characterful type: Fredoka (display) + Nunito (body). */
-@import url('https://fonts.googleapis.com/css2?family=Fredoka:wght@500;600;700&family=Nunito:wght@400;600;700;800&display=swap');
+/* Stitch identity: Noto Serif (display) + Plus Jakarta Sans (body). */
+@import url('https://fonts.googleapis.com/css2?family=Noto+Serif:wght@400;700;800&family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap');
 
 :root {
   /* Shape — chunky, tactile game pieces */
