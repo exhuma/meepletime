@@ -29,4 +29,12 @@ describe('nextViableDate', () => {
     const map = { '2026-06-10': v('2026-06-10', true) }
     expect(nextViableDate(map, '2026-06-14')).toBeNull()
   })
+
+  it('includes a viable date equal to today', () => {
+    const map = {
+      '2026-06-14': v('2026-06-14', true),
+      '2026-06-20': v('2026-06-20', true),
+    }
+    expect(nextViableDate(map, '2026-06-14')).toBe('2026-06-14')
+  })
 })

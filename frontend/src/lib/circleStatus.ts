@@ -12,6 +12,6 @@ export function nextViableDate(
   const upcoming = Object.values(viability)
     .filter((d) => d.is_viable && d.local_date >= todayStr)
     .map((d) => d.local_date)
-    .sort()
+    .sort() // ISO yyyy-MM-dd strings sort correctly lexicographically
   return upcoming[0] ?? null
 }

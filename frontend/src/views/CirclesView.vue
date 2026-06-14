@@ -117,7 +117,7 @@ const { startJob, endJob, isBusy } = useAppBar()
 
 function heroStyle(c: Pick<Circle, 'image_ref'>) {
   return c.image_ref
-    ? { backgroundImage: `url(${c.image_ref})` }
+    ? { backgroundImage: `url("${c.image_ref.replace(/"/g, '%22')}")` }
     : {
         background:
           'linear-gradient(135deg, rgb(var(--v-theme-primary)),' +
@@ -190,7 +190,8 @@ function goToJoin(): void {
   display: flex;
   align-items: center;
   justify-content: center;
-  /* Dark scrim so initials stay legible over the gradient */
+  /* Scrim darkens photo backgrounds via blend-mode; on the gradient fallback
+     initials stay legible thanks to text-shadow on .circle-card__initials */
   background-color: rgba(0, 0, 0, 0.18);
   background-blend-mode: multiply;
 }
@@ -218,6 +219,7 @@ function goToJoin(): void {
 
 .circle-card__desc {
   font-size: 0.85rem;
+  min-width: 0;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
