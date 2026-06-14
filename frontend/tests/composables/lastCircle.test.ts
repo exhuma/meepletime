@@ -10,4 +10,10 @@ describe('lastCircle', () => {
     rememberCircle('abc')
     expect(lastCircleId()).toBe('abc')
   })
+
+  it('overwrites the previous id when called again', () => {
+    rememberCircle('abc')
+    rememberCircle('xyz')
+    expect(lastCircleId()).toBe('xyz')
+  })
 })

@@ -44,6 +44,7 @@ defineProps<{
 }>()
 
 const circlesState = useCircles()
+// Captured at mount — matches the calendar view's pattern; refresh on reload.
 const todayStr = formatDate(new Date())
 
 /** Upcoming viable days from already-fetched viability data. */

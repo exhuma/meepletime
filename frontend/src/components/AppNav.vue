@@ -10,38 +10,25 @@
     <v-navigation-drawer v-if="mdAndUp" rail permanent>
       <v-list density="compact" nav>
         <v-list-item
-          prepend-icon="mdi-account-group"
-          title="Circles"
-          :active="active === 'circles'"
-          @click="goCircles"
-        />
-        <v-list-item
-          prepend-icon="mdi-calendar-month"
-          title="Calendar"
-          :active="active === 'calendar'"
-          @click="goCalendar"
-        />
-        <v-list-item
-          prepend-icon="mdi-account-circle"
-          title="Profile"
-          :active="active === 'profile'"
-          @click="goProfile"
+          v-for="item in items"
+          :key="item.key"
+          :prepend-icon="item.icon"
+          :title="item.label"
+          :active="isActive(item.key)"
+          @click="navigate(item.key)"
         />
       </v-list>
     </v-navigation-drawer>
 
-    <v-bottom-navigation v-else :model-value="active" grow>
-      <v-btn value="circles" @click="goCircles">
-        <v-icon>mdi-account-group</v-icon>
-        Circles
-      </v-btn>
-      <v-btn value="calendar" @click="goCalendar">
-        <v-icon>mdi-calendar-month</v-icon>
-        Calendar
-      </v-btn>
-      <v-btn value="profile" @click="goProfile">
-        <v-icon>mdi-account-circle</v-icon>
-        Profile
+    <v-bottom-navigation v-else :model-value="activeKey" grow>
+      <v-btn
+        v-for="item in items"
+        :key="item.key"
+        :value="item.key"
+        @click="navigate(item.key)"
+      >
+        <v-icon>{{ item.icon }}</v-icon>
+        {{ item.label }}
       </v-btn>
     </v-bottom-navigation>
   </template>
@@ -67,28 +54,37 @@ const visible = computed<boolean>(
     route.path !== '/auth/callback',
 )
 
-/** Which destination the current route maps to, for active styling. */
-const active = computed<'circles' | 'calendar' | 'profile' | null>(() => {
+const items = [
+  { key: 'circles', icon: 'mdi-account-group', label: 'Circles' },
+  { key: 'calendar', icon: 'mdi-calendar-month', label: 'Calendar' },
+  { key: 'profile', icon: 'mdi-account-circle', label: 'Profile' },
+]
+
+/** Return true when the current route belongs to the given destination. */
+function isActive(key: string): boolean {
   const p = route.path
-  if (p === '/profile') return 'profile'
-  if (p === '/circles') return 'circles'
-  if (p.startsWith('/circles/')) return 'calendar'
+  if (key === 'profile') return p === '/profile' || p.startsWith('/profile')
+  if (key === 'calendar') return p.startsWith('/circles/')
+  return p === '/circles' // circles
+}
+
+/** Derived active key used as the bottom-navigation model-value. */
+const activeKey = computed<string | null>(() => {
+  for (const item of items) {
+    if (isActive(item.key)) return item.key
+  }
   return null
 })
 
-/** Open the circles list. */
-function goCircles(): void {
-  router.push('/circles')
-}
-
-/** Open the last viewed circle's calendar, or the list as a fallback. */
-function goCalendar(): void {
-  const id = lastCircleId()
-  router.push(id ? `/circles/${id}` : '/circles')
-}
-
-/** Open profile settings. */
-function goProfile(): void {
-  router.push('/profile')
+/** Route to the destination identified by key. */
+function navigate(key: string): void {
+  if (key === 'calendar') {
+    const id = lastCircleId()
+    router.push(id ? `/circles/${id}` : '/circles')
+  } else if (key === 'profile') {
+    router.push('/profile')
+  } else {
+    router.push('/circles')
+  }
 }
 </script>
