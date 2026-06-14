@@ -31,30 +31,29 @@
       </p>
     </MtCard>
 
-    <!-- Circle tiles -->
+    <!-- Circle hero cards -->
     <div v-else-if="!isBusy" class="mt-tiles mt-6">
       <MtCard
-        v-for="(circle, i) in circlesState.circles.value"
+        v-for="circle in circlesState.circles.value"
         :key="circle.id"
         interactive
-        :tone="toneFor(i)"
         :to="`/circles/${circle.id}`"
-        class="mt-tile"
+        class="circle-card"
       >
-        <div class="mt-tile__body">
-          <div
-            class="mt-tile__avatar"
-            :class="`mt-tile__avatar--${toneFor(i)}`"
-          >
-            <v-icon size="34">mdi-dice-multiple</v-icon>
+        <div class="circle-card__hero" :style="heroStyle(circle)">
+          <span v-if="!circle.image_ref" class="circle-card__initials">
+            {{ initials(circle.name) }}
+          </span>
+        </div>
+        <div class="circle-card__body">
+          <div class="circle-card__name">{{ circle.name }}</div>
+          <div class="circle-card__desc text-medium-emphasis">
+            {{ circle.description || 'No description yet' }}
           </div>
-          <div class="mt-tile__text">
-            <div class="mt-tile__name">{{ circle.name }}</div>
-            <div class="mt-tile__desc text-medium-emphasis">
-              {{ circle.description || 'No description yet' }}
-            </div>
+          <div class="circle-card__next text-medium-emphasis">
+            <v-icon size="14" start>mdi-calendar-check</v-icon>
+            {{ nextLabel(circle.id) }}
           </div>
-          <v-icon class="mt-tile__chev">mdi-chevron-right</v-icon>
         </div>
       </MtCard>
     </div>
@@ -97,6 +96,15 @@ import { useCircles } from '../composables/circles'
 import CreateCircleDialog from '../components/CreateCircleDialog.vue'
 import { useAppBar } from '../composables/appBar'
 import { MtButton, MtCard, MtDialog, MtPinField } from '../ui'
+import type { Circle } from '../types'
+
+// nextViableDate (from ../lib/circleStatus) and safeFormat (from
+// ../lib/datetime) are intentionally not imported here: the circles-list
+// endpoint does not yet return per-circle viability data, so there is
+// nothing to pass to nextViableDate. When the payload includes a viability
+// map, nextLabel can become:
+//   const d = nextViableDate(map, todayStr)
+//   return d ? 'Next: ' + safeFormat(d, 'EEE, MMM d') : 'No upcoming viable days'
 
 const circlesState = useCircles()
 const router = useRouter()
@@ -107,10 +115,24 @@ const joinToken = ref('')
 const joinValid = ref(false)
 const { startJob, endJob, isBusy } = useAppBar()
 
-/** Rotate meeple colours across the list for playful variety. */
-const tones = ['primary', 'host', 'attend', 'viable'] as const
-function toneFor(i: number): (typeof tones)[number] {
-  return tones[i % tones.length]
+function heroStyle(c: Pick<Circle, 'image_ref'>) {
+  return c.image_ref
+    ? { backgroundImage: `url(${c.image_ref})` }
+    : {
+        background:
+          'linear-gradient(135deg, rgb(var(--v-theme-primary)),' +
+          ' rgb(var(--v-theme-tertiary)))',
+      }
+}
+
+function initials(name: string): string {
+  return name.trim().slice(0, 2).toUpperCase()
+}
+
+// TODO: when the circles-list payload includes a viability map per circle,
+// replace this with nextViableDate + safeFormat (see comment above).
+function nextLabel(_circleId: string): string {
+  return 'Open to see upcoming days'
 }
 
 onMounted(async () => {
@@ -160,63 +182,52 @@ function goToJoin(): void {
   gap: 0.9rem;
 }
 
-.mt-tile__body {
+.circle-card__hero {
+  height: 120px;
+  background-size: cover;
+  background-position: center;
+  border-radius: var(--mt-card-radius, 12px) var(--mt-card-radius, 12px) 0 0;
   display: flex;
   align-items: center;
-  gap: 1rem;
+  justify-content: center;
+  /* Dark scrim so initials stay legible over the gradient */
+  background-color: rgba(0, 0, 0, 0.18);
+  background-blend-mode: multiply;
+}
+
+.circle-card__initials {
+  font-family: var(--v-font-family-display, 'Noto Serif', serif);
+  font-weight: 700;
+  font-size: 2.2rem;
+  color: rgba(255, 255, 255, 0.92);
+  letter-spacing: 0.04em;
+  text-shadow: 0 1px 4px rgba(0, 0, 0, 0.35);
+}
+
+.circle-card__body {
   padding: 0.9rem 1rem;
 }
 
-.mt-tile__avatar {
-  flex: 0 0 auto;
-  width: 52px;
-  height: 52px;
-  padding: 9px;
-  border-radius: 1rem;
-  box-shadow: inset 0 -3px 0 0 rgba(0, 0, 0, 0.16);
-}
-
-.mt-tile__avatar--primary {
-  background: rgb(var(--v-theme-primary));
-  color: rgb(var(--v-theme-on-primary));
-}
-
-.mt-tile__avatar--host {
-  background: rgb(var(--v-theme-host));
-  color: rgb(var(--v-theme-on-host));
-}
-
-.mt-tile__avatar--attend {
-  background: rgb(var(--v-theme-attend));
-  color: rgb(var(--v-theme-on-attend));
-}
-
-.mt-tile__avatar--viable {
-  background: rgb(var(--v-theme-viable));
-  color: rgb(var(--v-theme-on-viable));
-}
-
-.mt-tile__text {
-  min-width: 0;
-  flex: 1 1 auto;
-}
-
-.mt-tile__name {
-  font-family: var(--v-font-family-display, sans-serif);
+.circle-card__name {
+  font-family: var(--v-font-family-display, 'Noto Serif', serif);
   font-weight: 600;
-  font-size: 1.1rem;
+  font-size: 1.2rem;
   line-height: 1.2;
+  margin-bottom: 0.25rem;
 }
 
-.mt-tile__desc {
+.circle-card__desc {
   font-size: 0.85rem;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
 }
 
-.mt-tile__chev {
-  flex: 0 0 auto;
-  opacity: 0.5;
+.circle-card__next {
+  font-size: 0.8rem;
+  margin-top: 0.4rem;
+  display: flex;
+  align-items: center;
+  gap: 0.25rem;
 }
 </style>
