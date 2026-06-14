@@ -53,9 +53,7 @@
               </span>
             </v-avatar>
           </div>
-          <v-alert v-else type="info" density="compact"
-            >No attendees yet.</v-alert
-          >
+          <p v-else class="dd-empty text-medium-emphasis">No attendees yet.</p>
         </div>
       </div>
 
@@ -81,9 +79,7 @@
             </v-card-text>
           </v-card>
         </div>
-        <v-alert v-else type="info" density="compact" class="mb-4"
-          >No notes yet.</v-alert
-        >
+        <p v-else class="dd-empty text-medium-emphasis mb-4">No notes yet.</p>
 
         <v-form @submit.prevent="submitNote">
           <v-textarea
@@ -217,5 +213,11 @@ onMounted(async () => {
   display: flex;
   flex-wrap: wrap;
   gap: 0.4rem;
+}
+.dd-empty {
+  padding: 0.75rem 1rem;
+  background: rgb(var(--v-theme-surface-container));
+  border-radius: var(--mt-card-radius);
+  font-size: 0.9rem;
 }
 </style>
