@@ -1,6 +1,6 @@
 """Add notification_email column and email_confirmations table.
 
-Revision ID: 0009_notification_email_confirmation
+Revision ID: 0009_email_confirmation
 Revises: 0008_onboarding_state
 Create Date: 2026-06-14 00:00:00.000000
 
@@ -18,7 +18,7 @@ from sqlalchemy.dialects import postgresql
 
 from alembic import op
 
-revision: str = "0009_notification_email_confirmation"
+revision: str = "0009_email_confirmation"
 down_revision: str | None = "0008_onboarding_state"
 branch_labels: str | Sequence[str] | None = None
 depends_on: str | Sequence[str] | None = None

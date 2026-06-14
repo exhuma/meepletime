@@ -19,10 +19,11 @@
 ## File Structure
 
 **Backend**
+
 - Modify `backend/src/app/config.py` — add `EMAIL_CONFIRMATION_TTL_HOURS`.
 - Modify `backend/src/app/models/notification_settings.py` — add `notification_email` column + `EmailConfirmation` model.
 - Modify `backend/src/app/models/__init__.py` — export `EmailConfirmation`.
-- Create `backend/alembic/versions/0009_notification_email_confirmation.py` — migration.
+- Create `backend/alembic/versions/0009_email_confirmation.py` — migration.
 - Create `backend/src/app/services/email.py` — generic SMTP send helper.
 - Modify `backend/src/app/services/notifications/channels/email.py` — reuse the helper (DRY).
 - Create `backend/src/app/services/email_confirmation.py` — start/resend/confirm/clear logic.
@@ -34,6 +35,7 @@
 - Modify `backend/tests/test_notifications_dispatch.py` — resolution test (append).
 
 **Frontend**
+
 - Modify `frontend/src/types.ts` — extended `NotificationSettings` + `EmailConfirmResult`.
 - Modify `frontend/src/composables/useNotificationSettings.ts` — new actions.
 - Modify `frontend/src/views/ProfileSettingsView.vue` — notification-email field/UI.
@@ -41,6 +43,7 @@
 - Modify `frontend/src/router/index.ts` — public `/confirm-email` route.
 
 **Docs**
+
 - Modify `docs/operator/notifications.md` and `docs/user/notifications.md`.
 
 ---
@@ -48,6 +51,7 @@
 ## Task 1: Config — confirmation TTL setting
 
 **Files:**
+
 - Modify: `backend/src/app/config.py`
 
 - [ ] **Step 1: Add the setting**
@@ -82,6 +86,7 @@ git commit -m "feat: add EMAIL_CONFIRMATION_TTL_HOURS setting"
 ## Task 2: Model — notification_email column + EmailConfirmation
 
 **Files:**
+
 - Modify: `backend/src/app/models/notification_settings.py`
 - Modify: `backend/src/app/models/__init__.py`
 
@@ -160,14 +165,15 @@ git commit -m "feat: add notification_email column and EmailConfirmation model"
 ## Task 3: Alembic migration
 
 **Files:**
-- Create: `backend/alembic/versions/0009_notification_email_confirmation.py`
+
+- Create: `backend/alembic/versions/0009_email_confirmation.py`
 
 - [ ] **Step 1: Write the migration**
 
 ```python
 """Add notification_email column and email_confirmations table.
 
-Revision ID: 0009_notification_email_confirmation
+Revision ID: 0009_email_confirmation
 Revises: 0008_onboarding_state
 Create Date: 2026-06-14 00:00:00.000000
 
@@ -185,7 +191,7 @@ from sqlalchemy.dialects import postgresql
 
 from alembic import op
 
-revision: str = "0009_notification_email_confirmation"
+revision: str = "0009_email_confirmation"
 down_revision: str | None = "0008_onboarding_state"
 branch_labels: str | Sequence[str] | None = None
 depends_on: str | Sequence[str] | None = None
@@ -247,12 +253,12 @@ def downgrade() -> None:
 - [ ] **Step 2: Verify the migration chain is consistent**
 
 Run: `cd backend && uv run alembic heads`
-Expected: a single head `0009_notification_email_confirmation`.
+Expected: a single head `0009_email_confirmation`.
 
 - [ ] **Step 3: Commit**
 
 ```bash
-git add backend/alembic/versions/0009_notification_email_confirmation.py
+git add backend/alembic/versions/0009_email_confirmation.py
 git commit -m "feat: migration for notification email confirmation"
 ```
 
@@ -261,6 +267,7 @@ git commit -m "feat: migration for notification email confirmation"
 ## Task 4: Generic SMTP send helper (with DRY refactor of the email channel)
 
 **Files:**
+
 - Create: `backend/src/app/services/email.py`
 - Modify: `backend/src/app/services/notifications/channels/email.py`
 
@@ -371,6 +378,7 @@ git commit -m "refactor: extract shared SMTP send helper"
 ## Task 5: Confirmation service
 
 **Files:**
+
 - Create: `backend/src/app/services/email_confirmation.py`
 
 - [ ] **Step 1: Write the service**
@@ -593,6 +601,7 @@ git commit -m "feat: notification-email confirmation service"
 ## Task 6: Schemas
 
 **Files:**
+
 - Modify: `backend/src/app/schemas/notification_settings.py`
 
 - [ ] **Step 1: Add the import and email schemas**
@@ -662,6 +671,7 @@ git commit -m "feat: schemas for notification email confirmation"
 ## Task 7: Router endpoints + extended settings response
 
 **Files:**
+
 - Modify: `backend/src/app/routers/notifications.py`
 
 - [ ] **Step 1: Add imports**
@@ -877,6 +887,7 @@ git commit -m "feat: notification-email endpoints"
 ## Task 8: Effective-email resolution in dispatch
 
 **Files:**
+
 - Modify: `backend/src/app/services/notifications/dispatch.py:88`
 
 - [ ] **Step 1: Resolve confirmed-or-profile email**
@@ -916,6 +927,7 @@ git commit -m "feat: route notifications to confirmed email when set"
 ## Task 9: Backend tests — confirmation flow
 
 **Files:**
+
 - Create: `backend/tests/test_notification_email.py`
 
 These tests monkeypatch the SMTP layer so no real mail is sent. They
@@ -1175,6 +1187,7 @@ git commit -m "test: notification-email confirmation flow"
 ## Task 10: Backend tests — resolution + extended settings shape
 
 **Files:**
+
 - Modify: `backend/tests/test_notification_settings.py`
 - Modify: `backend/tests/test_notifications_dispatch.py`
 
@@ -1252,6 +1265,7 @@ git commit -m "test: email resolution and extended settings shape"
 ## Task 11: Frontend types + composable actions
 
 **Files:**
+
 - Modify: `frontend/src/types.ts:85-89`
 - Modify: `frontend/src/composables/useNotificationSettings.ts`
 
@@ -1290,36 +1304,36 @@ import type {
 Add these functions inside `useNotificationSettings` (before `return`):
 
 ```ts
-  /** Start confirming a notification address; stores updated state. */
-  async function setNotificationEmail(email: string): Promise<void> {
-    settings.value = await api.post<NotificationSettings>(
-      '/notifications/email',
-      { email },
-    )
-  }
+/** Start confirming a notification address; stores updated state. */
+async function setNotificationEmail(email: string): Promise<void> {
+  settings.value = await api.post<NotificationSettings>(
+    '/notifications/email',
+    { email },
+  )
+}
 
-  /** Resend the pending confirmation link with a fresh deadline. */
-  async function resendNotificationEmail(): Promise<void> {
-    settings.value = await api.post<NotificationSettings>(
-      '/notifications/email/resend',
-    )
-  }
+/** Resend the pending confirmation link with a fresh deadline. */
+async function resendNotificationEmail(): Promise<void> {
+  settings.value = await api.post<NotificationSettings>(
+    '/notifications/email/resend',
+  )
+}
 
-  /** Clear the confirmed address and any pending confirmation. */
-  async function clearNotificationEmail(): Promise<void> {
-    settings.value = await api.delete<NotificationSettings>(
-      '/notifications/email',
-    )
-  }
+/** Clear the confirmed address and any pending confirmation. */
+async function clearNotificationEmail(): Promise<void> {
+  settings.value = await api.delete<NotificationSettings>(
+    '/notifications/email',
+  )
+}
 
-  /** Submit a confirmation code (no auth required). */
-  async function confirmNotificationEmail(
-    code: string,
-  ): Promise<EmailConfirmResult> {
-    return api.post<EmailConfirmResult>('/notifications/email/confirm', {
-      code,
-    })
-  }
+/** Submit a confirmation code (no auth required). */
+async function confirmNotificationEmail(
+  code: string,
+): Promise<EmailConfirmResult> {
+  return api.post<EmailConfirmResult>('/notifications/email/confirm', {
+    code,
+  })
+}
 ```
 
 Add the four names to the returned object.
@@ -1341,6 +1355,7 @@ git commit -m "feat: frontend notification-email API actions"
 ## Task 12: ProfileSettingsView — notification email field
 
 **Files:**
+
 - Modify: `frontend/src/views/ProfileSettingsView.vue`
 
 - [ ] **Step 1: Add the email-address sub-section under the Email row**
@@ -1350,69 +1365,69 @@ In the template, replace the existing Email-row hint paragraph
 reflects the configurable address:
 
 ```html
-              <p class="text-caption text-medium-emphasis ps-row__hint">
-                Emails go to your confirmed notification address, or your
-                account email if none is set.
-              </p>
+<p class="text-caption text-medium-emphasis ps-row__hint">
+  Emails go to your confirmed notification address, or your account email if
+  none is set.
+</p>
 ```
 
 Then, immediately after the closing `</div>` of the Email row's
 `ps-row` block (before the `<v-divider class="my-3" />`), insert:
 
 ```html
-          <!-- Notification email address -->
-          <div class="ps-email">
-            <v-text-field
-              v-model="emailInput"
-              label="Notification email"
-              type="email"
-              density="comfortable"
-              :disabled="saving"
-              hide-details="auto"
-              placeholder="Use account email"
-            />
-            <div v-if="pendingEmail" class="ps-email__status">
-              <v-chip size="small" color="warning" variant="tonal">
-                Pending: {{ pendingEmail }}
-              </v-chip>
-              <MtButton
-                variant="soft"
-                tone="primary"
-                :loading="emailBusy"
-                @click="onResendEmail"
-              >
-                Resend link
-              </MtButton>
-            </div>
-            <div v-else-if="confirmedEmail" class="ps-email__status">
-              <v-chip size="small" color="success" variant="tonal">
-                Confirmed: {{ confirmedEmail }}
-              </v-chip>
-            </div>
-            <div class="ps-email__actions">
-              <MtButton
-                variant="solid"
-                tone="primary"
-                :loading="emailBusy"
-                :disabled="!emailInput || emailInput === confirmedEmail"
-                @click="onSaveEmail"
-              >
-                Send confirmation
-              </MtButton>
-              <MtButton
-                v-if="confirmedEmail || pendingEmail"
-                variant="soft"
-                tone="neutral"
-                :loading="emailBusy"
-                @click="onClearEmail"
-              >
-                Use account email
-              </MtButton>
-            </div>
-            <p v-if="emailMessage" class="text-caption ps-email__msg">
-              {{ emailMessage }}
-            </p>
-          </div>
+<!-- Notification email address -->
+<div class="ps-email">
+  <v-text-field
+    v-model="emailInput"
+    label="Notification email"
+    type="email"
+    density="comfortable"
+    :disabled="saving"
+    hide-details="auto"
+    placeholder="Use account email"
+  />
+  <div v-if="pendingEmail" class="ps-email__status">
+    <v-chip size="small" color="warning" variant="tonal">
+      Pending: {{ pendingEmail }}
+    </v-chip>
+    <MtButton
+      variant="soft"
+      tone="primary"
+      :loading="emailBusy"
+      @click="onResendEmail"
+    >
+      Resend link
+    </MtButton>
+  </div>
+  <div v-else-if="confirmedEmail" class="ps-email__status">
+    <v-chip size="small" color="success" variant="tonal">
+      Confirmed: {{ confirmedEmail }}
+    </v-chip>
+  </div>
+  <div class="ps-email__actions">
+    <MtButton
+      variant="solid"
+      tone="primary"
+      :loading="emailBusy"
+      :disabled="!emailInput || emailInput === confirmedEmail"
+      @click="onSaveEmail"
+    >
+      Send confirmation
+    </MtButton>
+    <MtButton
+      v-if="confirmedEmail || pendingEmail"
+      variant="soft"
+      tone="neutral"
+      :loading="emailBusy"
+      @click="onClearEmail"
+    >
+      Use account email
+    </MtButton>
+  </div>
+  <p v-if="emailMessage" class="text-caption ps-email__msg">
+    {{ emailMessage }}
+  </p>
+</div>
 ```
 
 - [ ] **Step 2: Add the script state and handlers**
@@ -1444,9 +1459,7 @@ const emailMessage = ref('')
 const confirmedEmail = computed(
   () => settings.value?.notification_email ?? null,
 )
-const pendingEmail = computed(
-  () => settings.value?.pending_email ?? null,
-)
+const pendingEmail = computed(() => settings.value?.pending_email ?? null)
 ```
 
 Ensure `computed` is imported from `vue` (add it to the existing
@@ -1456,7 +1469,7 @@ In the existing settings-load handler (where `emailEnabled.value` is set
 from `settings.value`), also seed the input:
 
 ```ts
-    emailInput.value = settings.value?.notification_email ?? ''
+emailInput.value = settings.value?.notification_email ?? ''
 ```
 
 Add the handlers (near `onTest`):
@@ -1543,6 +1556,7 @@ git commit -m "feat: notification-email field in profile settings"
 ## Task 13: ConfirmEmailView + public route
 
 **Files:**
+
 - Create: `frontend/src/views/ConfirmEmailView.vue`
 - Modify: `frontend/src/router/index.ts`
 
@@ -1586,15 +1600,13 @@ onMounted(async () => {
       </template>
       <template v-else-if="phase === 'confirmed'">
         <h1 class="text-h6 mb-2">Email confirmed</h1>
-        <p>
-          {{ email }} will now receive your MeepleTime notifications.
-        </p>
+        <p>{{ email }} will now receive your MeepleTime notifications.</p>
       </template>
       <template v-else-if="phase === 'expired'">
         <h1 class="text-h6 mb-2">Link expired</h1>
         <p>
-          This confirmation link is no longer valid. Request a new one
-          from your profile settings.
+          This confirmation link is no longer valid. Request a new one from your
+          profile settings.
         </p>
       </template>
       <template v-else-if="phase === 'invalid'">
@@ -1605,9 +1617,7 @@ onMounted(async () => {
         <h1 class="text-h6 mb-2">Something went wrong</h1>
         <p>Please try again in a moment.</p>
       </template>
-      <v-btn class="mt-6" color="primary" to="/profile">
-        Go to settings
-      </v-btn>
+      <v-btn class="mt-6" color="primary" to="/profile"> Go to settings </v-btn>
     </v-card>
   </v-container>
 </template>
@@ -1649,6 +1659,7 @@ git commit -m "feat: public email-confirmation page and route"
 ## Task 14: Docs
 
 **Files:**
+
 - Modify: `docs/operator/notifications.md`
 - Modify: `docs/user/notifications.md`
 
@@ -1684,8 +1695,11 @@ git commit -m "docs: notification email confirmation"
 
 - [ ] **Backend:** `cd backend && uv run pytest -q` → all pass.
 - [ ] **Migration round-trips:** against a dev DB,
-  `cd backend && uv run alembic upgrade head && uv run alembic downgrade -1 && uv run alembic upgrade head` → clean.
+      `cd backend && uv run alembic upgrade head && uv run alembic downgrade -1 && uv run alembic upgrade head` → clean.
 - [ ] **Frontend:** `cd frontend && npx vue-tsc --noEmit && npm run build` → clean.
 - [ ] **Lint:** `pre-commit run --all-files` → ruff + prettier pass (80-char limit everywhere).
 - [ ] **Manual smoke (optional, needs SMTP):** set an email in `/profile`, click the link in the captured/dev mail, confirm the address flips to "Confirmed", and that a viability notification then targets it.
+
+```
+
 ```
