@@ -7,9 +7,9 @@
  * `tokens.css` as `--mt-*` variables. Swapping the look means swapping
  * this file — nothing else references raw colour values.
  *
- * Aesthetic: a warm wooden game table. Parchment and walnut surfaces,
- * bright "meeple" accents (coral, leaf, sky, honey), chunky tactile
- * shapes.
+ * Aesthetic: dual identity — a warm parchment table by day (light) and
+ * the Stitch "Warmer Dark" charcoal-and-terracotta scheme by night
+ * (dark, default).
  */
 
 /** Raw, un-themed palette. Referenced only by the semantic maps. */
@@ -72,10 +72,11 @@ const light: ThemeColors = {
   'on-tertiary': '#ffffff',
   'tertiary-container': '#f7d8b8',
   'on-tertiary-container': '#4a2400',
-  attend: '#6f8f5f',
+  attend: '#5c7a4e',
   'on-attend': '#ffffff',
   'attend-container': '#dbe7c8',
   'on-attend-container': '#243218',
+  // Hosting shares the terracotta/primary family in light too.
   host: '#c4502c',
   'on-host': '#ffffff',
   'host-container': '#ffd9cf',
@@ -111,10 +112,12 @@ const dark: ThemeColors = {
   'surface-tint': '#f75f2d',
   outline: '#9c8e8b',
   'outline-variant': '#5a4139',
+  // Terracotta is the filled CTA; peach is the accent tone.
   primary: '#f75f2d',
   'on-primary': '#3a0a00',
   'primary-container': '#7a2e16',
   'on-primary-container': '#ffdbd0',
+  // Peach accent for icons/links/text on dark surfaces.
   'primary-accent': '#ffb59f',
   secondary: '#a3b18a',
   'on-secondary': '#1d2418',
@@ -124,6 +127,7 @@ const dark: ThemeColors = {
   'on-tertiary': '#472a00',
   'tertiary-container': '#653e00',
   'on-tertiary-container': '#ffddb8',
+  // Domain: attending=sage, hosting=terracotta(peach), viable=amber.
   attend: '#a3b18a',
   'on-attend': '#1d2418',
   'attend-container': '#3a4a2c',
