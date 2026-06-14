@@ -64,7 +64,7 @@ onMounted(() => {
 
 <style scoped>
 .circle-title {
-  font-family: var(--v-font-family-display, sans-serif);
+  font-family: var(--v-font-family-display, 'Noto Serif', serif);
   font-size: 1.5rem;
   font-weight: 600;
   line-height: 1.1;

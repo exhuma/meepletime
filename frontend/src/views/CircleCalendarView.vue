@@ -340,7 +340,7 @@ onMounted(async () => {
 
 .cal-nav__label {
   flex: 1 1 auto;
-  font-family: var(--v-font-family-display);
+  font-family: var(--v-font-family-display, 'Noto Serif', serif);
   font-size: 1.9rem;
   font-weight: 700;
   letter-spacing: -0.01em;
