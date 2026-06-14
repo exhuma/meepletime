@@ -58,15 +58,18 @@ nothing.
    - `id` (UUID PK)
    - `user_id` (FK `users.id`, `ondelete=CASCADE`, unique, indexed)
    - `pending_email` (`String(255)`)
-   - `token_hash` (`String(64)`) — sha256 hex of an opaque
-     `secrets.token_urlsafe(32)`. The raw token only ever appears in the
-     emailed link; never stored, never returned.
+   - `token` (`String(64)`, indexed) — an opaque high-entropy
+     `secrets.token_urlsafe(32)`. Stored as-is (not hashed) because the
+     **retry** requirement re-sends *the same link*, so the token must be
+     reproducible on resend; a one-way hash could not be. It is never
+     returned by any API response.
    - `expires_at` (`DateTime(timezone=True)`)
    - `created_at` (`DateTime(timezone=True)`)
 
-Separating the token hash from the settings row keeps the secret out of
-any settings serialization and makes "confirm = delete the pending row"
-a clean operation. One Alembic migration adds the column and the table.
+Keeping the pending state in its own table (not on the settings row)
+keeps the token out of any settings serialization and makes "confirm =
+delete the pending row" a clean operation. One Alembic migration adds
+the column and the table.
 
 ## Effective-email resolution
 
@@ -139,7 +142,11 @@ All authenticated and self-scoped except the confirm endpoint.
 
 ## Security notes
 
-- Raw token never stored or logged; only the sha256 hash is persisted.
+- Token is 256-bit (`secrets.token_urlsafe(32)`), unguessable, and
+  never returned by any API response or logged. It is stored as-is (not
+  hashed) because retry must re-send the identical link; the residual
+  risk is limited to an attacker with full DB read access, for whom the
+  system is already compromised.
 - Tokens are single-use (row deleted on confirm) and time-limited.
 - Confirm endpoint does not reveal whether an email/account exists;
   responses describe the code state only.
