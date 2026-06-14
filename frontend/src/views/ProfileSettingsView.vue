@@ -34,7 +34,6 @@
                 label="Email"
                 color="primary"
                 hide-details
-                class="flex-grow-1"
                 :disabled="saving"
                 @update:model-value="onEmailChange"
               />
@@ -62,7 +61,6 @@
                 label="Browser notifications (this device)"
                 color="primary"
                 hide-details
-                class="flex-grow-1"
                 :disabled="saving || !webpushSupported"
                 @update:model-value="onWebpushChange"
               />
@@ -97,7 +95,6 @@
                 label="Telegram direct messages"
                 color="primary"
                 hide-details
-                class="flex-grow-1"
                 :disabled="saving"
                 @update:model-value="onTelegramDmChange"
               />
