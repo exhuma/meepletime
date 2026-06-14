@@ -22,7 +22,7 @@
                 <v-icon v-if="a.state === 'hosting'" color="host" class="mr-3"
                   >mdi-home-variant</v-icon
                 >
-                <span v-else class="dd-meeple"><MtMeeple /></span>
+                <v-icon color="attend" class="mr-3">mdi-check-circle</v-icon>
               </template>
               <v-list-item-title>{{ a.pseudonym }}</v-list-item-title>
               <v-list-item-subtitle class="text-capitalize">{{
@@ -94,7 +94,6 @@ import { useCircles } from '../composables/circles'
 import { enrichAttendees } from '../lib/members'
 import { safeFormat } from '../lib/datetime'
 import { MtCard, MtButton } from '../ui'
-import MtMeeple from '../ui/MtMeeple.vue'
 import type { Note } from '../types'
 import { useAppBar, useAppBarContext } from '../composables/appBar'
 
@@ -160,14 +159,3 @@ onMounted(async () => {
   }
 })
 </script>
-
-<style scoped>
-/* Attendee meeple glyph, sized to sit beside the host icon. */
-.dd-meeple {
-  display: inline-block;
-  width: 22px;
-  height: 22px;
-  margin-right: 12px;
-  color: rgb(var(--v-theme-attend));
-}
-</style>

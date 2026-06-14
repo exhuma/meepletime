@@ -2,7 +2,9 @@
   <v-container class="fill-height" fluid>
     <v-row justify="center" align="center">
       <v-col cols="12" sm="6" md="4" class="text-center">
-        <div class="login-meeple text-primary"><MtMeeple /></div>
+        <div class="login-meeple">
+          <v-icon size="72" color="primary-accent">mdi-dice-multiple</v-icon>
+        </div>
         <h1 class="login-title">MeepleTime</h1>
         <!-- Dev-only login (no Keycloak). DevLoginPanel is lazy
              behind a static import.meta.env.DEV guard, so Rollup
@@ -43,7 +45,6 @@ import { userManager } from '../auth/oidc'
 import { clearReauthGuard, hasAuthError } from '../auth/reauthGuard'
 import { devAuth } from '../config'
 import { MtButton } from '../ui'
-import MtMeeple from '../ui/MtMeeple.vue'
 
 // Dev-only picker. The static import.meta.env.DEV guard folds to
 // `false` in any production build, so the dynamic import lives in

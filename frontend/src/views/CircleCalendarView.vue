@@ -52,7 +52,8 @@
       <!-- Legend -->
       <div class="d-flex flex-wrap ga-2 px-2 py-3">
         <v-chip size="x-small" color="attend" variant="tonal">
-          <span class="legend-meeple"><MtMeeple /></span>Attending
+          <v-icon start size="12" color="attend">mdi-check-circle</v-icon
+          >Attending
         </v-chip>
         <v-chip size="x-small" color="host" variant="tonal">
           <v-icon start size="12">mdi-home-variant</v-icon>Hosting
@@ -122,7 +123,6 @@ import DayContextSheet from '../components/DayContextSheet.vue'
 import ConstraintEditorDialog from '../components/ConstraintEditorDialog.vue'
 import CalendarDayCell from '../components/CalendarDayCell.vue'
 import { MtButton } from '../ui'
-import MtMeeple from '../ui/MtMeeple.vue'
 import {
   formatDate,
   monthLabel as monthLabelFor,
@@ -316,13 +316,6 @@ onMounted(async () => {
   font-family: var(--v-font-family-display, sans-serif);
   font-size: 1.05rem;
   font-weight: 600;
-}
-
-.legend-meeple {
-  display: inline-block;
-  width: 12px;
-  height: 12px;
-  margin-right: 4px;
 }
 
 .calendar-grid {

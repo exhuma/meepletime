@@ -22,7 +22,9 @@
       v-if="!isBusy && circlesState.circles.value.length === 0"
       class="pa-8 text-center mt-6"
     >
-      <div class="mt-empty__meeple text-primary"><MtMeeple /></div>
+      <div class="mt-empty__meeple">
+        <v-icon size="80" color="primary-accent">mdi-dice-multiple</v-icon>
+      </div>
       <h2 class="text-h6 mb-2">No circles yet</h2>
       <p class="text-body-2 text-medium-emphasis mb-0">
         Create your first circle, or join one with an invite PIN.
@@ -44,7 +46,7 @@
             class="mt-tile__avatar"
             :class="`mt-tile__avatar--${toneFor(i)}`"
           >
-            <MtMeeple />
+            <v-icon size="34">mdi-dice-multiple</v-icon>
           </div>
           <div class="mt-tile__text">
             <div class="mt-tile__name">{{ circle.name }}</div>
@@ -95,7 +97,6 @@ import { useCircles } from '../composables/circles'
 import CreateCircleDialog from '../components/CreateCircleDialog.vue'
 import { useAppBar } from '../composables/appBar'
 import { MtButton, MtCard, MtDialog, MtPinField } from '../ui'
-import MtMeeple from '../ui/MtMeeple.vue'
 
 const circlesState = useCircles()
 const router = useRouter()
