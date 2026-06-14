@@ -86,6 +86,14 @@ export interface NotificationSettings {
   email_enabled: boolean
   webpush_enabled: boolean
   telegram_dm_enabled: boolean
+  notification_email: string | null
+  pending_email: string | null
+  pending_expires_at: string | null
+}
+
+export interface EmailConfirmResult {
+  status: 'confirmed' | 'expired' | 'invalid'
+  email: string | null
 }
 
 export interface CircleTelegramConfig {
