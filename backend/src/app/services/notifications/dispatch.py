@@ -85,7 +85,7 @@ def _load_recipients(event: NotificationEvent, db: Session) -> list[Recipient]:
             Recipient(
                 user_id=user.id,
                 delivery_id=delivery.id,
-                email=user.email,
+                email=settings.notification_email or user.email,
                 settings=settings,
             )
         )
