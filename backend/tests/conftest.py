@@ -88,6 +88,8 @@ def _make_test_settings() -> Settings:
             OIDC_ISSUER=_TEST_ISSUER,
             OIDC_AUTHORITY=_TEST_ISSUER,
             NOTIFICATION_DEBOUNCE_SECONDS=60,
+            NOTIFICATION_AGGREGATION_WINDOW_SECONDS=120,
+            NOTIFICATION_AGGREGATION_MAX_WAIT_SECONDS=600,
             CORS_ORIGINS=["http://localhost:5173"],
             INVITE_REGEN_LIMIT=3,
             INVITE_REGEN_WINDOW_SECONDS=60,

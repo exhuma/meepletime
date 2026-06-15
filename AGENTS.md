@@ -224,9 +224,13 @@ for audience-claim propagation). See `module-auth-oidc`.
   `min` for maximums); a day is viable if **any** hosting member's
   effective constraints are satisfied. `has_multiple_viable_hosts`
   signals the UI that members should agree out-of-band on who hosts.
-- **`services/notifications.py`** — APScheduler-backed, debounced
-  (`MEEPLETIME_NOTIFICATION_DEBOUNCE_SECONDS`) notification evaluation
-  keyed by `(circle_id, date)`.
+- **`services/notifications/`** — APScheduler-backed notification
+  evaluation, debounced per `circle_id`
+  (`MEEPLETIME_NOTIFICATION_AGGREGATION_WINDOW_SECONDS`, sliding, with a
+  `MEEPLETIME_NOTIFICATION_AGGREGATION_MAX_WAIT_SECONDS` cap). All days
+  changed in one window are aggregated into a single summary
+  notification; each day still emits its own derived event as the
+  audit/dedupe record.
 
 DB schema is migration-driven via Alembic
 (`backend/alembic/versions/`). Add a migration for every model change;

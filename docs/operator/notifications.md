@@ -10,10 +10,28 @@ All variables use the `MEEPLETIME_` prefix and are read from the
 environment (or the `.env` file) like the rest of the backend
 configuration.
 
+## Debounce and aggregation
+
+To avoid one notification per tapped day, evaluation is debounced **per
+circle**. Changes anywhere in a circle accumulate in a sliding window;
+when the window settles, every affected day is evaluated together and
+delivered as a **single aggregated summary** (e.g. "3 viable, 1
+forming") listing each day. A max-wait cap bounds how long pending
+changes are held, so a long editing session still flushes a summary.
+
+| Variable | Default | Meaning |
+| -------- | ------- | ------- |
+| `MEEPLETIME_NOTIFICATION_AGGREGATION_WINDOW_SECONDS` | `120` | Sliding per-circle debounce window; resets on each change. |
+| `MEEPLETIME_NOTIFICATION_AGGREGATION_MAX_WAIT_SECONDS` | `600` | Upper bound on how long pending changes are held before flushing. |
+
+Each affected day still records its own derived event (the audit and
+duplicate-suppression record); only delivery is aggregated.
+
 ## Deep links
 
-Notification bodies include a direct link to the relevant day. Set the
-public URL of the frontend so those links resolve for your users:
+Notification bodies link to the relevant day; an aggregated summary
+links to the circle calendar instead. Set the public URL of the
+frontend so those links resolve for your users:
 
 | Variable                | Meaning                              |
 | ----------------------- | ------------------------------------ |

@@ -15,8 +15,11 @@ notified when a day crosses a meaningful threshold, for example:
 - a day becomes **viable**;
 - a viable day stops being viable.
 
-Rapid back-and-forth changes are collapsed into a single notification,
-so you will not be spammed while people are still tapping.
+Rapid back-and-forth changes are collapsed, so you will not be spammed
+while people are still tapping. When several days in a circle change
+around the same time, they are gathered into **one summary
+notification** that lists all the affected days, rather than a separate
+message for each day.
 
 ## Choosing your channels
 

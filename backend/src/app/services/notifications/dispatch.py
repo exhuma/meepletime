@@ -1,9 +1,11 @@
 """Channel-agnostic dispatch for notification events.
 
-``dispatch_event`` resolves the eligible recipients for an event and
-fans the event out across every registered channel, recording one
-:class:`NotificationChannelAttempt` per send and marking per-user
+``dispatch_batch`` resolves the eligible recipients for a batch of
+events (all for one circle) and fans a single aggregated message out
+across every registered channel, recording one
+:class:`NotificationChannelAttempt` per delivery and marking per-user
 deliveries as delivered when at least one channel succeeds.
+``dispatch_event`` is a thin batch-of-one wrapper.
 
 This runs inside the synchronous APScheduler worker thread, so every
 channel ``send`` must use a hard network timeout and is wrapped here so
@@ -33,7 +35,7 @@ from app.services.notifications.channels import (
 )
 from app.services.notifications.context import (
     EventContext,
-    build_event_context,
+    build_batch_context,
 )
 
 logger = logging.getLogger(__name__)
@@ -54,13 +56,30 @@ def _default_settings(user_id: uuid.UUID) -> UserNotificationSettings:
     )
 
 
+def _resolve_settings(
+    user_id: uuid.UUID, db: Session
+) -> UserNotificationSettings:
+    """
+    Return a user's notification settings or transient defaults.
+
+    :param user_id: The user whose settings to resolve.
+    :param db: Active database session.
+    :returns: The persisted settings, or defaults when absent.
+    """
+    settings = db.execute(
+        select(UserNotificationSettings).where(
+            UserNotificationSettings.user_id == user_id
+        )
+    ).scalar_one_or_none()
+    return settings if settings is not None else _default_settings(user_id)
+
+
 def _load_recipients(event: NotificationEvent, db: Session) -> list[Recipient]:
     """
     Load the event's delivery rows joined with user + settings.
 
     Muted members never receive a delivery row (filtered upstream in
-    ``evaluate_and_notify``), so every row here is an eligible
-    recipient.
+    the evaluation step), so every row here is an eligible recipient.
 
     :param event: The event being dispatched.
     :param db: Active database session.
@@ -74,13 +93,7 @@ def _load_recipients(event: NotificationEvent, db: Session) -> list[Recipient]:
 
     recipients: list[Recipient] = []
     for delivery, user in rows:
-        settings = db.execute(
-            select(UserNotificationSettings).where(
-                UserNotificationSettings.user_id == user.id
-            )
-        ).scalar_one_or_none()
-        if settings is None:
-            settings = _default_settings(user.id)
+        settings = _resolve_settings(user.id, db)
         recipients.append(
             Recipient(
                 user_id=user.id,
@@ -92,26 +105,91 @@ def _load_recipients(event: NotificationEvent, db: Session) -> list[Recipient]:
     return recipients
 
 
+def _load_batch_recipients(
+    event_ids: list[uuid.UUID], db: Session
+) -> tuple[list[Recipient], dict[uuid.UUID, list[NotificationDelivery]]]:
+    """
+    Load distinct recipients and their deliveries across a batch.
+
+    Every non-muted member has one delivery row per event in the batch.
+    A recipient is built once per distinct user; the returned map lets
+    the dispatcher mark all of a user's deliveries delivered from a
+    single aggregated send.
+
+    :param event_ids: Ids of the events in the batch.
+    :param db: Active database session.
+    :returns: A ``(recipients, deliveries_by_user)`` pair.
+    """
+    rows = db.execute(
+        select(NotificationDelivery, User)
+        .join(User, User.id == NotificationDelivery.user_id)
+        .where(NotificationDelivery.notification_event_id.in_(event_ids))
+    ).all()
+
+    deliveries_by_user: dict[uuid.UUID, list[NotificationDelivery]] = {}
+    users: dict[uuid.UUID, User] = {}
+    for delivery, user in rows:
+        deliveries_by_user.setdefault(user.id, []).append(delivery)
+        users[user.id] = user
+
+    recipients: list[Recipient] = []
+    for user_id, deliveries in deliveries_by_user.items():
+        settings = _resolve_settings(user_id, db)
+        recipients.append(
+            Recipient(
+                user_id=user_id,
+                delivery_id=deliveries[0].id,
+                email=settings.notification_email or users[user_id].email,
+                settings=settings,
+            )
+        )
+    return recipients, deliveries_by_user
+
+
 def dispatch_event(
     event: NotificationEvent,
     db: Session,
     channels: list[NotificationChannel] | None = None,
 ) -> None:
     """
-    Deliver one event across all registered channels (best-effort).
+    Deliver a single event (batch of one).
 
     :param event: The persisted event to deliver.
     :param db: Active database session (committed here, not closed).
     :param channels: Explicit channel list (used by tests); defaults
         to the registered channels.
     """
+    dispatch_batch([event], db, channels)
+
+
+def dispatch_batch(
+    events: list[NotificationEvent],
+    db: Session,
+    channels: list[NotificationChannel] | None = None,
+) -> None:
+    """
+    Deliver a batch of events as one aggregated message (best-effort).
+
+    All events must belong to the same circle. A single message is
+    built for the whole batch and sent once per target on each channel;
+    every per-user delivery in the batch is audited and marked.
+
+    :param events: The persisted events to deliver (same circle).
+    :param db: Active database session (committed here, not closed).
+    :param channels: Explicit channel list (used by tests); defaults
+        to the registered channels.
+    """
+    if not events:
+        return
     if channels is None:
         channels = iter_channels()
     if not channels:
         return
 
-    ctx = build_event_context(event, db)
-    recipients = _load_recipients(event, db)
+    ctx = build_batch_context(events, db)
+    event_ids = [event.id for event in events]
+    primary_event_id = ctx.event_id
+    recipients, deliveries_by_user = _load_batch_recipients(event_ids, db)
     delivered: set[uuid.UUID] = set()
 
     for channel in channels:
@@ -125,7 +203,15 @@ def dispatch_event(
             )
             continue
         for target in targets:
-            _send_one(channel, target, ctx, event, db, delivered)
+            _deliver_target(
+                channel,
+                target,
+                ctx,
+                primary_event_id,
+                deliveries_by_user,
+                db,
+                delivered,
+            )
 
     if delivered:
         _mark_delivered(delivered, db)
@@ -133,21 +219,28 @@ def dispatch_event(
     db.commit()
 
 
-def _send_one(
+def _deliver_target(
     channel: NotificationChannel,
     target,
     ctx: EventContext,
-    event: NotificationEvent,
+    primary_event_id: uuid.UUID,
+    deliveries_by_user: dict[uuid.UUID, list[NotificationDelivery]],
     db: Session,
     delivered: set[uuid.UUID],
 ) -> None:
     """
-    Send one target and record the attempt outcome.
+    Send one target and record the attempt against its deliveries.
+
+    For a per-user target the single physical send is audited against
+    each of that user's deliveries in the batch (preserving the
+    one-attempt-per-delivery invariant). Broadcast targets (no user)
+    record a single attempt against the primary event.
 
     :param channel: The channel performing the send.
     :param target: The target to deliver to.
-    :param ctx: The event context.
-    :param event: The originating event.
+    :param ctx: The aggregated event context.
+    :param primary_event_id: Event id used for broadcast attempts.
+    :param deliveries_by_user: Batch deliveries grouped by user id.
     :param db: Active database session.
     :param delivered: Set of delivery ids with a success so far.
     """
@@ -160,18 +253,36 @@ def _send_one(
         error = str(exc)[:512]
         logger.warning("channel %s send failed: %s", channel.key, exc)
 
-    db.add(
-        NotificationChannelAttempt(
-            notification_event_id=event.id,
-            delivery_id=target.delivery_id,
-            user_id=target.user_id,
-            channel=channel.key,
-            status=status,
-            error=error,
-        )
+    user_deliveries = (
+        deliveries_by_user.get(target.user_id, [])
+        if target.user_id is not None
+        else []
     )
-    if status == "sent" and target.delivery_id is not None:
-        delivered.add(target.delivery_id)
+    if user_deliveries:
+        for delivery in user_deliveries:
+            db.add(
+                NotificationChannelAttempt(
+                    notification_event_id=delivery.notification_event_id,
+                    delivery_id=delivery.id,
+                    user_id=target.user_id,
+                    channel=channel.key,
+                    status=status,
+                    error=error,
+                )
+            )
+            if status == "sent":
+                delivered.add(delivery.id)
+    else:
+        db.add(
+            NotificationChannelAttempt(
+                notification_event_id=primary_event_id,
+                delivery_id=None,
+                user_id=target.user_id,
+                channel=channel.key,
+                status=status,
+                error=error,
+            )
+        )
 
 
 def _mark_delivered(delivery_ids: set[uuid.UUID], db: Session) -> None:

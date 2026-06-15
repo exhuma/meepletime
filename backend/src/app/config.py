@@ -30,8 +30,16 @@ class Settings(BaseSettings):
         without Keycloak. Requires ``DEV_SHARED_SECRET`` (used to
         sign the minted tokens). **Development and headless-agent
         use only. Never enable in production.**
-    :param NOTIFICATION_DEBOUNCE_SECONDS: Debounce window for
-        notification coalescing, in seconds.
+    :param NOTIFICATION_DEBOUNCE_SECONDS: Legacy per-day debounce
+        window, in seconds. Still used to derive the anti-storm
+        suppression window for duplicate derived events.
+    :param NOTIFICATION_AGGREGATION_WINDOW_SECONDS: Per-circle
+        sliding debounce window, in seconds. Repeated availability
+        changes anywhere in a circle within this window collapse into
+        one evaluation and a single aggregated summary notification.
+    :param NOTIFICATION_AGGREGATION_MAX_WAIT_SECONDS: Upper bound, in
+        seconds, on how long a circle's pending changes may be held
+        before flushing, so continuous editing still emits a summary.
     :param EMAIL_CONFIRMATION_TTL_HOURS: Validity window, in hours,
         for a notification-email confirmation link.
     :param CORS_ORIGINS: Allowed CORS origins for API requests.
@@ -69,6 +77,8 @@ class Settings(BaseSettings):
     DEV_SHARED_SECRET: str | None = None
     DEV_AUTH_ENABLED: bool = False
     NOTIFICATION_DEBOUNCE_SECONDS: int = 10
+    NOTIFICATION_AGGREGATION_WINDOW_SECONDS: int = 120
+    NOTIFICATION_AGGREGATION_MAX_WAIT_SECONDS: int = 600
     EMAIL_CONFIRMATION_TTL_HOURS: int = 24
     CORS_ORIGINS: list[str] = [
         "http://localhost:5173",

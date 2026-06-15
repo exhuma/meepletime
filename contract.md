@@ -336,16 +336,19 @@ Notifications must be based on derived state transitions, not raw tap events.
 
 ### 12.1 Debounce requirements
 
-Use a coarse debounce per `(circle_id, local_date)` measured in seconds, not milliseconds.
+Use a coarse debounce per `circle_id` measured in seconds, not milliseconds. The debounce accumulates every changed day for the circle and emits a single aggregated summary, rather than one notification per changed day.
 
 Required behavior:
 - Save availability changes immediately.
 - Reflect state changes immediately in the acting user’s UI.
-- Delay derived notification evaluation for a debounce window.
-- Collapse repeated changes within the debounce window into one evaluation.
+- Delay derived notification evaluation for a sliding debounce window that resets on each change anywhere in the circle.
+- Collapse repeated changes — across multiple days of the same circle — within the window into one evaluation and one aggregated summary notification.
 - Emit notifications only after the final stabilized derived state is evaluated.
+- Cap how long pending changes may be held (max-wait) so continuous editing still flushes a summary.
 
-A reasonable default debounce window for v1 is 10 seconds unless changed later.
+Each qualifying day still produces its own derived event as the audit/dedupe record; only delivery is aggregated.
+
+A reasonable default sliding window for v1 is 120 seconds with a 10-minute max-wait cap, unless changed later.
 
 ### 12.2 Notify-worthy transitions
 
@@ -363,6 +366,7 @@ Optional later:
 
 Implement suppression rules:
 - do not send repeated “candidate exists” notifications for the same day during the same debounce cycle
+- collapse multiple day-transitions for one circle in the same cycle into a single aggregated summary notification
 - do not notify on every attendee count change
 - do not notify on every raw state change
 - allow per-member notification preferences
