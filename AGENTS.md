@@ -166,7 +166,9 @@ See `docs/developer/host-run.md` for the full reference.
   `5432`, Keycloak `8080`) are conventional. If one is taken, pick a
   free port via `MEEPLETIME_BACKEND_PORT`, `MEEPLETIME_FRONTEND_PORT`,
   `MEEPLETIME_DB_PORT`, or `MEEPLETIME_KEYCLOAK_PORT`, and update the
-  dependent config (e.g. `VITE_API_BASE_URL`) to match.
+  dependent config (e.g. `VITE_API_BASE_URL`) to match. A non-default
+  *frontend* port also needs `MEEPLETIME_CORS_ORIGINS` set to that
+  origin, or the SPA's API calls (incl. dev-login) fail CORS.
 - **Gotcha:** a dev-container-seeded `backend/.env` points the DB at
   `db:5432`, which is unreachable on the host. Use `localhost` (or a
   shell `export MEEPLETIME_DATABASE_URL=...`, which overrides the

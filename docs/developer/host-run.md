@@ -98,7 +98,7 @@ override it and update any dependent config:
 | Service    | Default | Override env var           | Also update                      |
 |------------|---------|----------------------------|----------------------------------|
 | Backend    | 8000    | `MEEPLETIME_BACKEND_PORT`  | `VITE_API_BASE_URL`              |
-| Frontend   | 5173    | `MEEPLETIME_FRONTEND_PORT` | `MEEPLETIME_APP_BASE_URL`        |
+| Frontend   | 5173    | `MEEPLETIME_FRONTEND_PORT` | `MEEPLETIME_CORS_ORIGINS`, `MEEPLETIME_APP_BASE_URL` |
 | PostgreSQL | 5432    | `MEEPLETIME_DB_PORT`       | `MEEPLETIME_DATABASE_URL`        |
 | Keycloak   | 8080    | `MEEPLETIME_KEYCLOAK_PORT` | OIDC authority in both env files |
 
@@ -108,6 +108,22 @@ Example:
 MEEPLETIME_BACKEND_PORT=8001 task backend
 # then set VITE_API_BASE_URL=http://localhost:8001 in
 # frontend/.env.local before starting the frontend.
+```
+
+### Gotcha: a non-default frontend port breaks dev-login (CORS)
+
+The SPA calls the backend from its own origin, so the backend must
+allow that origin. CORS is gated on the `CORS_ORIGINS` setting (env
+`MEEPLETIME_CORS_ORIGINS`), which defaults to `http://localhost:5173`
+and `http://localhost:3000` — **not** on `APP_BASE_URL`. If you run
+the frontend on any other port, the browser's preflight for `POST
+/auth/dev/login` (and every other API call) fails with a CORS error
+until you whitelist the new origin. It is a JSON list, parsed by
+pydantic-settings:
+
+```bash
+# frontend on 5174 → start the backend with:
+export MEEPLETIME_CORS_ORIGINS='["http://localhost:5174"]'
 ```
 
 ## Playwright and debuggers
