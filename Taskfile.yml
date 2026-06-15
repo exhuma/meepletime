@@ -118,6 +118,14 @@ tasks:
     desc: Stop and remove the throwaway Keycloak from `task dev:keycloak`.
     cmd: docker rm -f meepletime-dev-keycloak
 
+  setup:host:
+    desc: >-
+      One-shot host bootstrap for running OUTSIDE the dev-container:
+      installs project-local toolchains (uv/npm), pre-commit hooks,
+      and seeds host-flavoured backend/.env + frontend/.env.local
+      (dev-auth, localhost DB) when absent. Idempotent.
+    cmd: bash scripts/setup-host.bash
+
   test:backend:
     desc: Run the backend test suite
     dir: backend
