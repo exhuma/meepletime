@@ -3,9 +3,12 @@ name: Build and publish images
 # Builds the backend and frontend Docker images and pushes them to the
 # private container registry on calendar-version tags
 # (e.g. v2026.6.15, v2026.6.15-alpha.1).
-# Each build publishes two tags per image: the immutable full version
-# (e.g. 2026.6.15-alpha.1) and a moving release-channel pointer
-# (alpha / beta / rc / stable). No unconditional "latest" is pushed.
+# Each build publishes the immutable full version (e.g.
+# 2026.6.15-alpha.1) plus one or more moving release-channel pointers.
+# Channels cascade by maturity (alpha < beta < stable): a stable
+# release also advances "beta" and "alpha", a beta release advances
+# "alpha", and an alpha release moves only "alpha". No unconditional
+# "latest" is pushed.
 # Trigger a manual run via the Actions tab with workflow_dispatch.
 on:
   push:
@@ -77,22 +80,31 @@ jobs:
           username: ${{ secrets.DOCKER_REGISTRY_USER }}
           password: ${{ secrets.DOCKER_REGISTRY_PASSWORD }}
 
-      - name: Derive release channel
+      - name: Derive release channels
         id: channel
         run: |
-          # Map the pre-release identifier in the tag to a moving
-          # channel pointer. A tag with no pre-release is "stable".
-          # Calver (YYYY.M.D) carries no semver compatibility meaning,
-          # so per-component pointers (alpha/beta/rc/stable) replace
-          # the {{major}}.{{minor}} / latest tags this project dropped.
+          # Map the pre-release identifier in the tag to the moving
+          # channel pointers this build advances. Channels cascade by
+          # maturity (alpha < beta < stable), so a more mature release
+          # also moves the less mature pointers. A tag with no
+          # pre-release is "stable". Calver (YYYY.M.D) carries no semver
+          # compatibility meaning, so these per-component pointers
+          # replace the {{major}}.{{minor}} / latest tags this project
+          # dropped.
           ref="${GITHUB_REF_NAME#v}"
           case "$ref" in
-            *-alpha.*) ch=alpha ;;
-            *-beta.*)  ch=beta ;;
-            *-rc.*)    ch=rc ;;
-            *)         ch=stable ;;
+            *-alpha.*) channels="alpha" ;;
+            *-beta.*)  channels="beta alpha" ;;
+            *-rc.*)    channels="rc" ;;
+            *)         channels="stable beta alpha" ;;
           esac
-          echo "channel=$ch" >> "$GITHUB_OUTPUT"
+          {
+            echo "raw_tags<<EOF"
+            for c in $channels; do
+              echo "type=raw,value=$c"
+            done
+            echo "EOF"
+          } >> "$GITHUB_OUTPUT"
 
       - name: Derive image metadata
         id: meta
@@ -105,7 +117,7 @@ jobs:
             latest=false
           tags: |
             type=semver,pattern={{version}}
-            type=raw,value=${{ steps.channel.outputs.channel }}
+            ${{ steps.channel.outputs.raw_tags }}
 
       - name: Build and push
         uses: docker/build-push-action@v6

@@ -25,6 +25,14 @@ tasks:
     dir: frontend
     cmd: npm run build
 
+  bump:
+    desc: >-
+      Bump the project version in frontend/package.json and
+      backend/pyproject.toml, then commit and tag it (no push).
+      Qualifier: alpha | beta | stable.
+      Usage: task bump -- alpha
+    cmd: python3 scripts/bump_version.py {{.CLI_ARGS}}
+
   dev:token:
     desc: >-
       Mint a self-signed HS256 dev JWT for headless API testing.
