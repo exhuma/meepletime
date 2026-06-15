@@ -124,6 +124,9 @@ task dev:token        # mint an HS256 dev JWT for headless API calls (see below)
 task dev:db           # throwaway Postgres on localhost:5432 for host runs
 task dev:db-stop      # stop/remove the throwaway dev DB (drops data)
 task db-shell         # psql into $MEEPLETIME_DATABASE_URL
+task setup:host       # one-shot host bootstrap (toolchains + env)
+task dev:keycloak     # throwaway Keycloak for real-OIDC e2e on host
+task dev:keycloak-stop # stop/remove the throwaway Keycloak
 ```
 
 Run a single backend test:
@@ -137,6 +140,37 @@ Lint/format is via pre-commit (ruff for `backend/`, prettier for
 
 Full stack via Docker: `docker compose up --build` (frontend on `:80`,
 API on `:8000`, `/docs` for Swagger).
+
+---
+
+## Running on the host (agents)
+
+Coding agents should run the stack **directly on the host**, not
+inside the dev-container (`.devcontainer/` is kept for human use).
+See `docs/developer/host-run.md` for the full reference.
+
+- **Bootstrap once:** `task setup:host` (installs uv/npm deps +
+  pre-commit, seeds host-flavoured `backend/.env` and
+  `frontend/.env.local` when absent).
+- **Toolchains:** Python 3.14 via `uv` (project venv in
+  `backend/.venv`), Node via `nvm`. Keep dependencies project-local;
+  do not install runtimes via the host package manager. A wider
+  scope is allowed only when a truly local install would explode
+  complexity or hits a real technical constraint.
+- **Backing services:** PostgreSQL via `task dev:db` (throwaway
+  container). Keycloak is **not** needed for most work — default to
+  dev-auth mode (`MEEPLETIME_DEV_AUTH_ENABLED=true` +
+  `VITE_DEV_AUTH=true`, seeded by `setup:host`). Start Keycloak via
+  `task dev:keycloak` only for explicit real-OIDC end-to-end tests.
+- **Ports:** the defaults (backend `8000`, frontend `5173`, DB
+  `5432`, Keycloak `8080`) are conventional. If one is taken, pick a
+  free port via `MEEPLETIME_BACKEND_PORT`, `MEEPLETIME_FRONTEND_PORT`,
+  `MEEPLETIME_DB_PORT`, or `MEEPLETIME_KEYCLOAK_PORT`, and update the
+  dependent config (e.g. `VITE_API_BASE_URL`) to match.
+- **Gotcha:** a dev-container-seeded `backend/.env` points the DB at
+  `db:5432`, which is unreachable on the host. Use `localhost` (or a
+  shell `export MEEPLETIME_DATABASE_URL=...`, which overrides the
+  `.env` file). `setup:host` warns when it detects this.
 
 ---
 
