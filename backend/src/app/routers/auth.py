@@ -7,6 +7,7 @@ from fastapi import APIRouter, Depends
 from app.dependencies import get_current_user
 from app.models.user import User
 from app.schemas.user import UserOut
+from app.services.avatar import resolve_avatar_ref
 
 router = APIRouter(prefix="/auth", tags=["auth"])
 
@@ -22,6 +23,8 @@ def get_me(
     the local user account is provisioned on first access.
 
     :param current_user: Resolved local user from OIDC token.
-    :returns: UserOut schema for the authenticated user.
+    :returns: UserOut schema, including the resolved ``avatar_ref``.
     """
-    return current_user
+    out = UserOut.model_validate(current_user)
+    out.avatar_ref = resolve_avatar_ref(current_user, current_user.image)
+    return out

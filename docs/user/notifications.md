@@ -23,15 +23,14 @@ message for each day.
 
 ## Choosing your channels
 
-Open the **gear icon** in the top bar (**Notifications**) to manage your
-channels. Each channel has its own switch:
+Click your **avatar** in the top bar and choose **Profile** to manage
+your channels. Each channel has its own switch:
 
 - **Email** — a message is sent to your account's email address.
 - **Browser notifications** — a system notification on the current
   device, even when the MeepleTime tab is closed.
-
-Telegram works a little differently — it is set up per circle rather
-than from your profile; see **Telegram** below.
+- **Telegram direct messages** — personal DMs from the bots of circles
+  you belong to; see **Telegram** below.
 
 Each channel also has a **Test** button that sends a real test
 notification right away and tells you whether it worked, so you can
@@ -56,9 +55,11 @@ operator, the switch has no effect and no mail is sent.
 
 ### Notification email
 
-By default, notifications go to your account email. You can set a
-separate **notification email** in the **Notifications** section of your
-profile:
+By default, notifications go to your account email — the address is
+shown in the **Notifications** section of your profile so you always
+know where mail will land. The text field there is only for choosing a
+*different* address; leave it blank to keep using your account email.
+To use another address:
 
 1. Enter the address and save.
 2. A confirmation email is sent to that address — click the link inside
@@ -87,18 +88,28 @@ not configured it.
 
 ## Telegram
 
-Telegram is set up **per circle** by an owner or admin, not from your
-personal profile. An admin creates a bot, adds it to the group chat your
-circle already uses, and links it in the circle's **Telegram
-notifications** settings. After that, viability updates for that circle
-are posted straight into the group chat for everyone to see.
+A circle's owner or admin sets up Telegram bots from **Edit circle
+settings → Notifications — Telegram**. A bot can work in one of two
+modes:
 
-Because it posts to a shared group, Telegram does not need each member
-to opt in individually. If you would rather not see the group posts, an
-admin can remove the bot or you can mute that circle.
+- **Group chat** — the bot posts each circle's updates into one shared
+  group chat for everyone to see. No per-member opt-in is needed; if you
+  would rather not see the posts, an admin can remove the bot or you can
+  mute that circle.
+- **Direct messages** — members opt in individually to receive personal
+  DMs, so only those who choose to are messaged.
 
-Some circles instead use **direct-message** bots. For those, turn on
-**Telegram direct messages** in your profile, then open the circle's
-notification settings, start a private chat with the bot, and link your
-personal chat id (for example from @userinfobot). You will then receive
-that circle's updates as a private message instead of a group post.
+### Opting in to direct messages
+
+If a circle you belong to offers a direct-message bot, you can connect
+to it from your own profile:
+
+1. Turn on **Telegram direct messages** in your profile.
+2. In Telegram, start a private chat with the bot and send it any
+   message (a bot cannot message you until you have messaged it first).
+3. Back in your profile, press **Connect** next to that bot and pick
+   your chat from the detected list. Use **Test** to confirm it works.
+
+You will then receive that circle's updates as a private message. Press
+**Disconnect** at any time to stop. You only ever see the bots of
+circles you actually belong to.

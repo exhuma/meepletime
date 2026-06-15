@@ -83,32 +83,45 @@
         @click="router.push('/welcome')"
       />
 
-      <MtButton
-        v-if="auth.isLoggedIn.value"
-        variant="icon"
-        tone="primary"
-        icon="mdi-cog"
-        title="Notification settings"
-        class="hidden-sm-and-down"
-        @click="router.push('/profile')"
-      />
-
-      <template v-if="auth.isLoggedIn.value">
-        <v-avatar
-          size="34"
-          color="primary"
-          class="app-avatar hidden-sm-and-down"
-        >
-          <span class="text-caption font-weight-bold">{{ userInitial }}</span>
-        </v-avatar>
-        <MtButton
-          variant="icon"
-          tone="primary"
-          icon="mdi-logout"
-          class="hidden-sm-and-down"
-          @click="handleLogout"
-        />
-      </template>
+      <!-- Single account entry-point: the avatar opens a menu with the
+           profile page and sign-out, so account actions are no longer
+           spread across ambiguous icon buttons. -->
+      <v-menu v-if="auth.isLoggedIn.value">
+        <template #activator="{ props }">
+          <v-avatar
+            v-bind="props"
+            size="34"
+            color="primary"
+            class="app-avatar"
+            role="button"
+            title="Account"
+          >
+            <v-img
+              v-if="avatarUrl && !avatarError"
+              :src="avatarUrl"
+              alt="Your profile picture"
+              @error="avatarError = true"
+            />
+            <span v-else class="text-caption font-weight-bold">{{
+              userInitial
+            }}</span>
+          </v-avatar>
+        </template>
+        <!-- Opaque surface so the page does not show through the menu
+             (the app-wide VList bgColor default is transparent). -->
+        <v-list density="compact" bg-color="surface" elevation="8">
+          <v-list-item
+            prepend-icon="mdi-account-circle"
+            title="Profile"
+            @click="router.push('/profile')"
+          />
+          <v-list-item
+            prepend-icon="mdi-logout"
+            title="Log out"
+            @click="handleLogout"
+          />
+        </v-list>
+      </v-menu>
     </v-app-bar>
 
     <AppNav />
@@ -121,13 +134,14 @@
 </template>
 
 <script setup lang="ts">
-import { computed, onMounted } from 'vue'
+import { computed, onMounted, ref, watch } from 'vue'
 import { useDisplay } from 'vuetify'
 import { useAuth } from './composables/auth'
 import { useAppBar } from './composables/appBar'
 import { useOnboarding } from './composables/useOnboarding'
 import { useRouter } from 'vue-router'
 import { devAuth } from './config'
+import { resolveImageUrl } from './lib/circleImage'
 import { MtButton } from './ui'
 import AppNav from './components/AppNav.vue'
 import AppFooter from './components/AppFooter.vue'
@@ -168,6 +182,17 @@ const userInitial = computed<string>(() => {
     auth.oidcUser.value?.profile?.email ??
     ''
   return (name as string).charAt(0).toUpperCase() || '?'
+})
+
+// Resolved avatar (uploaded image, provider photo, or gravatar). The
+// gravatar fallback 404s when none exists, so fall back to initials on
+// any image load error; reset the flag whenever the source changes.
+const avatarUrl = computed<string | null>(() =>
+  resolveImageUrl(auth.avatarRef.value),
+)
+const avatarError = ref(false)
+watch(avatarUrl, () => {
+  avatarError.value = false
 })
 
 /** Sign out the current user via OIDC. */
@@ -212,5 +237,6 @@ async function handleLogout(): Promise<void> {
 
 .app-avatar {
   color: rgb(var(--v-theme-on-primary));
+  cursor: pointer;
 }
 </style>

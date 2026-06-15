@@ -145,22 +145,36 @@ group-chat bot — or use different bots per circle — each Telegram bot is
 configured **inside a circle's settings** by an owner or admin. There is
 no global bot and no server-side Telegram variables to set.
 
-How it works end to end:
+A bot is created in one of two **modes**:
+
+- **Group chat** — posts each circle's updates into one shared group.
+- **Direct messages** — circle members opt in individually (from their
+  own profile) to receive personal DMs.
+
+How a group-chat bot works end to end:
 
 1. In Telegram, talk to **@BotFather** and create a bot. Copy the bot
    **token** it gives you.
 2. Add the bot to the group chat where the circle should receive
    updates, and post any message in that group.
-3. In MeepleTime, open the circle, choose **Notification settings**
-   (owner/admin only), and add the bot with a label and the token.
+3. In MeepleTime, open the circle, choose **Edit circle settings →
+   Notifications — Telegram** (owner/admin only), and add the bot with a
+   label, the token, and the **Group chat** mode.
 4. Click **Detect chat** — the backend calls the bot's `getUpdates` and
    lists the chats it has seen. Pick the group. That stores the chat id.
 5. Use the **Test** button to post a real test message to the group and
    confirm delivery before relying on it.
 
-From then on, each notification-worthy transition posts a message to
-that group chat. A circle may have several bots; the same bot/token can
-be reused across circles by entering it in each.
+For a **direct-message** bot, add it with the **Direct messages** mode
+instead; there is no group chat to detect. Each member who wants DMs
+then connects from their own profile (start the bot, press **Connect**,
+pick their chat). The backend only ever links members of the bot's
+circle, so DMs cannot reach non-members.
+
+From then on, each notification-worthy transition posts to the group
+chat (group bots) or to each connected member (DM bots). A circle may
+have several bots; the same bot/token can be reused across circles by
+entering it in each.
 
 Operational notes:
 

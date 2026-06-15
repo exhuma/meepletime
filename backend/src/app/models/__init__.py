@@ -21,10 +21,12 @@ from app.models.notification_settings import (
 )
 from app.models.onboarding import UserOnboardingState
 from app.models.user import User
+from app.models.user_image import UserImage
 
 __all__ = [
     "AuthIdentity",
     "User",
+    "UserImage",
     "Circle",
     "CircleImage",
     "CircleMembership",

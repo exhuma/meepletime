@@ -8,6 +8,8 @@ from fastapi import HTTPException, status
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
+from app.models.circle import Circle
+from app.models.membership import CircleMembership
 from app.models.notification_settings import (
     TELEGRAM_MODE_DM,
     CircleTelegramConfig,
@@ -153,6 +155,46 @@ def list_dm_bots_with_link_state(
         ).scalars()
     )
     return [(c, c.id in linked_ids) for c in configs]
+
+
+def list_user_dm_bots(
+    db: Session, user_id: uuid.UUID
+) -> list[tuple[CircleTelegramConfig, str, bool]]:
+    """
+    Return DM-mode bots across all circles the user belongs to.
+
+    Gated by membership: only bots of circles the user is a member of
+    are returned, satisfying "DMs may only go out to members of these
+    circles".
+
+    :param db: Active database session.
+    :param user_id: The member asking.
+    :returns: ``(config, circle_name, linked)`` triples.
+    """
+    rows = db.execute(
+        select(CircleTelegramConfig, Circle.name)
+        .join(Circle, Circle.id == CircleTelegramConfig.circle_id)
+        .join(
+            CircleMembership,
+            CircleMembership.circle_id == CircleTelegramConfig.circle_id,
+        )
+        .where(
+            CircleMembership.user_id == user_id,
+            CircleTelegramConfig.mode == TELEGRAM_MODE_DM,
+        )
+    ).all()
+    if not rows:
+        return []
+    config_ids = [config.id for config, _ in rows]
+    linked_ids = set(
+        db.execute(
+            select(TelegramMemberLink.circle_telegram_config_id).where(
+                TelegramMemberLink.user_id == user_id,
+                TelegramMemberLink.circle_telegram_config_id.in_(config_ids),
+            )
+        ).scalars()
+    )
+    return [(config, name, config.id in linked_ids) for config, name in rows]
 
 
 def upsert_member_link(

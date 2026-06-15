@@ -83,10 +83,12 @@ def create_app() -> FastAPI:
         memberships,
         notifications,
         onboarding,
+        users,
         viability,
     )
 
     app.include_router(auth.router)
+    app.include_router(users.router)
     app.include_router(circles.router)
     app.include_router(memberships.router)
     app.include_router(availability.router)

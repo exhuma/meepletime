@@ -37,6 +37,13 @@ class User(Base):
         String(255),
         nullable=True,
     )
+    # Profile picture URL from the identity provider's ``picture``
+    # claim, captured at provisioning. Used as the avatar fallback
+    # when the user has not uploaded their own image.
+    picture_url: Mapped[str | None] = mapped_column(
+        String(512),
+        nullable=True,
+    )
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True),
         default=lambda: datetime.now(UTC),
@@ -68,4 +75,10 @@ class User(Base):
     auth_identities: Mapped[list[AuthIdentity]] = relationship(
         "AuthIdentity",
         back_populates="user",
+    )
+    image: Mapped[UserImage | None] = relationship(
+        "UserImage",
+        back_populates="user",
+        uselist=False,
+        cascade="all, delete-orphan",
     )

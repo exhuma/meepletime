@@ -3,6 +3,12 @@ export interface User {
   email: string
   display_name: string | null
   created_at: string
+  /**
+   * Resolved avatar reference: an API-relative path for an uploaded
+   * image, an absolute IDP/gravatar URL, or null when the client
+   * should render the initials avatar.
+   */
+  avatar_ref?: string | null
 }
 
 export interface Circle {
@@ -118,6 +124,15 @@ export interface TelegramChatOption {
 
 export interface TelegramDmBot {
   id: string
+  label: string
+  linked: boolean
+}
+
+/** A DM-mode bot offered to a user, aggregated across their circles. */
+export interface UserDmBot {
+  circle_id: string
+  circle_name: string
+  config_id: string
   label: string
   linked: boolean
 }
