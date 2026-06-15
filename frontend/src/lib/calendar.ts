@@ -18,6 +18,54 @@ export interface MonthDayCell {
   dayOfMonth: number
   myState: Availability['state'] | null
   viability: DayViability | null
+  isWeekend: boolean
+}
+
+/** English weekday short names indexed Sunday=0 … Saturday=6. */
+const WEEKDAY_NAMES = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'] as const
+
+/**
+ * Read the locale's week info, tolerating the two browser shapes:
+ * Chromium exposes `getWeekInfo()` (a method), Safari a `weekInfo`
+ * property. Returns null when neither is available (e.g. Firefox).
+ */
+function localeWeekInfo(): { firstDay: number; weekend: number[] } | null {
+  try {
+    const loc = new Intl.Locale(navigator.language) as Intl.Locale & {
+      getWeekInfo?: () => { firstDay: number; weekend: number[] }
+      weekInfo?: { firstDay: number; weekend: number[] }
+    }
+    return loc.getWeekInfo?.() ?? loc.weekInfo ?? null
+  } catch {
+    return null
+  }
+}
+
+/**
+ * First weekday of the week for the user's locale, as a `getDay`
+ * index (0 = Sunday … 6 = Saturday). Locale week info reports ISO
+ * days (1 = Monday … 7 = Sunday), so `% 7` maps Sunday (7) to 0.
+ * Falls back to Monday when the locale week info is unavailable.
+ */
+export function getWeekStart(): number {
+  const info = localeWeekInfo()
+  if (!info) return 1
+  return info.firstDay % 7
+}
+
+/**
+ * Weekend days for the user's locale as `getDay` indices. Falls back
+ * to Saturday + Sunday when locale week info is unavailable.
+ */
+export function getWeekendDays(): Set<number> {
+  const info = localeWeekInfo()
+  if (!info) return new Set([0, 6])
+  return new Set(info.weekend.map((d) => d % 7))
+}
+
+/** Weekday header labels ordered from `weekStart` (a `getDay` index). */
+export function weekdayHeaders(weekStart: number): string[] {
+  return Array.from({ length: 7 }, (_, i) => WEEKDAY_NAMES[(weekStart + i) % 7])
 }
 
 /** Format a Date as a `yyyy-MM-dd` key. */
@@ -30,9 +78,13 @@ export function monthLabel(monthStart: Date): string {
   return format(monthStart, 'MMMM yyyy')
 }
 
-/** Weekday index (0 = Sunday) of the month's first day. */
-export function firstDayOffset(monthStart: Date): number {
-  return getDay(monthStart)
+/**
+ * Number of leading blank cells before the month's first day, given
+ * the locale's first weekday (`weekStart`, a `getDay` index). Defaults
+ * to a Sunday-first week.
+ */
+export function firstDayOffset(monthStart: Date, weekStart = 0): number {
+  return (getDay(monthStart) - weekStart + 7) % 7
 }
 
 /** True when navigating back stays at or after the current month. */
@@ -82,13 +134,13 @@ export function buildMonthDays(
   calendar: Readonly<Record<string, readonly Availability[]>>,
   viability: Readonly<Record<string, DayViability>>,
   userId: string | null,
+  weekendDays: ReadonlySet<number> = new Set([0, 6]),
 ): MonthDayCell[] {
   const count = getDaysInMonth(monthStart)
   const cells: MonthDayCell[] = []
   for (let d = 1; d <= count; d++) {
-    const date = formatDate(
-      new Date(monthStart.getFullYear(), monthStart.getMonth(), d),
-    )
+    const day = new Date(monthStart.getFullYear(), monthStart.getMonth(), d)
+    const date = formatDate(day)
     const entries = calendar[date] ?? []
     const mine = userId ? entries.find((a) => a.user_id === userId) : undefined
     cells.push({
@@ -96,6 +148,7 @@ export function buildMonthDays(
       dayOfMonth: d,
       myState: mine?.state ?? null,
       viability: viability[date] ?? null,
+      isWeekend: weekendDays.has(getDay(day)),
     })
   }
   return cells

@@ -25,8 +25,13 @@
         <!-- Calendar grid -->
         <div class="calendar-grid" data-tour="calendar-grid">
           <!-- Day headers -->
-          <div class="calendar-header" v-for="day in dayHeaders" :key="day">
-            {{ day }}
+          <div
+            class="calendar-header"
+            :class="{ 'calendar-header--weekend': day.isWeekend }"
+            v-for="day in dayHeaders"
+            :key="day.label"
+          >
+            {{ day.label }}
           </div>
 
           <!-- Blank cells for first week offset -->
@@ -46,6 +51,7 @@
             :viability="day.viability"
             :is-today="day.date === todayStr"
             :is-past="day.date < todayStr"
+            :is-weekend="day.isWeekend"
             :dimmed="viableOnly && !day.viability?.is_viable"
             @activate="onActivate"
             @context="onContext"
@@ -150,6 +156,9 @@ import {
   firstDayOffset as firstDayOffsetFor,
   canGoToPrevMonth,
   buildMonthDays,
+  getWeekStart,
+  getWeekendDays,
+  weekdayHeaders,
 } from '../lib/calendar'
 import {
   isAdminOrOwner as computeIsAdminOrOwner,
@@ -208,11 +217,19 @@ const monthLabel = computed<string>(() =>
   monthLabelFor(currentMonthStart.value),
 )
 
-const dayHeaders = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat']
+// First weekday + weekend days follow the user's browser locale.
+const weekStart = getWeekStart()
+const weekendDays = getWeekendDays()
 
-/** Offset of the first day (0 = Sunday). */
+/** Weekday headers ordered for the locale, flagged for weekends. */
+const dayHeaders = weekdayHeaders(weekStart).map((label, i) => ({
+  label,
+  isWeekend: weekendDays.has((weekStart + i) % 7),
+}))
+
+/** Leading blank cells before the month's first day. */
 const firstDayOffset = computed<number>(() =>
-  firstDayOffsetFor(currentMonthStart.value),
+  firstDayOffsetFor(currentMonthStart.value, weekStart),
 )
 
 /** Build the array of day cells for the current month. */
@@ -222,6 +239,7 @@ const daysInMonth = computed(() =>
     circlesState.calendar.value,
     circlesState.viability.value,
     auth.userId.value,
+    weekendDays,
   ),
 )
 
@@ -388,6 +406,10 @@ onMounted(async () => {
   font-weight: 600;
   padding: 6px 2px;
   color: rgb(var(--v-theme-on-surface-variant));
+}
+
+.calendar-header--weekend {
+  color: rgb(var(--v-theme-primary));
 }
 
 .calendar-blank {

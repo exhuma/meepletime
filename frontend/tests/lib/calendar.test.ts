@@ -3,6 +3,7 @@ import {
   formatDate,
   monthLabel,
   firstDayOffset,
+  weekdayHeaders,
   canGoToPrevMonth,
   buildMonthDays,
   buildUpcomingDays,
@@ -22,9 +23,40 @@ describe('monthLabel', () => {
 })
 
 describe('firstDayOffset', () => {
-  it('returns the weekday index of the month start', () => {
-    // 2026-06-01 is a Monday -> 1.
+  it('counts blank cells for a Sunday-first week (default)', () => {
+    // 2026-06-01 is a Monday -> one blank cell before it (Sunday).
     expect(firstDayOffset(new Date(2026, 5, 1))).toBe(1)
+  })
+
+  it('counts blank cells for a Monday-first week', () => {
+    // 2026-06-01 is a Monday -> no blank cells when Monday leads.
+    expect(firstDayOffset(new Date(2026, 5, 1), 1)).toBe(0)
+  })
+})
+
+describe('weekdayHeaders', () => {
+  it('orders headers from Sunday for a Sunday-first week', () => {
+    expect(weekdayHeaders(0)).toEqual([
+      'Sun',
+      'Mon',
+      'Tue',
+      'Wed',
+      'Thu',
+      'Fri',
+      'Sat',
+    ])
+  })
+
+  it('orders headers from Monday for a Monday-first week', () => {
+    expect(weekdayHeaders(1)).toEqual([
+      'Mon',
+      'Tue',
+      'Wed',
+      'Thu',
+      'Fri',
+      'Sat',
+      'Sun',
+    ])
   })
 })
 
@@ -68,6 +100,20 @@ describe('buildMonthDays', () => {
     }
     const days = buildMonthDays(new Date(2026, 5, 1), calendar, {}, 'u1')
     expect(days[0].myState).toBe(null)
+  })
+
+  it('flags weekend days from the given weekend set', () => {
+    const days = buildMonthDays(
+      new Date(2026, 5, 1),
+      {},
+      {},
+      null,
+      new Set([0, 6]),
+    )
+    // 2026-06-01 Monday, 06-06 Saturday, 06-07 Sunday.
+    expect(days[0].isWeekend).toBe(false)
+    expect(days[5].isWeekend).toBe(true)
+    expect(days[6].isWeekend).toBe(true)
   })
 })
 

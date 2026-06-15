@@ -2,6 +2,7 @@
   <div
     class="cell"
     :class="{
+      'cell--weekend': isWeekend,
       'cell--past': vs.isPast,
       'cell--viable': vs.fill === 'viable',
       'cell--over-soft-max': vs.fill === 'over-soft-max',
@@ -54,6 +55,7 @@ const props = defineProps<{
   viability: DayViability | null
   isToday: boolean
   isPast: boolean
+  isWeekend: boolean
   dimmed: boolean
 }>()
 
@@ -116,6 +118,12 @@ const ariaLabel = computed<string>(() => {
 .cell:focus-visible {
   outline: 2px solid rgb(var(--v-theme-primary));
   outline-offset: -2px;
+}
+
+/* Weekend tint; listed before the stronger states below so past /
+   viable / over-soft-max backgrounds still win (equal specificity). */
+.cell--weekend {
+  background: rgb(var(--v-theme-surface-container-high));
 }
 
 .cell--past {
