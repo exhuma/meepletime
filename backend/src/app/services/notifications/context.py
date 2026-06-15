@@ -59,6 +59,11 @@ def build_event_context(event: NotificationEvent, db: Session) -> EventContext:
     if event.event_type == "viable":
         title = f"{name}: a day is now viable"
         body = f"{event.local_date} is now a viable meetup day for {name}."
+    elif event.event_type == "no_longer_viable":
+        title = f"{name}: a day is no longer viable"
+        body = (
+            f"{event.local_date} is no longer a viable meetup day for {name}."
+        )
     else:
         title = f"{name}: meetup candidate"
         body = f"{event.local_date} has a meetup candidate forming for {name}."
@@ -75,20 +80,34 @@ def build_event_context(event: NotificationEvent, db: Session) -> EventContext:
     )
 
 
-def _summary_title(name: str, viable: int, forming: int) -> str:
+def _summary_title(name: str, viable: int, lost: int, forming: int) -> str:
     """
     Build the title for an aggregated, multi-day summary.
 
     :param name: Display name of the circle.
     :param viable: Number of days that became viable.
+    :param lost: Number of days that are no longer viable.
     :param forming: Number of days with a forming candidate.
     :returns: A short summary title.
     """
-    if viable and forming:
-        return f"{name}: {viable} viable, {forming} forming"
-    if viable:
-        return f"{name}: {viable} days now viable"
-    return f"{name}: {forming} meetup candidates forming"
+    present = [
+        (viable, "viable"),
+        (lost, "no longer viable"),
+        (forming, "forming"),
+    ]
+    buckets = [(count, label) for count, label in present if count]
+
+    # Preserve the friendlier single-bucket phrasing.
+    if len(buckets) == 1:
+        count, label = buckets[0]
+        if label == "viable":
+            return f"{name}: {count} days now viable"
+        if label == "forming":
+            return f"{name}: {count} meetup candidates forming"
+        return f"{name}: {count} days no longer viable"
+
+    parts = ", ".join(f"{count} {label}" for count, label in buckets)
+    return f"{name}: {parts}"
 
 
 def build_batch_context(
@@ -117,13 +136,16 @@ def build_batch_context(
     url = f"{base}/circles/{primary.circle_id}"
 
     viable = sum(1 for e in ordered if e.event_type == "viable")
-    forming = len(ordered) - viable
-    title = _summary_title(name, viable, forming)
+    lost = sum(1 for e in ordered if e.event_type == "no_longer_viable")
+    forming = len(ordered) - viable - lost
+    title = _summary_title(name, viable, lost, forming)
 
     lines = [f"Updated meetup days for {name}:"]
     for event in ordered:
         if event.event_type == "viable":
             lines.append(f"- {event.local_date}: now viable")
+        elif event.event_type == "no_longer_viable":
+            lines.append(f"- {event.local_date}: no longer viable")
         else:
             lines.append(f"- {event.local_date}: candidate forming")
     body = "\n".join(lines)

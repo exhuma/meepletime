@@ -45,22 +45,51 @@ def _evaluate_one(
     :param local_date: The circle-local date to evaluate.
     :param db: Active database session.
     :param anti_storm_window: Suppression window in seconds for
-        duplicate events of the same type on the same day.
+        duplicate events of the same viability class on the same day.
     :returns: The staged event, or ``None`` when nothing is
         notify-worthy (empty day or suppressed duplicate).
     """
     viability = compute_viability(circle, local_date, db)
-    if viability.attendee_count == 0:
-        return None  # No candidate – nothing to notify about
 
-    event_type = "viable" if viability.is_viable else "non_viable_candidate"
+    # The most recent prior event is this day's last notified state.
+    prior = (
+        db.execute(
+            select(NotificationEvent)
+            .where(
+                NotificationEvent.circle_id == circle.id,
+                NotificationEvent.local_date == local_date,
+            )
+            .order_by(NotificationEvent.created_at.desc())
+            .limit(1)
+        )
+        .scalars()
+        .first()
+    )
+    prior_was_viable = prior is not None and prior.event_type == "viable"
+
+    if viability.is_viable:
+        event_type = "viable"
+    elif prior_was_viable:
+        # viable -> non-viable, including a drop to zero attendees.
+        event_type = "no_longer_viable"
+    elif viability.attendee_count == 0:
+        return None  # No candidate and never viable – nothing to notify
+    else:
+        event_type = "non_viable_candidate"
+
+    # Suppress duplicates by viability class so the two non-viable types
+    # cannot both fire for the same day within one window.
+    if viability.is_viable:
+        suppress_types = ("viable",)
+    else:
+        suppress_types = ("no_longer_viable", "non_viable_candidate")
 
     recent_cutoff = datetime.now(UTC) - timedelta(seconds=anti_storm_window)
     existing = db.execute(
         select(NotificationEvent).where(
             NotificationEvent.circle_id == circle.id,
             NotificationEvent.local_date == local_date,
-            NotificationEvent.event_type == event_type,
+            NotificationEvent.event_type.in_(suppress_types),
             NotificationEvent.created_at >= recent_cutoff,
         )
     ).first()

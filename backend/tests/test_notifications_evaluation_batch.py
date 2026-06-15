@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from datetime import date
 
-from sqlalchemy import select
+from sqlalchemy import delete, select
 from sqlalchemy.orm import Session
 
 from app.models.availability import AvailabilityState, DayAvailability
@@ -290,3 +290,154 @@ def test_evaluate_batch_anti_storm_suppresses_repeat(
     )
     assert len(events) == 1  # second evaluation suppressed
     assert fake.sent == []  # no event -> no send
+
+
+def _latest_event(db: Session, day: date) -> NotificationEvent:
+    """Return the most recently created event for *day*."""
+    return (
+        db.execute(
+            select(NotificationEvent)
+            .where(NotificationEvent.local_date == day)
+            .order_by(NotificationEvent.created_at.desc())
+            .limit(1)
+        )
+        .scalars()
+        .one()
+    )
+
+
+def test_dropping_below_minimum_notifies_no_longer_viable(
+    db_session: Session,
+    monkeypatch,
+) -> None:
+    """A viable day losing a participant emits a lost-viability event."""
+    fake = _FakeChannel()
+    monkeypatch.setattr(dispatch_mod, "iter_channels", lambda: [fake])
+
+    owner = _user(db_session, "owner@x.test")
+    other = _user(db_session, "other@x.test")
+    circle = _circle(db_session, owner, minimum_attendees=2)
+    _member(db_session, circle, owner)
+    _member(db_session, circle, other)
+    _mark(db_session, circle, owner, _D1, AvailabilityState.attending)
+    _mark(db_session, circle, other, _D1, AvailabilityState.attending)
+    db_session.commit()
+
+    evaluate_and_notify_batch(circle.id, [_D1], db_session)
+    assert _latest_event(db_session, _D1).event_type == "viable"
+
+    # One participant leaves -> count drops below the minimum.
+    db_session.execute(
+        delete(DayAvailability).where(
+            DayAvailability.user_id == other.id,
+            DayAvailability.local_date == _D1,
+        )
+    )
+    db_session.commit()
+
+    evaluate_and_notify_batch(circle.id, [_D1], db_session)
+
+    lost = _latest_event(db_session, _D1)
+    assert lost.event_type == "no_longer_viable"
+    ctx = build_event_context(lost, db_session)
+    assert "no longer" in ctx.title.lower()
+    assert "no longer" in ctx.body.lower()
+    assert "forming" not in ctx.body.lower()
+
+
+def test_emptied_viable_day_notifies_no_longer_viable(
+    db_session: Session,
+    monkeypatch,
+) -> None:
+    """A viable day losing *all* attendees still notifies, not silence."""
+    fake = _FakeChannel()
+    monkeypatch.setattr(dispatch_mod, "iter_channels", lambda: [fake])
+
+    owner = _user(db_session, "owner@x.test")
+    circle = _circle(db_session, owner)
+    _member(db_session, circle, owner)
+    _mark(db_session, circle, owner, _D1, AvailabilityState.attending)
+    db_session.commit()
+
+    evaluate_and_notify_batch(circle.id, [_D1], db_session)
+    assert _latest_event(db_session, _D1).event_type == "viable"
+
+    db_session.execute(
+        delete(DayAvailability).where(DayAvailability.local_date == _D1)
+    )
+    db_session.commit()
+
+    evaluate_and_notify_batch(circle.id, [_D1], db_session)
+    assert _latest_event(db_session, _D1).event_type == "no_longer_viable"
+
+
+def test_emptied_forming_day_stays_silent(
+    db_session: Session,
+    monkeypatch,
+) -> None:
+    """A never-viable candidate emptying to zero is not 'no longer viable'."""
+    fake = _FakeChannel()
+    monkeypatch.setattr(dispatch_mod, "iter_channels", lambda: [fake])
+
+    owner = _user(db_session, "owner@x.test")
+    attendee = _user(db_session, "att@x.test")
+    circle = _circle(db_session, owner, host_needed=True)
+    _member(db_session, circle, owner)
+    _member(db_session, circle, attendee)
+    # Attending only with host required -> candidate forming, never viable.
+    _mark(db_session, circle, attendee, _D1, AvailabilityState.attending)
+    db_session.commit()
+
+    evaluate_and_notify_batch(circle.id, [_D1], db_session)
+    assert _latest_event(db_session, _D1).event_type == "non_viable_candidate"
+
+    db_session.execute(
+        delete(DayAvailability).where(DayAvailability.local_date == _D1)
+    )
+    db_session.commit()
+
+    evaluate_and_notify_batch(circle.id, [_D1], db_session)
+
+    events = list(
+        db_session.execute(
+            select(NotificationEvent).where(NotificationEvent.local_date == _D1)
+        ).scalars()
+    )
+    # No new event, and nothing mislabeled as a lost-viability transition.
+    assert len(events) == 1
+    assert all(e.event_type != "no_longer_viable" for e in events)
+
+
+def test_single_no_longer_viable_event_context(
+    db_session: Session,
+) -> None:
+    """The single-day wording for a lost-viability event is explicit."""
+    owner = _user(db_session, "a@x.test")
+    circle = _circle(db_session, owner)
+    event = _event(db_session, circle, _D1, "no_longer_viable")
+
+    ctx = build_event_context(event, db_session)
+
+    assert "no longer" in ctx.title.lower()
+    assert "no longer" in ctx.body.lower()
+    assert "forming" not in ctx.body.lower()
+
+
+def test_batch_context_distinguishes_lost_viability(
+    db_session: Session,
+) -> None:
+    """A mixed batch lists and counts all three transition types."""
+    owner = _user(db_session, "a@x.test")
+    circle = _circle(db_session, owner)
+    viable = _event(db_session, circle, _D1, "viable")
+    lost = _event(db_session, circle, _D2, "no_longer_viable")
+    forming = _event(db_session, circle, _D3, "non_viable_candidate")
+
+    ctx = build_batch_context([forming, lost, viable], db_session)
+
+    assert f"- {_D1}: now viable" in ctx.body
+    assert f"- {_D2}: no longer viable" in ctx.body
+    assert f"- {_D3}: candidate forming" in ctx.body
+    assert "1 viable" in ctx.title
+    assert "1 no longer viable" in ctx.title
+    assert "1 forming" in ctx.title
