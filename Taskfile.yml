@@ -13,12 +13,15 @@ tasks:
     deps: [migrate]
     cmd: >-
       uv run uvicorn app.main:app --reload --host 0.0.0.0
+      --port ${MEEPLETIME_BACKEND_PORT:-8000}
       --log-config logging.dev.yaml
 
   frontend:
     desc: Start the Vite dev server
     dir: frontend
-    cmd: npm run dev -- --host 0.0.0.0
+    cmd: >-
+      npm run dev -- --host 0.0.0.0
+      --port ${MEEPLETIME_FRONTEND_PORT:-5173}
 
   build:frontend:
     desc: Production build of the frontend
@@ -65,18 +68,63 @@ tasks:
         docker run -d --rm --name meepletime-dev-db
         -e POSTGRES_DB=meepletime -e POSTGRES_USER=meepletime
         -e POSTGRES_PASSWORD=changeme
-        -p 5432:5432 postgres:16-alpine
+        -p ${MEEPLETIME_DB_PORT:-5432}:5432 postgres:16-alpine
       - echo "Waiting for PostgreSQL to accept connections…"
       - >-
         until docker exec meepletime-dev-db
         pg_isready -U meepletime -q; do sleep 1; done
       - >-
         echo "Ready →
-        postgresql://meepletime:changeme@localhost:5432/meepletime"
+        postgresql://meepletime:changeme@localhost:${MEEPLETIME_DB_PORT:-5432}/meepletime"
 
   dev:db-stop:
     desc: Stop and remove the throwaway dev database from `task dev:db`.
     cmd: docker rm -f meepletime-dev-db
+
+  dev:keycloak:
+    desc: >-
+      Start a throwaway Keycloak 26.5 (realm pre-imported) on
+      localhost:8080 for real-OIDC end-to-end runs OUTSIDE the
+      dev-container. Ephemeral. Most agent work should use dev-auth
+      instead (no Keycloak). Override the port with
+      MEEPLETIME_KEYCLOAK_PORT (also update the OIDC authority env in
+      backend/.env and frontend/.env.local to match). Stop with
+      `task dev:keycloak-stop`.
+    cmds:
+      - >-
+        docker run -d --rm --name meepletime-dev-keycloak
+        -e KC_BOOTSTRAP_ADMIN_USERNAME=admin
+        -e KC_BOOTSTRAP_ADMIN_PASSWORD=admin
+        -e KC_HOSTNAME=http://keycloak.127.0.0.1.nip.io:${MEEPLETIME_KEYCLOAK_PORT:-8080}
+        -e KC_HEALTH_ENABLED=true
+        -p ${MEEPLETIME_KEYCLOAK_PORT:-8080}:8080
+        -v {{.ROOT_DIR}}/deploy/dev/keycloak-realm.json:/opt/keycloak/data/import/meepletime-realm.json:ro
+        -v {{.ROOT_DIR}}/assets/keycloak/themes:/opt/keycloak/themes:ro
+        quay.io/keycloak/keycloak:26.5
+        start-dev --import-realm --spi-theme-static-max-age=-1
+        --spi-theme-cache-themes=false
+        --spi-theme-cache-templates=false
+      - echo "Waiting for Keycloak realm to import…"
+      - >-
+        until curl -fsS
+        http://localhost:${MEEPLETIME_KEYCLOAK_PORT:-8080}/realms/meepletime
+        | grep -q '"realm":"meepletime"'; do sleep 2; done
+      - >-
+        echo "Ready →
+        http://keycloak.127.0.0.1.nip.io:${MEEPLETIME_KEYCLOAK_PORT:-8080}
+        (admin / admin)"
+
+  dev:keycloak-stop:
+    desc: Stop and remove the throwaway Keycloak from `task dev:keycloak`.
+    cmd: docker rm -f meepletime-dev-keycloak
+
+  setup:host:
+    desc: >-
+      One-shot host bootstrap for running OUTSIDE the dev-container:
+      installs project-local toolchains (uv/npm), pre-commit hooks,
+      and seeds host-flavoured backend/.env + frontend/.env.local
+      (dev-auth, localhost DB) when absent. Idempotent.
+    cmd: bash scripts/setup-host.bash
 
   test:backend:
     desc: Run the backend test suite

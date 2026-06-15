@@ -9,6 +9,7 @@ Use this guide when working on this repository.
 3. [Security](security.md)
 4. [Code Style](code-style.md)
 5. [Development login (no Keycloak)](auth.md)
+6. [Running on the host (no dev-container)](host-run.md)
 
 ## Scope
 
