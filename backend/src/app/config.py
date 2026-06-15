@@ -3,15 +3,38 @@
 from __future__ import annotations
 
 from functools import lru_cache
+from importlib.metadata import PackageNotFoundError
+from importlib.metadata import version as _package_version
 
-from pydantic import PostgresDsn, model_validator
+from pydantic import Field, PostgresDsn, model_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
+
+
+def _installed_version() -> str:
+    """
+    Return the installed backend version, or a dev placeholder.
+
+    Used only as the local-development fallback: in built images the
+    ``MEEPLETIME_VERSION`` env var (baked from the release git tag)
+    overrides it.
+
+    :returns: Distribution version string or ``"0.0.0+dev"``.
+    """
+    try:
+        return _package_version("meepletime-backend")
+    except PackageNotFoundError:
+        return "0.0.0+dev"
 
 
 class Settings(BaseSettings):
     """
     Application settings loaded from the environment.
 
+    :param VERSION: Application version string reported in the
+        ``X-MeepleTime-Version`` response header and the OpenAPI
+        schema. Set from ``MEEPLETIME_VERSION`` (baked from the
+        release git tag in built images); falls back to the
+        installed distribution version in local development.
     :param DATABASE_URL: PostgreSQL connection string.
     :param OIDC_AUTHORITY: OIDC discovery base URL (Keycloak realm
         URL) the backend fetches metadata/JWKS from.
@@ -70,6 +93,7 @@ class Settings(BaseSettings):
         values for uploaded circle hero images.
     """
 
+    VERSION: str = Field(default_factory=_installed_version)
     DATABASE_URL: PostgresDsn
     OIDC_AUTHORITY: str
     OIDC_AUDIENCE: str

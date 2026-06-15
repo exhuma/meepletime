@@ -1,7 +1,11 @@
 name: Build and publish images
 
 # Builds the backend and frontend Docker images and pushes them to the
-# private container registry on version tags (e.g. v0.1.0).
+# private container registry on calendar-version tags
+# (e.g. v2026.6.15, v2026.6.15-alpha.1).
+# Each build publishes two tags per image: the immutable full version
+# (e.g. 2026.6.15-alpha.1) and a moving release-channel pointer
+# (alpha / beta / rc / stable). No unconditional "latest" is pushed.
 # Trigger a manual run via the Actions tab with workflow_dispatch.
 on:
   push:
@@ -28,6 +32,27 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
+      - name: Verify version files match the release tag
+        if: startsWith(github.ref, 'refs/tags/')
+        run: |
+          # Guard against drift: the pushed tag must match the version
+          # baked into the package manifests. The frontend keeps the
+          # semver form verbatim; the backend keeps the equivalent
+          # PEP440 canonical form (alpha. -> a, beta. -> b, rc. -> rc).
+          tag="${GITHUB_REF_NAME#v}"
+          pkg="$(node -p "require('./frontend/package.json').version")"
+          if [ "$pkg" != "$tag" ]; then
+            echo "::error::frontend/package.json ($pkg) != tag ($tag)"
+            exit 1
+          fi
+          pep="$(printf '%s' "$tag" \
+            | sed -E 's/-alpha\./a/; s/-beta\./b/; s/-rc\./rc/')"
+          py="$(python3 -c "import tomllib; print(tomllib.load(open('backend/pyproject.toml','rb'))['project']['version'])")"
+          if [ "$py" != "$pep" ]; then
+            echo "::error::backend/pyproject.toml ($py) != expected ($pep)"
+            exit 1
+          fi
+
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
 
@@ -52,15 +77,35 @@ jobs:
           username: ${{ secrets.DOCKER_REGISTRY_USER }}
           password: ${{ secrets.DOCKER_REGISTRY_PASSWORD }}
 
+      - name: Derive release channel
+        id: channel
+        run: |
+          # Map the pre-release identifier in the tag to a moving
+          # channel pointer. A tag with no pre-release is "stable".
+          # Calver (YYYY.M.D) carries no semver compatibility meaning,
+          # so per-component pointers (alpha/beta/rc/stable) replace
+          # the {{major}}.{{minor}} / latest tags this project dropped.
+          ref="${GITHUB_REF_NAME#v}"
+          case "$ref" in
+            *-alpha.*) ch=alpha ;;
+            *-beta.*)  ch=beta ;;
+            *-rc.*)    ch=rc ;;
+            *)         ch=stable ;;
+          esac
+          echo "channel=$ch" >> "$GITHUB_OUTPUT"
+
       - name: Derive image metadata
         id: meta
         uses: docker/metadata-action@v5
         with:
           images: ${{ steps.registry.outputs.path }}/${{ matrix.component }}
+          # No auto-"latest": calver has no semver ordering to anchor it
+          # to. The moving pointer is the channel tag below.
+          flavor: |
+            latest=false
           tags: |
             type=semver,pattern={{version}}
-            type=semver,pattern={{major}}.{{minor}}
-            type=raw,value=latest
+            type=raw,value=${{ steps.channel.outputs.channel }}
 
       - name: Build and push
         uses: docker/build-push-action@v6
@@ -71,3 +116,6 @@ jobs:
           labels: ${{ steps.meta.outputs.labels }}
           cache-from: type=gha
           cache-to: type=gha,mode=max
+          build-args: |
+            APP_VERSION=${{ steps.meta.outputs.version || '0.0.0+dev' }}
+            VITE_GITHUB_REPO_URL=https://github.com/${{ github.repository }}

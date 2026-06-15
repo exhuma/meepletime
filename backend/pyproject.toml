@@ -1,6 +1,9 @@
 [project]
 name = "meepletime-backend"
-version = "0.1.0"
+# Calendar version in PEP440 canonical form. The equivalent semver
+# form (2026.6.15-alpha.1) lives in frontend/package.json and in the
+# release git tag; CI fails the build if these drift apart.
+version = "2026.6.15a1"
 description = "MeepleTime backend API"
 requires-python = ">=3.14"
 dependencies = [

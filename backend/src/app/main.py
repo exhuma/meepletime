@@ -17,6 +17,7 @@ from app.database import get_db
 from app.middleware import (
     RequestLoggingMiddleware,
     SecurityHeadersMiddleware,
+    VersionHeaderMiddleware,
 )
 
 LOG = logging.getLogger(__name__)
@@ -54,7 +55,7 @@ def create_app() -> FastAPI:
         description=(
             "Backend API for the MeepleTime meeting availability application"
         ),
-        version="1.0.0",
+        version=settings.VERSION,
         lifespan=lifespan,
     )
 
@@ -62,6 +63,7 @@ def create_app() -> FastAPI:
     # requests.  CORS must be outermost to catch preflight OPTIONS
     # before auth; security headers and logging are inner layers.
     app.add_middleware(SecurityHeadersMiddleware)
+    app.add_middleware(VersionHeaderMiddleware, version=settings.VERSION)
     app.add_middleware(RequestLoggingMiddleware)
     app.add_middleware(
         CORSMiddleware,

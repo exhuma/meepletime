@@ -3,6 +3,13 @@ WORKDIR /app
 COPY package*.json .
 RUN npm ci
 COPY . .
+# Build-time metadata. APP_VERSION (from the release git tag) is read
+# by vite.config.ts; VITE_GITHUB_REPO_URL is picked up by Vite as a
+# VITE_* var and drives the footer's source-code link. Both must be
+# declared here in the frontend build stage, before `npm run build`.
+ARG APP_VERSION
+ARG VITE_GITHUB_REPO_URL
+ENV VITE_APP_VERSION=$APP_VERSION
 RUN npm run build
 
 FROM nginx:alpine

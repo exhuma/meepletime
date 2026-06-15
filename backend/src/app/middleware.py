@@ -9,6 +9,7 @@ import uuid
 from starlette.middleware.base import BaseHTTPMiddleware
 from starlette.requests import Request
 from starlette.responses import Response
+from starlette.types import ASGIApp
 
 from app.logging_utils import clear_correlation_id, set_correlation_id
 
@@ -23,6 +24,25 @@ class SecurityHeadersMiddleware(BaseHTTPMiddleware):
         response.headers["X-Content-Type-Options"] = "nosniff"
         response.headers["X-Frame-Options"] = "DENY"
         response.headers["Referrer-Policy"] = "strict-origin-when-cross-origin"
+        return response
+
+
+class VersionHeaderMiddleware(BaseHTTPMiddleware):
+    """Add the application version to every response."""
+
+    def __init__(self, app: ASGIApp, version: str) -> None:
+        """
+        Store the version to stamp on each response.
+
+        :param app: The wrapped ASGI application.
+        :param version: Application version string.
+        """
+        super().__init__(app)
+        self._version = version
+
+    async def dispatch(self, request: Request, call_next) -> Response:
+        response = await call_next(request)
+        response.headers["X-MeepleTime-Version"] = self._version
         return response
 
 

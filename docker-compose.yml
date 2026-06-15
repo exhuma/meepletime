@@ -69,7 +69,13 @@ services:
       retries: 10
 
   frontend:
-    build: ./frontend
+    build:
+      context: ./frontend
+      args:
+        # Empty by default: the footer's source-code link stays hidden
+        # and the version falls back to package.json. CI overrides both.
+        VITE_GITHUB_REPO_URL: ${VITE_GITHUB_REPO_URL:-}
+        APP_VERSION: ${APP_VERSION:-}
     depends_on:
       backend:
         condition: service_healthy

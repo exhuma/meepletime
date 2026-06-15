@@ -115,6 +115,7 @@
 
     <v-main>
       <router-view />
+      <AppFooter />
     </v-main>
   </v-app>
 </template>
@@ -129,6 +130,7 @@ import { useRouter } from 'vue-router'
 import { devAuth } from './config'
 import { MtButton } from './ui'
 import AppNav from './components/AppNav.vue'
+import AppFooter from './components/AppFooter.vue'
 
 const { title, actions, isBusy } = useAppBar()
 

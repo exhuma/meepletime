@@ -17,6 +17,10 @@ COPY --from=build /app/alembic.ini ./alembic.ini
 COPY --from=build /app/logging.prod.yaml ./logging.prod.yaml
 ENV PATH="/app/.venv/bin:$PATH"
 ENV PYTHONPATH="/app/src"
+# Release version, baked from the git tag by CI (build-args). Surfaces
+# in the X-MeepleTime-Version response header and the OpenAPI schema.
+ARG APP_VERSION=0.0.0+dev
+ENV MEEPLETIME_VERSION=$APP_VERSION
 CMD ["sh", "-c", \
   "alembic upgrade head && \
   uvicorn app.main:app --host 0.0.0.0 --port 8000 \
