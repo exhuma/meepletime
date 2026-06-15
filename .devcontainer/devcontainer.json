@@ -1,4 +1,8 @@
 {
+  // NOTE: The dev-container is OPTIONAL and human-oriented. Coding
+  // agents should run on the host instead — see
+  // docs/developer/host-run.md and the "Running on the host" section
+  // in AGENTS.md.
   // MeepleTime — FastAPI + Vue 3 + PostgreSQL + Keycloak
   "name": "meepletime",
   // Use a docker-compose stack so PostgreSQL and Keycloak start
