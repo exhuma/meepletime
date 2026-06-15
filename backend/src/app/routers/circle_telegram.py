@@ -23,6 +23,7 @@ from app.schemas.circle_telegram import (
     DetectChatOut,
     TelegramDmBotOut,
     TelegramLinkIn,
+    UserDmBotOut,
 )
 from app.schemas.notification_settings import NotificationTestOut
 from app.services.circle_telegram import (
@@ -33,6 +34,7 @@ from app.services.circle_telegram import (
     get_dm_config_or_404,
     list_configs,
     list_dm_bots_with_link_state,
+    list_user_dm_bots,
     upsert_member_link,
 )
 from app.services.notifications.test_delivery import (
@@ -200,6 +202,72 @@ def detect_telegram_chat(
             detail="Could not reach Telegram for this bot",
         )
     return DetectChatOut(chats=chats)
+
+
+@router.post(
+    "/circles/{circle_id}/telegram/{config_id}/detect-dm",
+    response_model=DetectChatOut,
+)
+def detect_telegram_dm_chat(
+    circle_id: uuid.UUID,
+    config_id: uuid.UUID,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_active_user),
+) -> DetectChatOut:
+    """
+    List private chats a DM-mode bot has recently seen.
+
+    Start a private chat with the bot and send it any message first,
+    then call this to pick your own chat id. Any circle member may
+    call this for a DM-mode bot; only private chats are returned.
+
+    \r
+
+    :raises HTTPException: 404 when the config is not a DM bot in this
+        circle, 502 when the Telegram API is unreachable.
+    """
+    get_membership_or_403(db, circle_id, current_user.id)
+    config = get_dm_config_or_404(db, circle_id, config_id)
+    try:
+        chats = get_chat_options(config.bot_token)
+    except httpx.HTTPError:
+        raise HTTPException(
+            status_code=status.HTTP_502_BAD_GATEWAY,
+            detail="Could not reach Telegram for this bot",
+        )
+    private = [c for c in chats if c.get("type") == "private"]
+    return DetectChatOut(chats=private)
+
+
+@router.get(
+    "/users/me/telegram/dm-bots",
+    response_model=list[UserDmBotOut],
+)
+def list_my_dm_bots(
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_active_user),
+) -> list[UserDmBotOut]:
+    """
+    List DM-mode bots across every circle the caller belongs to.
+
+    Powers the per-user opt-in on the profile page. Results are scoped
+    to the caller's memberships and never expose bot tokens.
+
+    :param db: Database session.
+    :param current_user: Authenticated user.
+    :returns: DM-mode bots with their circle and the caller's link
+        status.
+    """
+    return [
+        UserDmBotOut(
+            circle_id=config.circle_id,
+            circle_name=name,
+            config_id=config.id,
+            label=config.label,
+            linked=linked,
+        )
+        for config, name, linked in list_user_dm_bots(db, current_user.id)
+    ]
 
 
 @router.get(

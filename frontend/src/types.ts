@@ -128,6 +128,15 @@ export interface TelegramDmBot {
   linked: boolean
 }
 
+/** A DM-mode bot offered to a user, aggregated across their circles. */
+export interface UserDmBot {
+  circle_id: string
+  circle_name: string
+  config_id: string
+  label: string
+  linked: boolean
+}
+
 export interface NotificationTestResult {
   ok: boolean
   message: string

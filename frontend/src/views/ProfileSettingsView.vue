@@ -188,6 +188,10 @@
               Test
             </MtButton>
           </div>
+
+          <!-- Per-user DM opt-in: connect to the DM bots of circles you
+               belong to. Renders nothing when none are available. -->
+          <ProfileTelegramDm v-if="telegramDmEnabled" />
         </MtCard>
       </v-col>
     </v-row>
@@ -203,6 +207,7 @@ import { isWebPushSupported } from '../lib/webpush'
 import { ApiError } from '../api'
 import { MtCard, MtButton } from '../ui'
 import ProfileAvatarField from '../components/ProfileAvatarField.vue'
+import ProfileTelegramDm from '../components/ProfileTelegramDm.vue'
 
 useAppBarContext('Profile')
 

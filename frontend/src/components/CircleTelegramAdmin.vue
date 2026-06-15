@@ -1,9 +1,10 @@
 <template>
   <div>
     <p class="text-body-2 text-medium-emphasis mb-3">
-      Add a bot (from BotFather) to post viability updates into a group chat.
-      Add the bot to your group, send a message there, then use “Detect chat” to
-      pick the chat id.
+      Add a bot (from BotFather) to send viability updates. A
+      <strong>group chat</strong> bot posts to one shared chat; a
+      <strong>direct messages</strong> bot lets members opt in to personal DMs
+      from their own profile.
     </p>
 
     <v-alert
@@ -29,29 +30,34 @@
           <div class="font-weight-medium">{{ config.label }}</div>
           <div class="text-caption text-medium-emphasis">
             token {{ config.token_hint }} ·
-            <template v-if="config.group_chat_id">
+            <template v-if="config.mode === 'dm'">
+              direct messages · members opt in from their profile
+            </template>
+            <template v-else-if="config.group_chat_id">
               chat {{ config.group_chat_id }}
             </template>
             <span v-else class="text-warning">no chat yet</span>
           </div>
         </div>
-        <MtButton
-          variant="soft"
-          tone="primary"
-          :disabled="!config.group_chat_id"
-          :loading="testingId === config.id"
-          @click="onTest(config.id)"
-        >
-          Test
-        </MtButton>
-        <MtButton
-          variant="soft"
-          tone="primary"
-          :loading="busyConfigId === config.id"
-          @click="onDetect(config.id)"
-        >
-          Detect chat
-        </MtButton>
+        <template v-if="config.mode !== 'dm'">
+          <MtButton
+            variant="soft"
+            tone="primary"
+            :disabled="!config.group_chat_id"
+            :loading="testingId === config.id"
+            @click="onTest(config.id)"
+          >
+            Test
+          </MtButton>
+          <MtButton
+            variant="soft"
+            tone="primary"
+            :loading="busyConfigId === config.id"
+            @click="onDetect(config.id)"
+          >
+            Detect chat
+          </MtButton>
+        </template>
         <MtButton
           variant="icon"
           tone="primary"
@@ -84,6 +90,15 @@
     </div>
 
     <v-form @submit.prevent="onCreate">
+      <v-select
+        v-model="newMode"
+        :items="modeItems"
+        label="Delivery mode"
+        variant="outlined"
+        density="compact"
+        hide-details
+        class="mb-2"
+      />
       <v-text-field
         v-model="newLabel"
         label="Bot label"
@@ -130,11 +145,17 @@ const {
   testConfig,
 } = useCircleTelegram()
 
+const modeItems = [
+  { title: 'Group chat', value: 'group' },
+  { title: 'Direct messages', value: 'dm' },
+]
+
 const error = ref('')
 const notice = ref('')
 const creating = ref(false)
 const newLabel = ref('')
 const newToken = ref('')
+const newMode = ref<'group' | 'dm'>('group')
 const busyConfigId = ref<string | null>(null)
 const testingId = ref<string | null>(null)
 const detectingId = ref<string | null>(null)
@@ -170,9 +191,11 @@ async function onCreate(): Promise<void> {
     await createConfig(props.circleId, {
       label: newLabel.value.trim(),
       bot_token: newToken.value.trim(),
+      mode: newMode.value,
     })
     newLabel.value = ''
     newToken.value = ''
+    newMode.value = 'group'
   } catch {
     error.value = 'Could not add the bot.'
   } finally {

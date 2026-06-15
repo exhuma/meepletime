@@ -57,6 +57,14 @@ notification once the dust settles — not a storm.
 > yet**. In this alpha you will not receive messages — keep an eye on
 > the circle directly, and watch this space.
 
+## Your profile picture
+
+Click your **avatar** in the top bar and choose **Profile** to upload a
+photo. MeepleTime shows the best avatar it can find, in order: your
+uploaded photo, then the picture from your login provider (if any), then
+a [gravatar](https://gravatar.com/) for your email, and finally your
+initials. Remove your upload at any time to fall back down that chain.
+
 ## Past days are read-only
 
 Once a day has passed it becomes part of the archive: still visible for

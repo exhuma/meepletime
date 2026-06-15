@@ -97,3 +97,13 @@ class TelegramLinkIn(BaseModel):
     """Payload to link a member's private Telegram chat."""
 
     chat_id: str
+
+
+class UserDmBotOut(BaseModel):
+    """A DM-mode bot available to a user, with circle and link state."""
+
+    circle_id: uuid.UUID
+    circle_name: str
+    config_id: uuid.UUID
+    label: str
+    linked: bool
