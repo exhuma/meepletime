@@ -110,6 +110,14 @@ export function useAuth() {
     displayName: computed(
       () => _backendUser.value?.display_name ?? null,
     ) as ComputedRef<string | null>,
+    /**
+     * The account email from the backend user record. This is the
+     * exact address notifications fall back to when no custom
+     * notification email is set, so the UI can surface it verbatim.
+     */
+    accountEmail: computed(
+      () => _backendUser.value?.email ?? null,
+    ) as ComputedRef<string | null>,
     isLoggedIn,
     login,
     logout,

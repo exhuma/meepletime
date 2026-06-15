@@ -108,14 +108,6 @@
       :is-admin="isAdminOrOwner"
     />
 
-    <CircleNotificationsDialog
-      v-if="circlesState.currentCircle.value"
-      v-model="notificationsDialog"
-      :circle-id="circleId"
-      :circle-name="circlesState.currentCircle.value.name"
-      :is-admin="isAdminOrOwner"
-    />
-
     <DayContextSheet
       v-model="contextSheetOpen"
       :date="selectedDay ?? ''"
@@ -144,7 +136,6 @@ import { useCircles } from '../composables/circles'
 import { useAuth } from '../composables/auth'
 import InviteDialog from '../components/InviteDialog.vue'
 import EditCircleDialog from '../components/EditCircleDialog.vue'
-import CircleNotificationsDialog from '../components/CircleNotificationsDialog.vue'
 import DayContextSheet from '../components/DayContextSheet.vue'
 import ConstraintEditorDialog from '../components/ConstraintEditorDialog.vue'
 import CalendarDayCell from '../components/CalendarDayCell.vue'
@@ -179,11 +170,6 @@ useAppBarContext('Circle Calendar', [
     action: () => (editDialog.value = true),
   },
   {
-    icon: 'mdi-bell-cog',
-    label: 'Notification settings',
-    action: () => (notificationsDialog.value = true),
-  },
-  {
     icon: 'mdi-filter-variant',
     label: 'Viable days only',
     action: () => (viableOnly.value = !viableOnly.value),
@@ -202,7 +188,6 @@ const circleId = route.params.id as string
 const viableOnly = ref(false)
 const inviteDialog = ref(false)
 const editDialog = ref(false)
-const notificationsDialog = ref(false)
 const selectedDay = ref<string | null>(null)
 const contextSheetOpen = ref(false)
 const constraintDialogOpen = ref(false)

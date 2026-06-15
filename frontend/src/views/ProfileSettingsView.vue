@@ -52,22 +52,50 @@
             </MtButton>
           </div>
 
-          <!-- Notification email address -->
+          <!-- Notification email address. The field is an *override*:
+               empty means "use the account email", shown below so the
+               default address is never hidden. -->
           <div class="ps-email">
             <v-text-field
               v-model="emailInput"
-              label="Notification email"
+              label="Use a different email (optional)"
               type="email"
               density="comfortable"
               :disabled="emailBusy"
               hide-details="auto"
-              placeholder="Use account email"
-            />
-            <div v-if="pendingEmail" class="ps-email__status">
-              <v-chip size="small" color="warning" variant="tonal">
-                Pending: {{ pendingEmail }}
-              </v-chip>
+              :placeholder="accountEmail ?? 'Use account email'"
+              persistent-placeholder
+            >
+              <template v-if="emailIndicator" #append-inner>
+                <v-icon
+                  :color="emailIndicator.color"
+                  :title="emailIndicator.title"
+                >
+                  {{ emailIndicator.icon }}
+                </v-icon>
+              </template>
+            </v-text-field>
+            <p class="text-caption text-medium-emphasis ps-email__help">
+              Leave blank to use your account email<template
+                v-if="accountEmail"
+              >
+                (<strong>{{ accountEmail }}</strong
+                >)</template
+              >. A different address must be confirmed before it is used.
+            </p>
+
+            <div class="ps-email__actions">
               <MtButton
+                v-if="emailIsNew"
+                variant="solid"
+                tone="primary"
+                :loading="emailBusy"
+                @click="onSaveEmail"
+              >
+                Send confirmation
+              </MtButton>
+              <MtButton
+                v-if="pendingEmail"
                 variant="soft"
                 tone="primary"
                 :loading="emailBusy"
@@ -75,25 +103,9 @@
               >
                 Resend link
               </MtButton>
-            </div>
-            <div v-else-if="confirmedEmail" class="ps-email__status">
-              <v-chip size="small" color="success" variant="tonal">
-                Confirmed: {{ confirmedEmail }}
-              </v-chip>
-            </div>
-            <div class="ps-email__actions">
-              <MtButton
-                variant="solid"
-                tone="primary"
-                :loading="emailBusy"
-                :disabled="!emailInput || emailInput === confirmedEmail"
-                @click="onSaveEmail"
-              >
-                Send confirmation
-              </MtButton>
               <MtButton
                 v-if="confirmedEmail || pendingEmail"
-                variant="soft"
+                variant="ghost"
                 tone="primary"
                 :loading="emailBusy"
                 @click="onClearEmail"
@@ -154,8 +166,8 @@
                 @update:model-value="onTelegramDmChange"
               />
               <p class="text-caption text-medium-emphasis ps-row__hint">
-                Allows personal Telegram DMs. Link your chat from a circle's
-                notification settings (under the circle calendar) for each bot.
+                Master switch for personal Telegram direct messages. A circle's
+                bot must also be linked to your account to receive them.
               </p>
             </div>
             <MtButton
@@ -176,6 +188,7 @@
 <script setup lang="ts">
 import { ref, onMounted, computed } from 'vue'
 import { useNotificationSettings } from '../composables/useNotificationSettings'
+import { useAuth } from '../composables/auth'
 import { useAppBarContext, useAppBar } from '../composables/appBar'
 import { isWebPushSupported } from '../lib/webpush'
 import { ApiError } from '../api'
@@ -195,6 +208,7 @@ const {
   clearNotificationEmail,
 } = useNotificationSettings()
 const { startJob, endJob } = useAppBar()
+const { accountEmail } = useAuth()
 
 const error = ref('')
 const notice = ref('')
@@ -213,6 +227,49 @@ const confirmedEmail = computed(
   () => settings.value?.notification_email ?? null,
 )
 const pendingEmail = computed(() => settings.value?.pending_email ?? null)
+
+/** The trimmed override the user has typed (empty ⇒ account email). */
+const trimmedInput = computed(() => emailInput.value.trim())
+
+/**
+ * True when the typed address is a brand-new one that has not yet been
+ * sent for confirmation — the only state where "Send confirmation"
+ * applies.
+ */
+const emailIsNew = computed(
+  () =>
+    trimmedInput.value !== '' &&
+    trimmedInput.value !== confirmedEmail.value &&
+    trimmedInput.value !== pendingEmail.value,
+)
+
+/**
+ * A compact status icon for the field, replacing the verbose chips:
+ * a confirmed address shows a check, a pending one shows a clock, and
+ * anything else (empty or unsent) shows nothing.
+ */
+const emailIndicator = computed<{
+  icon: string
+  color: string
+  title: string
+} | null>(() => {
+  if (trimmedInput.value === '') return null
+  if (trimmedInput.value === confirmedEmail.value) {
+    return {
+      icon: 'mdi-check-circle',
+      color: 'success',
+      title: 'Confirmed — notifications use this address.',
+    }
+  }
+  if (trimmedInput.value === pendingEmail.value) {
+    return {
+      icon: 'mdi-clock-alert-outline',
+      color: 'warning',
+      title: 'Awaiting confirmation — check your inbox.',
+    }
+  }
+  return null
+})
 
 onMounted(async () => {
   startJob('profile-settings')
@@ -377,7 +434,9 @@ async function onWebpushChange(value: boolean | null): Promise<void> {
   flex-direction: column;
   gap: 10px;
 }
-.ps-email__status,
+.ps-email__help {
+  margin: 0;
+}
 .ps-email__actions {
   display: flex;
   align-items: center;

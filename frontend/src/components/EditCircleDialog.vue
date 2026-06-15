@@ -26,6 +26,20 @@
       />
     </v-form>
 
+    <!-- Per-circle notification config lives here (admin-gated) rather
+         than competing with account settings in the app bar. -->
+    <v-expansion-panels v-if="isAdmin" class="mt-4">
+      <v-expansion-panel>
+        <v-expansion-panel-title>
+          <v-icon class="mr-2" color="primary">mdi-bell-cog</v-icon>
+          Notifications — Telegram
+        </v-expansion-panel-title>
+        <v-expansion-panel-text>
+          <CircleTelegramAdmin :circle-id="circle.id" />
+        </v-expansion-panel-text>
+      </v-expansion-panel>
+    </v-expansion-panels>
+
     <template #actions>
       <v-spacer />
       <MtButton
@@ -55,6 +69,7 @@ import { MtDialog, MtButton } from '../ui'
 import CircleFormFields from './CircleFormFields.vue'
 import type { CircleFormModel } from './CircleFormFields.vue'
 import CircleImageField from './CircleImageField.vue'
+import CircleTelegramAdmin from './CircleTelegramAdmin.vue'
 import type { Circle } from '../types'
 
 const props = defineProps<{

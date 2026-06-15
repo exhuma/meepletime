@@ -83,32 +83,37 @@
         @click="router.push('/welcome')"
       />
 
-      <MtButton
-        v-if="auth.isLoggedIn.value"
-        variant="icon"
-        tone="primary"
-        icon="mdi-cog"
-        title="Notification settings"
-        class="hidden-sm-and-down"
-        @click="router.push('/profile')"
-      />
-
-      <template v-if="auth.isLoggedIn.value">
-        <v-avatar
-          size="34"
-          color="primary"
-          class="app-avatar hidden-sm-and-down"
-        >
-          <span class="text-caption font-weight-bold">{{ userInitial }}</span>
-        </v-avatar>
-        <MtButton
-          variant="icon"
-          tone="primary"
-          icon="mdi-logout"
-          class="hidden-sm-and-down"
-          @click="handleLogout"
-        />
-      </template>
+      <!-- Single account entry-point: the avatar opens a menu with the
+           profile page and sign-out, so account actions are no longer
+           spread across ambiguous icon buttons. -->
+      <v-menu v-if="auth.isLoggedIn.value">
+        <template #activator="{ props }">
+          <v-avatar
+            v-bind="props"
+            size="34"
+            color="primary"
+            class="app-avatar"
+            role="button"
+            title="Account"
+          >
+            <span class="text-caption font-weight-bold">{{ userInitial }}</span>
+          </v-avatar>
+        </template>
+        <!-- Opaque surface so the page does not show through the menu
+             (the app-wide VList bgColor default is transparent). -->
+        <v-list density="compact" bg-color="surface" elevation="8">
+          <v-list-item
+            prepend-icon="mdi-account-circle"
+            title="Profile"
+            @click="router.push('/profile')"
+          />
+          <v-list-item
+            prepend-icon="mdi-logout"
+            title="Log out"
+            @click="handleLogout"
+          />
+        </v-list>
+      </v-menu>
     </v-app-bar>
 
     <AppNav />
@@ -212,5 +217,6 @@ async function handleLogout(): Promise<void> {
 
 .app-avatar {
   color: rgb(var(--v-theme-on-primary));
+  cursor: pointer;
 }
 </style>
