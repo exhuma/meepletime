@@ -19,8 +19,17 @@
           >{{ notice }}</v-alert
         >
 
+        <MtCard class="ps-section mb-4">
+          <h1 class="ps-section__title">Profile</h1>
+          <p class="text-body-2 text-medium-emphasis mb-4">
+            Your name and email come from your login. Upload a photo to
+            personalise your avatar.
+          </p>
+          <ProfileAvatarField />
+        </MtCard>
+
         <MtCard v-if="settings" class="ps-section">
-          <h1 class="ps-section__title">Notifications</h1>
+          <h2 class="ps-section__title">Notifications</h2>
           <p class="text-body-2 text-medium-emphasis mb-5">
             Choose how MeepleTime tells you when a day becomes a viable meetup.
             You can mute individual circles separately.
@@ -193,8 +202,9 @@ import { useAppBarContext, useAppBar } from '../composables/appBar'
 import { isWebPushSupported } from '../lib/webpush'
 import { ApiError } from '../api'
 import { MtCard, MtButton } from '../ui'
+import ProfileAvatarField from '../components/ProfileAvatarField.vue'
 
-useAppBarContext('Notifications')
+useAppBarContext('Profile')
 
 const {
   settings,

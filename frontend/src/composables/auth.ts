@@ -97,6 +97,26 @@ export function useAuth() {
     await _syncBackendUser()
   }
 
+  /**
+   * Upload (or replace) the user's profile picture and refresh the
+   * cached backend user with the new resolved avatar.
+   *
+   * @param file - The image file to upload.
+   */
+  async function uploadAvatar(file: File): Promise<void> {
+    const form = new FormData()
+    form.append('file', file)
+    _backendUser.value = await api.post<User>('/users/me/image', form)
+  }
+
+  /**
+   * Remove the user's uploaded profile picture; the cached user then
+   * falls back through the avatar chain (IDP picture / gravatar).
+   */
+  async function removeAvatar(): Promise<void> {
+    _backendUser.value = await api.delete<User>('/users/me/image')
+  }
+
   return {
     oidcUser: _oidcUser,
     /**
@@ -118,9 +138,18 @@ export function useAuth() {
     accountEmail: computed(
       () => _backendUser.value?.email ?? null,
     ) as ComputedRef<string | null>,
+    /**
+     * Resolved avatar reference for the authenticated user, or null
+     * when the client should render the initials avatar.
+     */
+    avatarRef: computed(
+      () => _backendUser.value?.avatar_ref ?? null,
+    ) as ComputedRef<string | null>,
     isLoggedIn,
     login,
     logout,
     loadFromStorage,
+    uploadAvatar,
+    removeAvatar,
   }
 }

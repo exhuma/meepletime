@@ -169,6 +169,7 @@ def get_current_user(
     provider: str = settings.OIDC_ISSUER
     email: str = payload.get("email", "")
     display_name: str | None = payload.get("name")
+    picture_url: str | None = payload.get("picture")
 
     identity = db.execute(
         select(AuthIdentity).where(
@@ -184,7 +185,11 @@ def get_current_user(
         select(User).where(User.email == email)
     ).scalar_one_or_none()
     if user is None:
-        user = User(email=email, display_name=display_name)
+        user = User(
+            email=email,
+            display_name=display_name,
+            picture_url=picture_url,
+        )
         db.add(user)
         db.flush()
         LOG.info(
