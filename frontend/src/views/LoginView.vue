@@ -87,7 +87,17 @@ onMounted(async () => {
     authError.value = true
     return
   }
-  await auth.login(returnTo)
+  try {
+    await auth.login(returnTo)
+  } catch (e) {
+    // signinRedirect throws before navigating when the OIDC client is
+    // misconfigured (e.g. no authority/metadata URL) or Keycloak is
+    // unreachable. Without this catch the rejection is unhandled and
+    // the "Redirecting to sign in…" spinner hangs forever; surface the
+    // manual-retry path instead.
+    console.error('Sign-in redirect failed', e)
+    authError.value = true
+  }
 })
 
 async function retrySignIn(): Promise<void> {
