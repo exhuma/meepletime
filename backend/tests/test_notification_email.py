@@ -12,13 +12,20 @@ import app.services.email_confirmation as confirm_svc
 
 
 class _Mailbox:
-    """Collects (to, subject, body) tuples in place of real SMTP."""
+    """Collects (to, subject, text, html) tuples in place of SMTP."""
 
     def __init__(self) -> None:
-        self.sent: list[tuple[str, str, str]] = []
+        self.sent: list[tuple[str, str, str, str]] = []
 
-    def __call__(self, to: str, subject: str, body: str) -> None:
-        self.sent.append((to, subject, body))
+    def __call__(
+        self,
+        to: str,
+        subject: str,
+        text: str,
+        html: str,
+        inline_image: object = None,
+    ) -> None:
+        self.sent.append((to, subject, text, html))
 
 
 @pytest.fixture()
@@ -26,7 +33,7 @@ def mailbox(monkeypatch) -> _Mailbox:
     """Patch SMTP config + send so confirmation mail is captured."""
     box = _Mailbox()
     monkeypatch.setattr(notif_router, "is_smtp_configured", lambda: True)
-    monkeypatch.setattr(confirm_svc, "send_email", box)
+    monkeypatch.setattr(confirm_svc, "send_email_html", box)
     return box
 
 
@@ -52,6 +59,8 @@ def test_set_email_sends_link_and_marks_pending(
     assert body["notification_email"] is None
     assert len(mailbox.sent) == 1
     assert mailbox.sent[0][0] == "notify@example.com"
+    # The HTML alternative carries the same confirmation link.
+    assert "confirm-email?code=" in mailbox.sent[0][3]
 
 
 def test_confirm_promotes_address_and_consumes_code(

@@ -18,8 +18,9 @@ from sqlalchemy.orm import Session
 
 from app.config import get_settings
 from app.models.notification_settings import EmailConfirmation
-from app.services.email import send_email
+from app.services.email import send_email_html
 from app.services.notification_settings import get_or_create_settings
+from app.services.notifications.email_render import render_confirmation
 
 # Entropy for the opaque confirmation token, in bytes.
 _TOKEN_BYTES = 32
@@ -106,10 +107,16 @@ def _send(row: EmailConfirmation) -> None:
     :param row: The pending confirmation row.
     :raises OSError: On SMTP transport failure.
     """
-    send_email(
+    base = get_settings().APP_BASE_URL.rstrip("/")
+    hours = get_settings().EMAIL_CONFIRMATION_TTL_HOURS
+    link = f"{base}/confirm-email?code={row.token}"
+    rendered = render_confirmation(link, hours, _confirmation_body(row.token))
+    send_email_html(
         row.pending_email,
         "Confirm your MeepleTime notification email",
-        _confirmation_body(row.token),
+        rendered.text,
+        rendered.html,
+        inline_image=rendered.image,
     )
 
 

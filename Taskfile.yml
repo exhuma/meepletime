@@ -28,6 +28,13 @@ tasks:
     dir: frontend
     cmd: npm run build
 
+  build:email:
+    desc: >-
+      Regenerate the static HTML email templates from the shared
+      design tokens, writing them into the backend package.
+    dir: frontend
+    cmd: npm run build:email
+
   bump:
     desc: >-
       Bump the project version in frontend/package.json and

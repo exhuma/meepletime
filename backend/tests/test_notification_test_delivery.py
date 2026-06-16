@@ -45,7 +45,9 @@ def test_email_test_ok_when_configured(
     smtp = MagicMock()
     ctx = MagicMock()
     ctx.__enter__.return_value = smtp
-    monkeypatch.setattr(email_svc.smtplib, "SMTP", MagicMock(return_value=ctx))
+    monkeypatch.setattr(
+        email_svc.smtplib, "SMTP_SSL", MagicMock(return_value=ctx)
+    )
 
     ok, message = td.send_user_test(db_session, user, "email")
     assert ok is True

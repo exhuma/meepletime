@@ -10,13 +10,14 @@ from __future__ import annotations
 
 from sqlalchemy.orm import Session
 
-from app.services.email import is_smtp_configured, send_email
+from app.services.email import is_smtp_configured, send_email_html
 from app.services.notifications.channels import register
 from app.services.notifications.channels.base import (
     ChannelTarget,
     Recipient,
 )
 from app.services.notifications.context import EventContext
+from app.services.notifications.email_render import render_notification
 
 
 class EmailChannel:
@@ -67,17 +68,20 @@ class EmailChannel:
         self, target: ChannelTarget, ctx: EventContext, db: Session
     ) -> None:
         """
-        Send one notification email.
+        Send one notification email (HTML with plain-text fallback).
 
         :param target: The email target to deliver to.
         :param ctx: The event context being delivered.
-        :param db: Active database session (unused).
+        :param db: Active database session (loads the hero image).
         :raises OSError: On connection or SMTP transport failure.
         """
-        send_email(
+        rendered = render_notification(ctx, db)
+        send_email_html(
             target.address,
             ctx.title,
-            f"{ctx.body}\n\n{ctx.url}\n",
+            rendered.text,
+            rendered.html,
+            inline_image=rendered.image,
         )
 
 
