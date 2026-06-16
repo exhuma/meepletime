@@ -152,9 +152,19 @@ $rows
 const dayRow = `${banner}<tr>
   <td style="padding:8px 0; border-bottom:1px solid ${border};
     font-family:${bodyFont}; font-size:14px; color:${text};">
-    <span style="color:${muted};">$day</span>&nbsp;&nbsp;<strong>$phrase</strong>
+    <span style="color:${muted};">$day</span>&nbsp;&nbsp;<strong>$phrase</strong>$description
   </td>
 </tr>
+`
+
+// One description block: an optional bold label (host pseudonym) plus
+// the plain-text rendering of a day's Quill description. Both slots are
+// filled with escaped text by the Python renderer.
+const descriptionBlock = `${banner}<div style="margin:6px 0 0;
+  font-family:${bodyFont}; font-size:13px; line-height:1.5;
+  color:${muted};">
+  <strong style="color:${text};">$label</strong>$text
+</div>
 `
 
 const files: Record<string, string> = {
@@ -165,6 +175,7 @@ const files: Record<string, string> = {
   'confirmation_body.html': confirmationBody,
   'day_list.html': dayList,
   'day_row.html': dayRow,
+  'description_block.html': descriptionBlock,
 }
 
 const outDir = fileURLToPath(

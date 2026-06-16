@@ -279,12 +279,44 @@ Minimum v1 requirement:
 Rules:
 - Notes are optional.
 - Notes must be viewable from the day detail view.
-- Rich text is not required for v1.
-- Quill or richer editing is explicitly deferred.
+- Notes themselves remain plain text; rich text is not required for
+  the notes feature.
+- Rich-text editing (Quill) is now permitted, but only for the
+  separate day-description feature (see section 10.1), not for notes.
 
 Permissions:
 - Any circle member may add a note/comment in v1 unless later policy says otherwise.
 - Edit/delete policy is left as an open question unless needed for the initial implementation. Prefer a simple append-only model if uncertain.
+
+## 10.1 Day description
+
+A *description* is static session detail attached to a circle-day,
+distinct from the threaded notes of section 10 (singular, not a
+conversation: no replies). It captures details for a single session
+— for example a hiking group's trail or meetup location — and is
+folded into the viability email once the day becomes viable.
+
+Shape (depends on whether the circle requires a host):
+- Circles where a host is **not** required (`host_needed = false`):
+  a single circle-wide description per `(circle_id, local_date)`.
+- Circles that **require** a host (`host_needed = true`): one
+  description **per host** for the day (a host is a member whose
+  availability state is `hosting`), so members can compare offers
+  when several hosts volunteer.
+
+Rules:
+- Descriptions are optional and viewable from the day detail view.
+- The canonical stored representation is a Quill **Delta** document
+  (JSON). HTML is only ever derived at render time and is sanitised
+  on the client (DOMPurify) before display; it is never stored.
+- The viability email includes a plain-text rendering of the
+  description(s) for a day that became viable.
+
+Permissions:
+- Circle-wide description: only the circle **owner or admin** may
+  set, edit, or clear it.
+- Per-host description: owned and editable by **that host**; the
+  circle **owner or admin** may also manage any host's description.
 
 ## 11. Viability rules
 
@@ -493,7 +525,8 @@ Do not implement these in v1 unless required by the coding agent for structural 
 - calendar sync with Google, Apple, or Microsoft
 - public signup or anonymous participation
 - score-based day ranking
-- rich text comments
+- rich text *notes/comments* (rich text is allowed only for day
+  descriptions, section 10.1)
 - backup host distinction
 - complex moderation/reporting
 - advanced historical analytics

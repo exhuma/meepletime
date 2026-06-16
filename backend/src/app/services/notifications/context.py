@@ -8,14 +8,32 @@ re-derive presentation from the raw ORM event.
 from __future__ import annotations
 
 import uuid
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from datetime import date
 
+from sqlalchemy import select
 from sqlalchemy.orm import Session
 
 from app.config import get_settings
+from app.models.availability import AvailabilityState, DayAvailability
 from app.models.circle import Circle
+from app.models.day_description import DayDescription
+from app.models.membership import CircleMembership
 from app.models.notification import NotificationEvent
+from app.services.delta import delta_to_text
+
+
+@dataclass
+class DescBlock:
+    """One day-description block folded into a notification.
+
+    :param label: Host pseudonym for a per-host description, or
+        ``None`` for the circle-wide description.
+    :param text: Plain-text rendering of the Quill description.
+    """
+
+    label: str | None
+    text: str
 
 
 @dataclass
@@ -41,6 +59,77 @@ class EventContext:
     title: str
     body: str
     url: str
+    day_descriptions: dict[date, list[DescBlock]] = field(default_factory=dict)
+
+
+def _description_blocks(
+    circle: Circle, local_date: date, db: Session
+) -> list[DescBlock]:
+    """
+    Collect the day's description(s) for folding into a notification.
+
+    Host-required circles contribute one block per member currently
+    hosting the day (labelled with their pseudonym); other circles
+    contribute the single circle-wide description. Empty descriptions
+    are skipped.
+
+    :param circle: The circle the day belongs to.
+    :param local_date: The day to describe.
+    :param db: Active database session.
+    :returns: Description blocks, possibly empty.
+    """
+    if circle.host_needed:
+        hosting_ids = set(
+            db.execute(
+                select(DayAvailability.user_id).where(
+                    DayAvailability.circle_id == circle.id,
+                    DayAvailability.local_date == local_date,
+                    DayAvailability.state == AvailabilityState.hosting,
+                )
+            ).scalars()
+        )
+        if not hosting_ids:
+            return []
+        rows = (
+            db.execute(
+                select(DayDescription).where(
+                    DayDescription.circle_id == circle.id,
+                    DayDescription.local_date == local_date,
+                    DayDescription.host_user_id.is_not(None),
+                )
+            )
+            .scalars()
+            .all()
+        )
+        blocks: list[DescBlock] = []
+        for row in rows:
+            if row.host_user_id not in hosting_ids:
+                continue
+            text = delta_to_text(row.content_delta)
+            if not text:
+                continue
+            membership = db.execute(
+                select(CircleMembership).where(
+                    CircleMembership.circle_id == circle.id,
+                    CircleMembership.user_id == row.host_user_id,
+                )
+            ).scalar_one_or_none()
+            label = membership.pseudonym if membership else None
+            blocks.append(DescBlock(label=label, text=text))
+        blocks.sort(key=lambda b: (b.label or ""))
+        return blocks
+
+    row = db.execute(
+        select(DayDescription).where(
+            DayDescription.circle_id == circle.id,
+            DayDescription.local_date == local_date,
+            DayDescription.host_user_id.is_(None),
+        )
+    ).scalar_one_or_none()
+    if row is None:
+        return []
+    text = delta_to_text(row.content_delta)
+    return [DescBlock(label=None, text=text)] if text else []
 
 
 def build_event_context(event: NotificationEvent, db: Session) -> EventContext:
@@ -68,6 +157,12 @@ def build_event_context(event: NotificationEvent, db: Session) -> EventContext:
         title = f"{name}: meetup candidate"
         body = f"{event.local_date} has a meetup candidate forming for {name}."
 
+    day_descriptions: dict[date, list[DescBlock]] = {}
+    if event.event_type == "viable" and circle is not None:
+        blocks = _description_blocks(circle, event.local_date, db)
+        if blocks:
+            day_descriptions[event.local_date] = blocks
+
     return EventContext(
         event_id=event.id,
         circle_id=event.circle_id,
@@ -77,6 +172,7 @@ def build_event_context(event: NotificationEvent, db: Session) -> EventContext:
         title=title,
         body=body,
         url=url,
+        day_descriptions=day_descriptions,
     )
 
 
@@ -150,6 +246,15 @@ def build_batch_context(
             lines.append(f"- {event.local_date}: candidate forming")
     body = "\n".join(lines)
 
+    day_descriptions: dict[date, list[DescBlock]] = {}
+    if circle is not None:
+        for event in ordered:
+            if event.event_type != "viable":
+                continue
+            blocks = _description_blocks(circle, event.local_date, db)
+            if blocks:
+                day_descriptions[event.local_date] = blocks
+
     return EventContext(
         event_id=primary.id,
         circle_id=primary.circle_id,
@@ -159,4 +264,5 @@ def build_batch_context(
         title=title,
         body=body,
         url=url,
+        day_descriptions=day_descriptions,
     )

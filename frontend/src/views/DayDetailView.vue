@@ -57,6 +57,17 @@
         </div>
       </div>
 
+      <div class="mb-6">
+        <DayDescriptionSection
+          :circle-id="circleId"
+          :date="date"
+          :host-needed="hostNeeded"
+          :is-admin="isAdmin"
+          :am-hosting="amHosting"
+          :current-user-id="auth.userId.value"
+        />
+      </div>
+
       <div>
         <h3 class="text-subtitle-1 font-weight-bold mb-2">Notes</h3>
         <div v-if="notes.length > 0" class="mb-4">
@@ -110,16 +121,19 @@
 import { ref, computed, onMounted, nextTick } from 'vue'
 import { useRoute } from 'vue-router'
 import { useCircles } from '../composables/circles'
-import { enrichAttendees } from '../lib/members'
+import { enrichAttendees, isAdminOrOwner, myState } from '../lib/members'
 import { safeFormat } from '../lib/datetime'
 import { MtButton } from '../ui'
+import DayDescriptionSection from '../components/DayDescriptionSection.vue'
 import type { Note } from '../types'
 import { useAppBar, useAppBarContext } from '../composables/appBar'
+import { useAuth } from '../composables/auth'
 import { useOnboarding } from '../composables/useOnboarding'
 
 const route = useRoute()
 const { startJob, endJob } = useAppBar()
 const circlesState = useCircles()
+const auth = useAuth()
 const onboarding = useOnboarding()
 
 const circleId = route.params.id as string
@@ -145,6 +159,16 @@ const enrichedAttendees = computed(() =>
 
 const hostAttendee = computed(
   () => enrichedAttendees.value.find((a) => a.state === 'hosting') ?? null,
+)
+
+const hostNeeded = computed<boolean>(
+  () => circlesState.currentCircle.value?.host_needed ?? false,
+)
+const isAdmin = computed<boolean>(() =>
+  isAdminOrOwner(circlesState.members.value, auth.userId.value ?? null),
+)
+const amHosting = computed<boolean>(
+  () => myState(attendees.value, auth.userId.value ?? null) === 'hosting',
 )
 
 function initials(name: string): string {

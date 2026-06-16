@@ -107,4 +107,16 @@ export const TOUR_TIPS: TourTip[] = [
     priority: 10,
     essential: true,
   },
+  {
+    key: 'dayDetail.description',
+    view: 'dayDetail',
+    selector: '[data-tour="day-detail-description"]',
+    title: 'Session description',
+    body:
+      'Add the details for this session here — like the trail or ' +
+      'meetup spot. In host circles each host describes their own ' +
+      'session; otherwise an organiser sets one for the day.',
+    priority: 20,
+    essential: false,
+  },
 ]

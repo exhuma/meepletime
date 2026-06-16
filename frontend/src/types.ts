@@ -75,6 +75,27 @@ export interface Note {
   pseudonym?: string | null
 }
 
+/** A Quill Delta document — the canonical day-description payload. */
+export interface DeltaDoc {
+  ops: unknown[]
+}
+
+export interface DayDescription {
+  id: string
+  circle_id: string
+  local_date: string
+  host_user_id: string | null
+  content_delta: DeltaDoc
+  updated_at: string
+  host_pseudonym?: string | null
+}
+
+/** All descriptions for a circle-day (see day_description router). */
+export interface DayDescriptionBundle {
+  circle_wide: DayDescription | null
+  per_host: DayDescription[]
+}
+
 export interface HostDayConstraint {
   id: string
   circle_id: string

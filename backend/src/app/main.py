@@ -78,6 +78,7 @@ def create_app() -> FastAPI:
         availability,
         circle_telegram,
         circles,
+        day_description,
         day_notes,
         host_day_constraints,
         memberships,
@@ -95,6 +96,7 @@ def create_app() -> FastAPI:
     app.include_router(viability.router)
     app.include_router(host_day_constraints.router)
     app.include_router(day_notes.router)
+    app.include_router(day_description.router)
     app.include_router(notifications.router)
     app.include_router(circle_telegram.router)
     app.include_router(onboarding.router)

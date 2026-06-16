@@ -21,7 +21,7 @@ from sqlalchemy import select
 from sqlalchemy.orm import Session
 
 from app.models.circle_image import CircleImage
-from app.services.notifications.context import EventContext
+from app.services.notifications.context import DescBlock, EventContext
 
 # Inline images larger than this are skipped (uploads can be several
 # MB); the gradient hero is used instead to avoid bloated emails.
@@ -106,14 +106,39 @@ def _shell(preheader: str, hero: str, content: str) -> str:
     )
 
 
-def _day_list(lines: list[str]) -> str:
+def _render_blocks(blocks: list[DescBlock]) -> str:
+    """
+    Render description blocks to email-safe HTML.
+
+    The block text is the plain-text rendering of a Quill description;
+    it is HTML-escaped here (newlines become ``<br>``) so no untrusted
+    markup ever reaches the email. The optional label is the host's
+    pseudonym.
+
+    :param blocks: Description blocks for one day.
+    :returns: Concatenated block HTML, or ``""`` when empty.
+    """
+    tmpl = _template("description_block.html")
+    out: list[str] = []
+    for block in blocks:
+        label = f"{html.escape(block.label)}: " if block.label else ""
+        text = html.escape(block.text).replace("\n", "<br>")
+        out.append(tmpl.substitute(label=label, text=text))
+    return "".join(out)
+
+
+def _day_list(
+    lines: list[str], descriptions: dict[str, list[DescBlock]]
+) -> str:
     """
     Render the batch day rows from the plain-text body lines.
 
     Each line has the form ``- <date>: <phrase>`` (see
-    :func:`build_batch_context`); non-matching lines are ignored.
+    :func:`build_batch_context`); non-matching lines are ignored. Any
+    description blocks for a day (keyed by ISO date) are appended.
 
     :param lines: Body lines following the summary header line.
+    :param descriptions: Description blocks keyed by ISO date string.
     :returns: HTML for the day-list table.
     """
     row = _template("day_row.html")
@@ -126,9 +151,35 @@ def _day_list(lines: list[str]) -> str:
         if not sep:
             day, phrase = item[2:], ""
         rows.append(
-            row.substitute(day=html.escape(day), phrase=html.escape(phrase))
+            row.substitute(
+                day=html.escape(day),
+                phrase=html.escape(phrase),
+                description=_render_blocks(descriptions.get(day, [])),
+            )
         )
     return _template("day_list.html").substitute(rows="".join(rows))
+
+
+def _plain_text(ctx: EventContext) -> str:
+    """
+    Build the plain-text alternative, folding in any descriptions.
+
+    Without descriptions the output is byte-for-byte identical to the
+    previous body + link layout.
+
+    :param ctx: The event context being delivered.
+    :returns: The plain-text email body.
+    """
+    parts = [ctx.body]
+    desc_lines: list[str] = []
+    for day in sorted(ctx.day_descriptions):
+        for block in ctx.day_descriptions[day]:
+            prefix = f"{block.label}: " if block.label else ""
+            desc_lines.append(f"{day} — {prefix}{block.text}")
+    if desc_lines:
+        parts.append("\n".join(desc_lines))
+    parts.append(ctx.url)
+    return "\n\n".join(parts) + "\n"
 
 
 def render_notification(ctx: EventContext, db: Session) -> RenderedEmail:
@@ -139,7 +190,10 @@ def render_notification(ctx: EventContext, db: Session) -> RenderedEmail:
     :param db: Active database session (used to load the hero image).
     :returns: The rendered HTML + plain-text email.
     """
-    text = f"{ctx.body}\n\n{ctx.url}\n"
+    descriptions = {
+        day.isoformat(): blocks for day, blocks in ctx.day_descriptions.items()
+    }
+    text = _plain_text(ctx)
     image = db.execute(
         select(CircleImage).where(CircleImage.circle_id == ctx.circle_id)
     ).scalar_one_or_none()
@@ -148,11 +202,11 @@ def render_notification(ctx: EventContext, db: Session) -> RenderedEmail:
     if ctx.event_type == "batch":
         lines = ctx.body.split("\n")
         lead = lines[0]
-        detail = _day_list(lines[1:])
+        detail = _day_list(lines[1:], descriptions)
         cta_label = "View circle"
     else:
         lead = ctx.body
-        detail = ""
+        detail = _render_blocks(ctx.day_descriptions.get(ctx.local_date, []))
         cta_label = "View this day"
 
     content = _template("notification_body.html").substitute(

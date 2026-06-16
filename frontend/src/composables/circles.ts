@@ -4,7 +4,10 @@ import api, { ApiError } from '../api'
 import type {
   Availability,
   Circle,
+  DayDescription,
+  DayDescriptionBundle,
   DayViability,
+  DeltaDoc,
   HostDayConstraint,
   HostDayConstraintSet,
   Member,
@@ -199,6 +202,56 @@ export function useCircles() {
     return api.post<Note>(`/circles/${circleId}/notes/${date}`, { content })
   }
 
+  /** Fetch the circle-wide and per-host descriptions for a day. */
+  async function fetchDayDescriptions(
+    circleId: string,
+    date: string,
+  ): Promise<DayDescriptionBundle> {
+    return api.get<DayDescriptionBundle>(
+      `/circles/${circleId}/day-description/${date}`,
+    )
+  }
+
+  /** Create or replace the circle-wide description (owner/admin). */
+  async function saveCircleDescription(
+    circleId: string,
+    date: string,
+    contentDelta: DeltaDoc,
+  ): Promise<DayDescription> {
+    return api.put<DayDescription>(
+      `/circles/${circleId}/day-description/${date}`,
+      { content_delta: contentDelta },
+    )
+  }
+
+  /** Delete the circle-wide description (owner/admin). */
+  async function clearCircleDescription(
+    circleId: string,
+    date: string,
+  ): Promise<void> {
+    await api.delete(`/circles/${circleId}/day-description/${date}`)
+  }
+
+  /** Create or replace the caller's own host description for a day. */
+  async function saveMyHostDescription(
+    circleId: string,
+    date: string,
+    contentDelta: DeltaDoc,
+  ): Promise<DayDescription> {
+    return api.put<DayDescription>(
+      `/circles/${circleId}/day-description/${date}/hosts/me`,
+      { content_delta: contentDelta },
+    )
+  }
+
+  /** Delete the caller's own host description for a day. */
+  async function clearMyHostDescription(
+    circleId: string,
+    date: string,
+  ): Promise<void> {
+    await api.delete(`/circles/${circleId}/day-description/${date}/hosts/me`)
+  }
+
   /** Join a circle using inviteToken with the given pseudonym. */
   async function joinCircle(
     inviteToken: string,
@@ -284,6 +337,11 @@ export function useCircles() {
     fetchViability,
     fetchNotes,
     addNote,
+    fetchDayDescriptions,
+    saveCircleDescription,
+    clearCircleDescription,
+    saveMyHostDescription,
+    clearMyHostDescription,
     joinCircle,
     regenerateInvite,
     fetchMyConstraint,

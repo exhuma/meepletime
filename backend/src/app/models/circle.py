@@ -67,6 +67,9 @@ class Circle(Base):
     day_notes: Mapped[list["DayNote"]] = relationship(
         "DayNote", back_populates="circle"
     )
+    day_descriptions: Mapped[list["DayDescription"]] = relationship(
+        "DayDescription", back_populates="circle"
+    )
     notification_events: Mapped[list["NotificationEvent"]] = relationship(
         "NotificationEvent", back_populates="circle"
     )
