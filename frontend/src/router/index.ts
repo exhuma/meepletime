@@ -3,6 +3,7 @@
  */
 import { createRouter, createWebHistory, type RouteRecordRaw } from 'vue-router'
 import { userManager } from '../auth/oidc'
+import { useOnboarding } from '../composables/useOnboarding'
 
 const routes: RouteRecordRaw[] = [
   {
@@ -79,6 +80,12 @@ const router = createRouter({
   routes,
 })
 
+// Authed routes that must never be bounced to the welcome intro:
+// /welcome itself (avoids a redirect loop) and the invite flow
+// (/join/:token), so a freshly-authenticated invitee can complete the
+// join first and only then sees /welcome on the next navigation.
+const ONBOARDING_EXEMPT = new Set(['/welcome'])
+
 // Redirect unauthenticated users to /login rather than
 // calling signinRedirect() directly from the guard.
 // Calling signinRedirect (which sets window.location.href)
@@ -92,6 +99,18 @@ router.beforeEach(async (to) => {
     return {
       path: '/login',
       query: { returnTo: to.fullPath },
+    }
+  }
+  // Authenticated: gate brand-new users into the welcome intro. This
+  // lives in the guard — not App.vue's one-shot onMounted — so it fires
+  // on every authed landing, including the client-side redirect out of
+  // /auth/callback, which does not remount the root component. Loading
+  // is idempotent and non-throwing; an unknown state never redirects.
+  if (!ONBOARDING_EXEMPT.has(to.path) && !to.path.startsWith('/join/')) {
+    const onboarding = useOnboarding()
+    await onboarding.ensureLoaded()
+    if (onboarding.loaded.value && !onboarding.welcomeSeen.value) {
+      return { path: '/welcome' }
     }
   }
   return true

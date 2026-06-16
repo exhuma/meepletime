@@ -20,6 +20,9 @@ const MAX_TIPS_PER_VISIT = 3
 // Module-level singleton state for the current user's onboarding.
 const state = ref<OnboardingState | null>(null)
 const loaded = ref(false)
+// De-dupes concurrent `ensureLoaded` callers (e.g. near-simultaneous
+// navigations) so the state is fetched at most once per session.
+let loadInFlight: Promise<void> | null = null
 
 /** Return reactive onboarding state and actions. */
 export function useOnboarding() {
@@ -27,6 +30,28 @@ export function useOnboarding() {
   async function load(): Promise<void> {
     state.value = await api.get<OnboardingState>('/onboarding')
     loaded.value = true
+  }
+
+  /**
+   * Load the onboarding state at most once per session, de-duping
+   * concurrent callers. Non-throwing: on failure it logs and leaves
+   * `loaded` false, so callers treat the state as unknown and skip the
+   * welcome redirect rather than looping or stranding the user.
+   */
+  async function ensureLoaded(): Promise<void> {
+    if (loaded.value) return
+    if (loadInFlight) return loadInFlight
+    loadInFlight = (async () => {
+      try {
+        state.value = await api.get<OnboardingState>('/onboarding')
+        loaded.value = true
+      } catch (e) {
+        console.error('[onboarding] Failed to load state:', e)
+      } finally {
+        loadInFlight = null
+      }
+    })()
+    return loadInFlight
   }
 
   /** True once the welcome intro has been seen. */
@@ -78,6 +103,7 @@ export function useOnboarding() {
     loaded: readonly(loaded),
     welcomeSeen,
     load,
+    ensureLoaded,
     markWelcomeSeen,
     selectTips,
     startTour,

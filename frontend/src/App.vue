@@ -138,7 +138,6 @@ import { computed, onMounted, ref, watch } from 'vue'
 import { useDisplay } from 'vuetify'
 import { useAuth } from './composables/auth'
 import { useAppBar } from './composables/appBar'
-import { useOnboarding } from './composables/useOnboarding'
 import { useRouter } from 'vue-router'
 import { devAuth } from './config'
 import { resolveImageUrl } from './lib/circleImage'
@@ -149,31 +148,15 @@ import AppFooter from './components/AppFooter.vue'
 const { title, actions, isBusy } = useAppBar()
 
 const auth = useAuth()
-const onboarding = useOnboarding()
 const router = useRouter()
 const { mdAndUp } = useDisplay()
 
+// Restore any persisted OIDC session so the app bar (avatar, actions)
+// reflects auth state on a fresh page load. The welcome/onboarding gate
+// now lives in the router guard (router/index.ts) so it fires reliably
+// on first login, regardless of when the session is established.
 onMounted(async () => {
   await auth.loadFromStorage()
-  if (!auth.isLoggedIn.value) return
-  // Load onboarding state once, then send brand-new users to the
-  // welcome intro. Gated solely by the server `welcome_seen` flag, so
-  // it fires at most once and never re-nags. Avoid hijacking the OIDC
-  // callback or the welcome route itself.
-  try {
-    await onboarding.load()
-  } catch (e) {
-    console.error('[onboarding] Failed to load state:', e)
-    return
-  }
-  const path = router.currentRoute.value.path
-  if (
-    !onboarding.welcomeSeen.value &&
-    path !== '/welcome' &&
-    !path.startsWith('/auth/')
-  ) {
-    await router.replace('/welcome')
-  }
 })
 
 const userInitial = computed<string>(() => {
