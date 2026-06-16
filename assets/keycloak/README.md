@@ -9,11 +9,20 @@ Current theme:
 
 ## Theme maintenance
 
-The Keycloak theme is maintained independently from the Vue
-frontend theme pipeline.
+Colours and fonts come from the shared design tokens in
+`frontend/src/theme/tokens.ts` (the same source the app and email
+templates use). They are baked into the theme's `brand-tokens.css`
+(login and account) by a generator, so the Keycloak pages stay in
+sync with the app skin.
 
-- Edit login/account templates and CSS directly under
-  `themes/meepletime`.
+- To change colours/fonts: edit `frontend/src/theme/tokens.ts`, then
+  run `task build:keycloak` and commit the regenerated
+  `brand-tokens.css` files. Do not hand-edit `brand-tokens.css` — it
+  is generated.
+- To change structure/styling: edit the login/account templates
+  (`*.ftl`) and `login.css` / `account.css` directly under
+  `themes/meepletime`. These reference the tokens via `--mt-*` CSS
+  variables (e.g. `var(--mt-font-base)`).
 
 ## Local dev-container usage
 

@@ -20,3 +20,4 @@ run an OIDC provider.
    :caption: Appendix
 
    keycloak
+   keycloak-theme

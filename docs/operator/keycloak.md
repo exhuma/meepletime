@@ -65,10 +65,16 @@ The login flow uses standalone FreeMarker templates under
 shell on top of `keycloak.v3`, so branding and page framing can
 be changed without forking the React application bundle.
 
+Colours and fonts are generated from the app's shared design tokens
+(`frontend/src/theme/tokens.ts`) via `task build:keycloak`; the output
+is committed, so the theme is ready to use without a build step.
+
 For production, mount `assets/keycloak/themes` (or a copied image
 layer containing it) to `/opt/keycloak/themes` in the Keycloak
 container and set both the realm login theme and account theme to
-`meepletime`.
+`meepletime`. See [The MeepleTime Keycloak theme](keycloak-theme.md)
+for the full artifact reference and packaging options (directory mount,
+custom image, or provider JAR).
 
 ---
 

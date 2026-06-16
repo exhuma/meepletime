@@ -12,28 +12,6 @@
     'Manage your personal details, account security, and applications.'
   )
 >
-  <div class="mt-backdrop" aria-hidden="true">
-    <svg class="mt-grid" xmlns="http://www.w3.org/2000/svg">
-      <defs>
-        <pattern
-          id="hexgrid"
-          width="40"
-          height="40"
-          patternUnits="userSpaceOnUse"
-        >
-          <path
-            d="M20 0 L40 20 L20 40 L0 20 Z"
-            fill="none"
-            stroke="#ffb5a1"
-            stroke-width="0.75"
-            opacity="0.06"
-          />
-        </pattern>
-      </defs>
-      <rect width="100%" height="100%" fill="url(#hexgrid)"/>
-    </svg>
-  </div>
-
   <div class="mt-account-shell">
     <header class="mt-account-header">
       <div class="mt-account-brand-block">

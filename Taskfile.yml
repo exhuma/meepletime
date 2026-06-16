@@ -35,6 +35,13 @@ tasks:
     dir: frontend
     cmd: npm run build:email
 
+  build:keycloak:
+    desc: >-
+      Regenerate the Keycloak theme's brand-tokens.css (login and
+      account) from the shared design tokens.
+    dir: frontend
+    cmd: npm run build:keycloak
+
   bump:
     desc: >-
       Bump the project version in frontend/package.json and
