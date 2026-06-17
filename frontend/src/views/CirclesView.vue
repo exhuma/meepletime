@@ -86,12 +86,10 @@
       icon="mdi-plus-circle"
       class="mt-6"
       data-tour="circles-create"
-      @click="createDialog = true"
+      @click="router.push('/circles/new')"
     >
       Create a Circle
     </MtButton>
-
-    <CreateCircleDialog v-model="createDialog" @created="onCircleCreated" />
 
     <MtDialog v-model="joinDialog" title="Join a Circle" :max-width="400">
       <p class="text-body-2 text-medium-emphasis mb-4">
@@ -116,7 +114,6 @@ import { ref, onMounted, nextTick } from 'vue'
 import type { DeepReadonly } from 'vue'
 import { useRouter } from 'vue-router'
 import { useCircles } from '../composables/circles'
-import CreateCircleDialog from '../components/CreateCircleDialog.vue'
 import { useAppBar } from '../composables/appBar'
 import { useOnboarding } from '../composables/useOnboarding'
 import { MtButton, MtCard, MtDialog, MtPinField } from '../ui'
@@ -128,7 +125,6 @@ const circlesState = useCircles()
 const router = useRouter()
 const onboarding = useOnboarding()
 
-const createDialog = ref(false)
 const joinDialog = ref(false)
 const joinToken = ref('')
 const joinValid = ref(false)
@@ -169,11 +165,6 @@ onMounted(async () => {
   await nextTick()
   await onboarding.startTour('circles')
 })
-
-/** Close the create dialog after a circle has been created. */
-function onCircleCreated(): void {
-  createDialog.value = false
-}
 
 /** Navigate to the join page for the entered invite PIN. */
 function goToJoin(): void {

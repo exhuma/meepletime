@@ -1,11 +1,12 @@
 <template>
-  <div>
-    <!-- On desktop the calendar tab shows a side rail, so the calendar
-         column is group-centred to its left. Reserve a matching rail
-         spacer here so the title/tabs centre on the same column; the
-         list tab has no rail, so it stays plain-centred. -->
-    <div class="head-layout">
-      <v-container class="pa-3 pb-0 head-main" style="max-width: 720px">
+  <!-- Two-column shell: the main column stacks the hero, tabs and the
+       active child view (calendar/list) vertically, so they read as one
+       group. The viable-days rail is a sibling column on the calendar
+       tab, which keeps the header aligned with the calendar without a
+       spacer hack. -->
+  <div class="circle-shell">
+    <div class="circle-main">
+      <v-container class="pa-3 pb-0" style="max-width: 720px">
         <!-- Subtle hero banner: the circle photo (or brand-gradient
              fallback) fades into the page via a bottom scrim, with the
              circle name overlaid. Purely atmospheric, kept understated. -->
@@ -42,14 +43,13 @@
         </v-tabs>
       </v-container>
 
-      <div
-        v-if="mdAndUp && activeTab === 'calendar'"
-        class="rail-spacer"
-        aria-hidden="true"
-      ></div>
+      <router-view />
     </div>
 
-    <router-view />
+    <CalendarSideRail
+      v-if="mdAndUp && activeTab === 'calendar'"
+      :circle-id="circleId"
+    />
   </div>
 </template>
 
@@ -60,6 +60,7 @@ import { useRoute, useRouter } from 'vue-router'
 import { useCircles } from '../composables/circles'
 import { rememberCircle } from '../composables/lastCircle'
 import { heroBackgroundStyle } from '../lib/circleImage'
+import CalendarSideRail from '../components/CalendarSideRail.vue'
 
 const route = useRoute()
 const router = useRouter()
@@ -100,21 +101,20 @@ onMounted(() => {
 </script>
 
 <style scoped>
-/* Mirror CircleCalendarView's .cal-layout so the title/tabs centre on
-   the same column as the calendar grid (rail reserved on desktop). */
-.head-layout {
+/* Centre the [main + rail] group. The main column holds the hero, tabs
+   and the active child view stacked vertically; the rail sits beside it
+   on the calendar tab. align-items:flex-start lets the rail pin to the
+   top and run its own height. */
+.circle-shell {
   display: flex;
   justify-content: center;
   align-items: flex-start;
   gap: var(--mt-rail-gap);
 }
 
-.head-main {
+.circle-main {
   flex: 0 1 auto;
-}
-
-.rail-spacer {
-  flex: 0 0 var(--mt-rail-width);
+  min-width: 0;
 }
 
 .circle-hero {

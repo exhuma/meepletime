@@ -57,6 +57,14 @@ const rows = computed<UpcomingDay[]>(() =>
 .side-rail {
   width: var(--mt-rail-width);
   flex: 0 0 var(--mt-rail-width);
+  /* Stand as its own full-height column, pinned below the fixed app bar
+     (64px is Vuetify's default v-app-bar height) and scrolling
+     independently when the viable-days list is long. Content stays
+     top-aligned via the flex-column list below. */
+  position: sticky;
+  top: calc(64px + 1rem);
+  max-height: calc(100vh - 64px - 2rem);
+  overflow-y: auto;
 }
 
 .side-rail__heading {

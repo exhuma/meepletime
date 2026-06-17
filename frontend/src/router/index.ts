@@ -40,6 +40,19 @@ const routes: RouteRecordRaw[] = [
     meta: { requiresAuth: true, title: 'Circles' },
   },
   {
+    // Full-page create form. Declared before /circles/:id so the static
+    // `new` segment is never captured as a circle id.
+    path: '/circles/new',
+    component: () => import('../views/CircleFormView.vue'),
+    meta: { requiresAuth: true, title: 'New circle' },
+  },
+  {
+    // Full-page edit form, outside the tabbed shell.
+    path: '/circles/:id/edit',
+    component: () => import('../views/CircleFormView.vue'),
+    meta: { requiresAuth: true, title: 'Edit circle' },
+  },
+  {
     // Tabbed circle shell: calendar and list share a header strip.
     path: '/circles/:id',
     component: () => import('../views/CircleView.vue'),
@@ -72,6 +85,17 @@ const routes: RouteRecordRaw[] = [
     path: '/profile',
     component: () => import('../views/ProfileSettingsView.vue'),
     meta: { requiresAuth: true, title: 'Profile' },
+  },
+  // Legal pages are public (reachable pre-login) and currently stubs.
+  {
+    path: '/legal/terms',
+    component: () => import('../views/LegalTermsView.vue'),
+    meta: { title: 'Terms of Service' },
+  },
+  {
+    path: '/legal/privacy',
+    component: () => import('../views/LegalPrivacyView.vue'),
+    meta: { title: 'Privacy Policy' },
   },
 ]
 
